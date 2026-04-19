@@ -9,7 +9,7 @@ $currentPage  = 'dashboard.php';
 
 require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
-require_once '../includes/functions.php';
+require_once '../includes/functions_v2.php';
 
 $driverId = $_SESSION['driver_id'];
 
@@ -18,17 +18,31 @@ $busStmt = $pdo->prepare("SELECT * FROM buses WHERE driver_id = ? AND is_active 
 $busStmt->execute([$driverId]);
 $bus = $busStmt->fetch();
 
-$activeTrip = $bus ? getActiveTripForBus($pdo, (int)$bus['id']) : null;
+$activeTrip = null;
+if ($bus) {
+    // First, auto-end any orphaned trips on this bus from previous drivers
+    $orphanCheck = getLiveTrip($pdo, (int)$bus['id'], 0);
+    if ($orphanCheck && (int)$orphanCheck['driver_id'] !== $driverId) {
+        $pdo->prepare("UPDATE trips SET status = 'completed', ended_at = NOW() WHERE id = ?")->execute([$orphanCheck['id']]);
+    }
+    // Now get the current driver's active trip
+    $activeTrip = getLiveTrip($pdo, (int)$bus['id'], (int)$driverId);
+}
 
 // Get all stations for Simulator OSRM fetching
 $stationsList = $pdo->query("SELECT latitude, longitude FROM stations WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Today's stats
 $statsStmt = $pdo->prepare(
-    "SELECT COALESCE(SUM(t.fare_amount),0) AS revenue, COUNT(t.id) AS passengers
+    "SELECT 
+        COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.fare_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 0 THEN t.fare_amount ELSE 0 END), 0) AS cash_in_hand,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 2 THEN t.fare_amount ELSE 0 END), 0) AS pending_remittance,
+        SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (p.id IS NULL OR p.remitted = 0) THEN 1 ELSE 0 END) AS passengers
      FROM   tickets t
      JOIN   trips   tr ON tr.id = t.trip_id
-     WHERE  tr.driver_id = ? AND DATE(t.issued_at) = CURDATE()"
+     LEFT JOIN payments p ON p.ticket_id = t.id
+     WHERE  tr.driver_id = ?"
 );
 $statsStmt->execute([$driverId]);
 $todayStats = $statsStmt->fetch();
@@ -55,12 +69,12 @@ include '../includes/header.php';
         <!-- Top bar -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-slate-800">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars(explode(' ', $_SESSION['full_name'])[0]) ?>! 🚍</h2>
+                <h2 class="text-2xl font-black text-slate-800">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>! 🚍</h2>
                 <p class="text-slate-500 text-sm mt-1"><?= date('l, F j, Y') ?></p>
             </div>
             <?php if ($activeTrip): ?>
-            <span class="flex items-center gap-2 bg-green-100 text-green-700 font-bold px-5 py-2.5 rounded-full">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Trip Active
+            <span class="flex items-center gap-2 bg-orange-100 text-orange-700 font-bold px-5 py-2.5 rounded-full">
+                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> Trip Active
             </span>
             <?php else: ?>
             <span class="flex items-center gap-2 bg-slate-100 text-slate-500 font-bold px-5 py-2.5 rounded-full">
@@ -80,14 +94,41 @@ include '../includes/header.php';
                     <p class="text-3xl font-black text-slate-800"><?= (int)$todayStats['passengers'] ?></p>
                 </div>
             </div>
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
-                    <i class="ph ph-money text-2xl text-emerald-600"></i>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                        <i class="ph ph-wallet text-2xl text-emerald-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-slate-400 text-sm font-semibold tracking-tight">Cash in Hand</p>
+                        <p id="top-cash-in-hand" class="text-3xl font-black text-emerald-700 leading-tight"><?= peso((float)$todayStats['cash_in_hand']) ?></p>
+                        <p class="text-slate-400 text-[10px] uppercase font-black tracking-widest mt-1 opacity-70">Day's Total: <?= peso((float)$todayStats['total_revenue']) ?></p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-slate-400 text-sm">Today's Revenue</p>
-                    <p class="text-3xl font-black text-emerald-700"><?= peso((float)$todayStats['revenue']) ?></p>
+                <?php if ((float)$todayStats['cash_in_hand'] > 0): ?>
+                    <?php if (!$activeTrip): ?>
+                    <button onclick="remitCash('<?= peso((float)$todayStats['cash_in_hand']) ?>')" id="btn-remit-cash"
+                            class="mt-3 w-full flex justify-center items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-3 rounded-2xl transition-all active:scale-95 shadow-lg shadow-orange-500/20 text-sm uppercase tracking-wider">
+                        <i class="ph ph-hand-coins text-lg"></i> Remit Cash to Admin
+                    </button>
+                    <?php else: ?>
+                    <button disabled
+                            class="mt-3 w-full flex justify-center items-center gap-2 bg-slate-100 text-slate-400 font-black py-3 rounded-2xl text-sm uppercase tracking-wider cursor-not-allowed border border-slate-200">
+                        <i class="ph ph-lock-key text-lg"></i> End Trip to Remit
+                    </button>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php if ((float)$todayStats['pending_remittance'] > 0): ?>
+                <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse shrink-0"></span>
+                    <span class="text-[11px] font-bold text-amber-700">Awaiting Admin Confirmation: <?= peso((float)$todayStats['pending_remittance']) ?></span>
                 </div>
+                <?php elseif ((float)$todayStats['cash_in_hand'] == 0 && (float)$todayStats['total_revenue'] > 0): ?>
+                <div class="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <i class="ph ph-check-circle text-emerald-500"></i>
+                    <span class="text-[11px] font-bold text-emerald-700">All cash remitted & confirmed</span>
+                </div>
+                <?php endif; ?>
             </div>
             <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
                 <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center">
@@ -116,10 +157,10 @@ include '../includes/header.php';
                 </div>
                 <?php elseif ($activeTrip): ?>
                 <!-- Active trip info -->
-                <div class="bg-green-50 border border-green-200 rounded-2xl p-4 mb-5">
+                <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5">
                     <div class="flex items-center gap-2 mb-3">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        <span class="font-bold text-green-700 text-sm">Trip in progress</span>
+                        <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                        <span class="font-bold text-orange-700 text-sm">Trip in progress</span>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-sm">
                         <div><p class="text-slate-400 text-xs">From</p><p class="font-semibold"><?= htmlspecialchars($activeTrip['start_name']) ?></p></div>
@@ -162,25 +203,9 @@ include '../includes/header.php';
 
                     <!-- Kiosk handles GPS automatically -->
                     <div class="w-full rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2 bg-green-50 border border-green-200 text-green-700">
-                        <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
-                        <span>🖥️ Kiosk GPS is broadcasting your location automatically</span>
+                        <span class="w-2 h-2 rounded-full bg-green-500 shrink-0 animate-pulse"></span>
+                        <span>🖥️ Bus Kiosk GPS is active · Live Tracking enabled</span>
                     </div>
-
-                    <!-- Simulator for demo/testing -->
-                    <details class="mt-2">
-                        <summary class="text-xs text-slate-400 cursor-pointer select-none">Demo / Simulator (for testing)</summary>
-                        <div class="flex gap-2 mt-2">
-                            <button onclick="simulateLocation()" id="sim-btn"
-                                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-xl text-xs transition">
-                                Step Sim
-                            </button>
-                            <button onclick="toggleAutoSim()" id="auto-btn"
-                                    class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-xl text-xs transition">
-                                Auto (5s)
-                            </button>
-                        </div>
-                        <p id="sim-status" class="text-xs text-slate-300 mt-1 text-center"></p>
-                    </details>
                 </div>
                 <?php endif; ?>
             </div>
@@ -192,9 +217,15 @@ include '../includes/header.php';
                         <i class="ph ph-users text-orange-500"></i> Passengers This Trip
                     </h3>
                     <?php if ($activeTrip): ?>
-                    <div class="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-right">
-                        <p class="text-[10px] uppercase font-bold tracking-wider opacity-70">Cash to Collect/Remit</p>
-                        <p class="font-black text-xl leading-none" id="live-cash-total">₱ 0.00</p>
+                    <div class="flex gap-4">
+                        <div class="bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl text-right">
+                            <p class="text-[9px] uppercase font-bold tracking-wider text-slate-400">Total Pending</p>
+                            <p class="font-bold text-lg text-slate-600 leading-none" id="live-cash-pending">₱ 0.00</p>
+                        </div>
+                        <div class="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-right shadow-lg shadow-emerald-600/20">
+                            <p class="text-[10px] uppercase font-black tracking-widest opacity-80 mb-1">Cash in Hand</p>
+                            <p class="font-black text-2xl leading-none" id="live-cash-collected">₱ 0.00</p>
+                        </div>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -215,6 +246,7 @@ include '../includes/header.php';
             </div>
         </div>
 
+
     </main>
 </div>
 
@@ -227,11 +259,25 @@ function fetchTripStats() {
     fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>')
     .then(r => r.json())
     .then(data => {
-        if (!data.success) return;
+        if (!data.success) {
+            document.getElementById('live-pax-list').innerHTML = `
+                <div class="text-center py-10 text-red-400">
+                    <i class="ph ph-warning-circle text-5xl mb-2"></i>
+                    <p class="text-sm font-bold">Error syncing with Kiosk</p>
+                    <p class="text-xs mt-1 text-red-300">${data.error || 'Unknown Error'}</p>
+                </div>`;
+            return;
+        }
         
         // Update top counters
         document.getElementById('live-pax-count').innerText = data.total_passengers;
-        document.getElementById('live-cash-total').innerText = '₱ ' + parseFloat(data.total_cash).toFixed(2);
+        document.getElementById('live-cash-collected').innerText = '₱ ' + parseFloat(data.collected_cash).toFixed(2);
+        document.getElementById('live-cash-pending').innerText = '₱ ' + parseFloat(data.pending_cash).toFixed(2);
+        
+        if (data.all_time_cash_in_hand !== undefined) {
+            const topCashDiv = document.getElementById('top-cash-in-hand');
+            if (topCashDiv) topCashDiv.innerText = '₱ ' + parseFloat(data.all_time_cash_in_hand).toFixed(2);
+        }
         
         const list = document.getElementById('live-pax-list');
         if (data.recent_passengers.length === 0) {
@@ -245,138 +291,128 @@ function fetchTripStats() {
 
         // Render live ticket list
         list.innerHTML = data.recent_passengers.map(p => {
-            // Fix iOS/Safari date parsing issue by transforming "-" to "/"
             let dateStr = p.issued_at.replace(/-/g, '/');
+            const isNear = p.proximity === 'near';
+            const iconBg = isNear ? 'bg-emerald-100 border-emerald-200' : 'bg-amber-100 border-amber-200';
+            const iconColor = isNear ? 'text-emerald-600' : 'text-amber-600';
+            const icon = isNear ? 'ph-check-circle' : 'ph-clock';
+
+            let paymentAction = '';
+            if (p.is_paid) {
+                paymentAction = `<span class="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-3 py-1.5 rounded-full flex items-center gap-1 border border-emerald-100"><i class="ph ph-check-fat-fill"></i> Paid</span>`;
+            } else {
+                paymentAction = `<button onclick="collectPayment(${p.id}, this)" class="text-[11px] font-black text-white uppercase bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 rounded-xl shadow-md transition active:scale-95 flex items-center gap-2">
+                    <i class="ph ph-hand-coins text-base"></i> Receive Cash
+                </button>`;
+            }
+
             return `
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 shadow-sm animate-[fadeIn_0.5s_ease-out]">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 text-blue-600">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-white border ${isNear ? 'border-emerald-200 shadow-md ring-1 ring-emerald-50' : 'border-slate-200 shadow-sm'} animate-[fadeIn_0.5s_ease-out]">
+                <div class="w-10 h-10 rounded-xl ${iconBg} border flex items-center justify-center shrink-0 ${iconColor} relative">
                     <i class="ph ph-receipt text-xl"></i>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isNear ? 'bg-emerald-500' : 'bg-amber-500'}"></div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-2">
                         <p class="font-black text-slate-800 text-base">₱ ${parseFloat(p.fare_amount).toFixed(2)}</p>
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">${p.passenger_type}</p>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${p.passenger_type}</span>
                     </div>
-                    <p class="text-xs text-slate-400 truncate">${p.origin_name} &rarr; ${p.dest_name}</p>
+                    <p class="text-[11px] text-slate-500 truncate">${p.origin_name} &rarr; <span class="font-bold text-slate-700">${p.dest_name}</span></p>
+                    <p class="text-[9px] ${isNear ? 'text-emerald-600 font-bold' : 'text-slate-400'} mt-0.5">
+                        <i class="ph ${isNear ? 'ph-map-pin-line' : 'ph-navigation-arrow'}"></i> ${isNear ? 'Arriving Soon' : p.distance_km.toFixed(1) + ' km away'}
+                    </p>
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-1 rounded">Collect Cash</p>
-                    <p class="text-[10px] font-medium text-slate-400 mt-1">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <div class="mb-1">${paymentAction}</div>
+                    <p class="text-[10px] font-medium text-slate-400">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                 </div>
             </div>`;
         }).join('');
+    })
+    .catch(err => {
+        document.getElementById('live-pax-list').innerHTML = `
+            <div class="text-center py-10 text-rose-400">
+                <i class="ph ph-wifi-slash text-5xl mb-2"></i>
+                <p class="text-sm font-bold">Connection lost</p>
+                <p class="text-xs mt-1 text-rose-300">Retrying...</p>
+            </div>`;
     });
 }
+
+function collectPayment(ticketId, btn) {
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i>';
+    
+    fetch('api_collect_payment.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            window.showToast('Payment Collected', 'Cash recorded successfully', 'success');
+            fetchTripStats(); // Refresh list immediately
+        } else {
+            window.showToast('Error', d.message, 'error');
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    })
+    .catch(() => {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
+        btn.disabled = false;
+        btn.innerText = originalText;
+    });
+}
+
 // Poll Kiosk via database every 3 seconds
 setInterval(fetchTripStats, 3000);
 fetchTripStats();
 <?php endif; ?>
 
-// ═══════════════════════════════════════════════════════════
-// SHARED — push lat/lng to server
-// ═══════════════════════════════════════════════════════════
-function pushLocation(lat, lng, speed) {
-    fetch('update_location.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng, speed })
-    })
-    .then(r => r.json())
-    .then(() => {
-        document.getElementById('sim-status').textContent =
-            `📍 ${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)} · ${speed} km/h · ${new Date().toLocaleTimeString()}`;
-    })
-    .catch(() => {
-        document.getElementById('sim-status').textContent = '❌ Server error';
-    });
-}
-
-// ═══════════════════════════════════════════════════════════
-// SIMULATOR — Dynamic OSRM Route Tracing
-// ═══════════════════════════════════════════════════════════
-const allStations = <?= json_encode($stationsList) ?>;
-let routeWaypoints = [];
-let simDirection = 'forward'; 
-<?php if ($activeTrip): ?>
-simDirection = <?= (int)$activeTrip['start_station_id'] < (int)$activeTrip['end_station_id'] ? "'forward'" : "'backward'" ?>;
-<?php endif; ?>
-
-let wpIndex = 0;
-
-// Fetch accurate OSRM geometry on load
-function loadAccurateRoute() {
-    const coordStr = allStations
-        .filter(s => s.latitude && s.longitude)
-        .map(s => `${parseFloat(s.longitude).toFixed(6)},${parseFloat(s.latitude).toFixed(6)}`)
-        .join(';');
-    
-    fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.code === 'Ok' && data.routes.length) {
-                let coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                if (simDirection === 'backward') coords = coords.reverse();
-                routeWaypoints = coords;
-                const statusEl = document.getElementById('sim-status');
-                if (statusEl) statusEl.innerText = `✅ Simulator ready (${routeWaypoints.length} waypoints)`;
-            }
-        });
-}
-document.addEventListener('DOMContentLoaded', loadAccurateRoute);
-
-function simulateLocation() {
-    const statusEl = document.getElementById('sim-status');
-    if (routeWaypoints.length === 0) {
-        if(statusEl) statusEl.innerText = '⏳ Waiting for route geometry...';
-        return;
-    }
-    if (wpIndex >= routeWaypoints.length) {
-        if(statusEl) statusEl.innerText = '🛑 Route completed';
-        if (autoActive) toggleAutoSim();
-        return;
-    }
-    const [lat, lng] = routeWaypoints[wpIndex];
-    wpIndex += 3; // Skip ahead slightly for speed, OSRM points are very dense
-    const speed = (Math.random() * 20 + 20).toFixed(1);
-    pushLocation(lat, lng, speed);
-}
-
-function toggleAutoSim() {
-    autoActive = !autoActive;
-    const btn = document.getElementById('auto-btn');
-    if (autoActive) {
-        autoSimInterval = setInterval(simulateLocation, 5000);
-        btn.classList.replace('bg-slate-100', 'bg-orange-500');
-        btn.classList.replace('text-slate-700', 'text-white');
-        btn.textContent = 'Stop Auto';
-        document.getElementById('sim-status').textContent = '🔄 Auto-updating every 5 seconds...';
-    } else {
-        clearInterval(autoSimInterval);
-        btn.classList.replace('bg-orange-500', 'bg-slate-100');
-        btn.classList.replace('text-white', 'text-slate-700');
-        btn.textContent = 'Auto (5s)';
-        document.getElementById('sim-status').textContent = 'Manual mode';
-    }
-}
-
-function startTrip(direction) {
+async function startTrip(direction) {
     const dirTxt = direction === 'forward' ? 'Cabanatuan → Rizal' : 'Rizal → Cabanatuan';
-    if (!confirm('Start a new trip? Route: ' + dirTxt)) return;
-    
+
+    const confirmed = await window.showConfirm({
+        title: 'Start New Trip?',
+        message: `You are about to start a trip on route: ${dirTxt}. Passengers will be able to book tickets.`,
+        type: 'info',
+        confirmText: 'Yes, Start Trip'
+    });
+
+    if (!confirmed) return;
+
     fetch('start_trip.php', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ direction: direction })
     })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) location.reload();
-            else alert('Error: ' + d.message);
-        });
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            window.showToast('Trip Started', `Route: ${dirTxt}`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            window.showToast('Error', d.message || 'Failed to start trip', 'error');
+        }
+    })
+    .catch(() => {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
+    });
 }
 
-function endTrip(tripId) {
-    if (!confirm('End this trip? This will close all bookings for this run.')) return;
+async function endTrip(tripId) {
+    const confirmed = await window.showConfirm({
+        title: 'End This Trip?',
+        message: 'This will close all bookings for this run. This action cannot be undone.',
+        type: 'danger',
+        confirmText: 'Yes, End Trip'
+    });
+
+    if (!confirmed) return;
+
     fetch('end_trip.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -384,10 +420,122 @@ function endTrip(tripId) {
     })
     .then(r => r.json())
     .then(d => {
-        if (d.success) location.reload();
-        else alert('Error: ' + d.message);
+        if (d.success) {
+            window.showToast('Trip Ended', 'All bookings for this run have been closed.', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            window.showToast('Error', d.message || 'Failed to end trip', 'error');
+        }
+    })
+    .catch(() => {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
     });
 }
+
+// ========================================
+// 💰 Remit Cash — driver flags collected cash as remitted
+// ========================================
+async function remitCash(amount) {
+    const confirmed = await window.showConfirm({
+        title: 'Remit Cash to Admin',
+        message: `You are about to remit ${amount} to the admin. Are you sure you have handed over this amount? This action cannot be undone.`,
+        type: 'warning',
+        confirmText: 'Yes, I Remitted'
+    });
+
+    if (!confirmed) return;
+
+    const btn = document.getElementById('btn-remit-cash');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin text-lg"></i> Processing...';
+    }
+
+    try {
+        const res = await fetch('api_remit_cash.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            window.showToast('Remittance Submitted', 
+                `₱ ${data.amount.toFixed(2)} flagged as remitted. Pending admin confirmation.`, 
+                'success');
+            // Refresh the page after a short delay so the user sees the toast
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            window.showToast('Remittance Failed', data.message || 'Unknown error', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph ph-hand-coins text-lg"></i> Remit Cash to Admin';
+            }
+        }
+    } catch (err) {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-hand-coins text-lg"></i> Remit Cash to Admin';
+        }
+    }
+}
+
+// ========================================
+// 🛰️ Live GPS Tracking — pushes driver's phone location to server
+// This makes the bus icon move on the passenger's live map
+// ========================================
+<?php if ($activeTrip): ?>
+(function() {
+    let lastPush = 0;
+    const PUSH_INTERVAL = 5000; // Push every 5 seconds
+
+    if (!navigator.geolocation) {
+        console.warn('GPS not available on this device');
+        return;
+    }
+
+    // Show GPS status indicator
+    const gpsIndicator = document.createElement('div');
+    gpsIndicator.id = 'gps-status';
+    gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-lg text-xs font-bold text-slate-500';
+    gpsIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> GPS Connecting...';
+    document.body.appendChild(gpsIndicator);
+
+    navigator.geolocation.watchPosition(
+        function(pos) {
+            const now = Date.now();
+            if (now - lastPush < PUSH_INTERVAL) return;
+            lastPush = now;
+
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const speed = (pos.coords.speed || 0) * 3.6; // m/s → km/h
+
+            fetch('push_location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat, lng, speed })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    gpsIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]"></span> GPS Active · ${speed.toFixed(0)} km/h`;
+                    gpsIndicator.className = gpsIndicator.className.replace('text-slate-500', 'text-green-600').replace('border-slate-200', 'border-green-200');
+                }
+            })
+            .catch(() => {
+                gpsIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> GPS Error';
+            });
+        },
+        function(err) {
+            console.warn('GPS Error:', err.message);
+            gpsIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> GPS Unavailable';
+            gpsIndicator.className = gpsIndicator.className.replace('text-slate-500', 'text-red-500');
+        },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+    );
+})();
+<?php endif; ?>
 
 </script>
 

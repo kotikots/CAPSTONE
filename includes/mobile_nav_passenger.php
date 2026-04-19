@@ -1,11 +1,10 @@
 <?php
 $currentPage = $currentPage ?? '';
 $navItems = [
-    ['href' => '/PARE/passenger/dashboard.php',  'icon' => 'ph-squares-four',      'label' => 'Home'],
-    ['href' => '/PARE/passenger/booking.php',    'icon' => 'ph-map-pin',           'label' => 'Book'],
-    ['href' => '/PARE/passenger/ticket.php',     'icon' => 'ph-ticket',            'label' => 'Ticket'],
-    ['href' => '/PARE/passenger/history.php',    'icon' => 'ph-clock-counter-clockwise', 'label' => 'History'],
-    ['href' => '/PARE/passenger/map.php',        'icon' => 'ph-map-trifold',       'label' => 'Map'],
+    ['href' => '/PARE/passenger/dashboard.php',  'icon' => 'ph-squares-four',           'label' => 'Home'],
+    ['href' => '/PARE/passenger/map.php',        'icon' => 'ph-map-trifold',            'label' => 'Map'],
+    ['href' => '/PARE/passenger/rides.php',      'icon' => 'ph-clock-counter-clockwise', 'label' => 'Rides'],
+    ['href' => '/PARE/passenger/profile.php',    'icon' => 'ph-user-circle',            'label' => 'Profile'],
 ];
 ?>
 <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-2xl border-t border-slate-200/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">

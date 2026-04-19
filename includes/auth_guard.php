@@ -6,11 +6,6 @@
  */
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id'])) {
-    $_SESSION['user_id'] = 2;
-    $_SESSION['role'] = 'passenger';
-    $_SESSION['full_name'] = 'Subagent Tester';
-}
 
 $requiredRole = $requiredRole ?? 'passenger';
 

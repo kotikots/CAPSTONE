@@ -69,18 +69,6 @@ $recentTrips = $pdo->query(
      ORDER  BY tr.started_at DESC LIMIT 8"
 )->fetchAll();
 
-// Active Fleet Locations for Map
-$mapMarkers = $pdo->query(
-    "SELECT b.body_number, b.plate_number, l.latitude, l.longitude, l.speed_kmh, l.recorded_at
-     FROM buses b
-     JOIN (
-         SELECT bus_id, MAX(recorded_at) as max_rec
-         FROM bus_locations GROUP BY bus_id
-     ) latest ON latest.bus_id = b.id
-     JOIN bus_locations l ON l.bus_id = b.id AND l.recorded_at = latest.max_rec
-     WHERE b.is_active = 1"
-)->fetchAll(PDO::FETCH_ASSOC);
-
 include '../includes/header.php';
 ?>
 <!-- Leaflet CSS for Maps -->
@@ -100,7 +88,7 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= date('l, F j, Y') ?></p>
             </div>
             <a href="reports.php"
-               class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-emerald-500/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-blue-600/30 transition active:scale-95">
                 <i class="ph ph-file-text text-xl"></i> Reports & Export
             </a>
         </div>
@@ -108,10 +96,10 @@ include '../includes/header.php';
         <!-- Revenue Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
             <?php foreach ([
-                ['Today',       $revToday, 'ph-sun',        'amber',   "vs yesterday"],
-                ['This Week',   $revWeek,  'ph-calendar',   'blue',    "current week"],
-                ['This Month',  $revMonth, 'ph-chart-line', 'violet',  "current month"],
-                ['All Time',    $revAll,   'ph-piggy-bank', 'emerald', "since launched"],
+                ['Today',       $revToday, 'ph-sun',        'emerald',   "vs yesterday"],
+                ['This Week',   $revWeek,  'ph-calendar',   'emerald',   "current week"],
+                ['This Month',  $revMonth, 'ph-chart-line', 'emerald',   "current month"],
+                ['All Time',    $revAll,   'ph-piggy-bank', 'emerald',   "since launched"],
             ] as [$label, $value, $icon, $color, $sub]): ?>
             <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between mb-3">
@@ -131,9 +119,9 @@ include '../includes/header.php';
             <?php foreach ([
                 ['Passengers',   $totalPassengers, 'ph-users',         'blue'],
                 ['Drivers',      $totalDrivers,    'ph-steering-wheel','orange'],
-                ['Buses',        $totalBuses,      'ph-bus',           'teal'],
-                ['Active Trips', $activeTrips,     'ph-map-pin',       'green'],
-                ['Total Tickets',$totalTickets,    'ph-ticket',        'violet'],
+                ['Buses',        $totalBuses,      'ph-bus',           'blue'],
+                ['Active Trips', $activeTrips,     'ph-map-pin',       'orange'],
+                ['Total Tickets',$totalTickets,    'ph-ticket',        'blue'],
             ] as [$label, $val, $icon, $color]): ?>
             <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-slate-100 flex items-center gap-3">
                 <i class="ph <?= $icon ?> text-xl text-<?= $color ?>-500"></i>
@@ -219,9 +207,16 @@ include '../includes/header.php';
                         <td class="px-5 py-4 font-black text-emerald-700"><?= peso((float)$tr['total_revenue']) ?></td>
                         <td class="px-5 py-4">
                             <span class="px-2.5 py-1 rounded-lg text-xs font-bold
-                                <?= $tr['status']==='active' ? 'bg-green-100 text-green-700' : ($tr['status']==='completed' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-600') ?>">
+                                <?= $tr['status']==='active' ? 'bg-orange-100 text-orange-700' : ($tr['status']==='completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600') ?>">
                                 <?= ucfirst($tr['status']) ?>
                             </span>
+                            <?php if ($tr['status'] === 'active'): ?>
+                            <button onclick="forceEndTrip(<?= $tr['id'] ?>)" 
+                                    class="ml-2 text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-tighter transition active:scale-90"
+                                    title="Force End Trip">
+                                [Force End]
+                            </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -258,57 +253,130 @@ new Chart(document.getElementById('revenueChart'), {
     }
 });
 
-// Leaflet Map Initialization
-const markers = <?= json_encode($mapMarkers) ?>;
-const map = L.map('fleetMap').setView([15.4859, 120.9665], 11); // Default to Cabanatuan
+// Leaflet Map Initialization — Real-Time Polling
+const map = L.map('fleetMap').setView([15.4859, 120.9665], 11);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap &nbsp; | &copy; CartoDB'
 }).addTo(map);
 
-// Custom Bus Icon
-const busIcon = L.divIcon({
+// Custom Bus Icons
+const busIconActive = L.divIcon({
     html: '<div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
     className: 'custom-leaflet-icon',
     iconSize: [32, 32],
     iconAnchor: [16, 16]
 });
-
-// Add markers to map
-const bounds = [];
-markers.forEach(m => {
-    if (m.latitude && m.longitude) {
-        const latLng = [parseFloat(m.latitude), parseFloat(m.longitude)];
-        bounds.push(latLng);
-        L.marker(latLng, { icon: busIcon })
-         .addTo(map)
-         .bindPopup(`
-            <div class="p-2 min-w-[150px]">
-                <p class="text-xs text-slate-400 uppercase font-bold mb-1">Bus ${m.body_number}</p>
-                <p class="font-bold text-slate-800 text-sm mb-2">${m.plate_number}</p>
-                <div class="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded">
-                    <i class="ph ph-gauge text-blue-500"></i>
-                    <span>${parseFloat(m.speed_kmh).toFixed(1)} km/h</span>
-                </div>
-            </div>
-         `);
-    }
+const busIconIdle = L.divIcon({
+    html: '<div class="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
+    className: 'custom-leaflet-icon',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
 });
 
-// Fit map to visible buses or default bounds
-if (bounds.length > 0) {
-    if (bounds.length === 1) {
-        map.setView(bounds[0], 14);
-    } else {
-        map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
-    }
+// Live marker tracking
+let fleetMarkers = {};
+let initialFit = false;
+
+function syncFleetMap() {
+    fetch('get_fleet_locations.php')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const activeIds = new Set();
+            const bounds = [];
+
+            data.buses.forEach(bus => {
+                if (!bus.latitude || !bus.longitude) return;
+
+                const id = bus.bus_id;
+                activeIds.add(id);
+                const pos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
+                bounds.push(pos);
+                const isOnTrip = !!bus.trip_id;
+                const icon = isOnTrip ? busIconActive : busIconIdle;
+
+                if (fleetMarkers[id]) {
+                    // Smoothly move existing marker
+                    fleetMarkers[id].setLatLng(pos);
+                    fleetMarkers[id].setIcon(icon);
+                } else {
+                    // Create new marker
+                    fleetMarkers[id] = L.marker(pos, { icon: icon }).addTo(map);
+                }
+
+                // Update popup content
+                const speed = parseFloat(bus.speed_kmh || 0).toFixed(1);
+                const statusBadge = isOnTrip
+                    ? '<span class="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">ON ROUTE</span>'
+                    : '<span class="inline-block bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full">IDLE</span>';
+
+                fleetMarkers[id].bindPopup(`
+                    <div class="p-2 min-w-[160px]">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Bus ${bus.body_number}</p>
+                            ${statusBadge}
+                        </div>
+                        <p class="font-bold text-slate-800 text-sm">${bus.plate_number}</p>
+                        <p class="text-xs text-slate-500 mb-2">${bus.driver_name || ''}</p>
+                        <div class="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded">
+                            <i class="ph ph-gauge text-blue-500"></i>
+                            <span>${speed} km/h</span>
+                        </div>
+                    </div>
+                `);
+            });
+
+            // Remove markers for buses no longer reporting
+            Object.keys(fleetMarkers).forEach(id => {
+                if (!activeIds.has(parseInt(id))) {
+                    map.removeLayer(fleetMarkers[id]);
+                    delete fleetMarkers[id];
+                }
+            });
+
+            // Fit bounds on first load only
+            if (!initialFit && bounds.length > 0) {
+                initialFit = true;
+                if (bounds.length === 1) {
+                    map.setView(bounds[0], 14);
+                } else {
+                    map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
+                }
+            }
+        })
+        .catch(err => console.warn('Fleet sync error:', err));
 }
 
-// Auto-refresh admin dashboard to reflect live Kiosk passenger ticks and map
+// Poll every 5 seconds for live tracking
+syncFleetMap();
+setInterval(syncFleetMap, 5000);
+
+// Auto-refresh full page every 2 minutes (for stats/charts only — map is already live)
 setTimeout(() => {
     window.location.reload();
-}, 15000);
+}, 120000);
+
+function forceEndTrip(tripId) {
+    if (!confirm('Are you sure you want to FORCE END this trip? This will manually stop live tracking for this bus.')) return;
+    
+    fetch('api_force_end_trip.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_id: tripId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Success: Trip has been ended.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
 </script>
 
 <?php include '../includes/mobile_nav_admin.php'; ?>

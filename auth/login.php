@@ -6,6 +6,9 @@
  */
 session_start();
 require_once '../config/db.php';
+require_once '../includes/functions_security.php';
+
+
 
 // Already logged in?
 if (isset($_SESSION['user_id']) || isset($_SESSION['driver_id'])) {
@@ -22,9 +25,9 @@ function redirectFor(string $role): string {
     };
 }
 
-$error = '';
+$error = $error ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     $identifier = trim($_POST['identifier'] ?? '');  // email OR id_number OR license
     $password   = $_POST['password'] ?? '';
     $loginAs    = $_POST['login_as'] ?? 'passenger'; // passenger | driver
@@ -52,10 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['bus_body']  = $bus['body_number']  ?? 'N/A';
                 $_SESSION['bus_plate'] = $bus['plate_number'] ?? 'N/A';
 
+                logSecurityEvent($pdo, $identifier, 'driver', 'success', 'Successful login');
+                
                 header('Location: /PARE/driver/dashboard.php');
                 exit;
             } else {
                 $error = 'Invalid driver credentials.';
+                logSecurityEvent($pdo, $identifier, 'driver', 'failure', 'Invalid credentials');
             }
 
         } else {
@@ -71,10 +77,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id_number'] = $user['id_number'];
                 $_SESSION['role']      = $user['role'];
 
+                logSecurityEvent($pdo, $identifier, $user['role'], 'success', 'Successful login');
+
                 header('Location: ' . redirectFor($user['role']));
                 exit;
             } else {
                 $error = 'Invalid email/ID or password.';
+                logSecurityEvent($pdo, $identifier, 'passenger/admin', 'failure', 'Invalid credentials');
             }
         }
     }
@@ -96,7 +105,7 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
                 <h1 class="text-5xl font-black tracking-tight">PARE</h1>
             </div>
             <h2 class="text-3xl font-bold mb-4 leading-tight">
-                Passenger Monitoring<br>& Fare System
+               A Web-Based Passenger <br> and Revenue Monitoring System
             </h2>
             <p class="text-blue-200 text-lg leading-relaxed mb-10">
                 Real-time bus tracking, instant ticketing, and seamless fare collection — all in one platform.
@@ -168,12 +177,12 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
                             Email or ID Number
                         </label>
                         <div class="relative">
-                            <i class="ph ph-identification-card absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-xl"></i>
+                            <i class="ph ph-identification-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
                             <input type="text" name="identifier" id="identifier"
                                    value="<?= htmlspecialchars($_POST['identifier'] ?? '') ?>"
                                    placeholder="Email or ID number"
                                    required
-                                   class="w-full bg-white/10 border border-white/20 text-white placeholder-white/30 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-white/10 border border-white/20 text-slate-700 placeholder-slate-400 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
                         </div>
                     </div>
 
@@ -181,11 +190,15 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
                     <div>
                         <label class="block text-white/70 text-sm font-medium mb-1.5">Password</label>
                         <div class="relative">
-                            <i class="ph ph-lock-simple absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-xl"></i>
+                            <i class="ph ph-lock-simple absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
                             <input type="password" name="password" id="password"
                                    placeholder="Your password"
                                    required
-                                   class="w-full bg-white/10 border border-white/20 text-white placeholder-white/30 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-white/10 border border-white/20 text-slate-700 placeholder-slate-400 rounded-xl pl-11 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <button type="button" onclick="togglePasswordVisibility()" 
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1 z-10">
+                                <i id="eye-icon" class="ph ph-eye-slash text-xl"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -197,7 +210,12 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
 
                 </form>
 
-                <div class="mt-6 text-center">
+                <!-- Forgot Password -->
+                <div class="text-right mt-2" id="forgot-link">
+                    <a href="forgot_password.php" class="text-blue-300 text-xs font-medium hover:text-white transition">Forgot password?</a>
+                </div>
+
+                <div class="mt-4 text-center <?= $loginAs === 'driver' ? 'invisible' : '' ?>" id="register-footer">
                     <p class="text-white/40 text-sm">
                         No account yet?
                         <a href="register.php" class="text-blue-300 font-semibold hover:text-white">Register here</a>
@@ -215,20 +233,45 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
 </div>
 
 <script>
-    // Update label hint based on role selection
+    // Update label hint and footer visibility based on role selection
     document.querySelectorAll('input[name="login_as"]').forEach(radio => {
         radio.addEventListener('change', () => {
             const label = document.getElementById('id-label');
             const input = document.getElementById('identifier');
+            const footer = document.getElementById('register-footer');
+            
             if (radio.value === 'driver') {
                 label.textContent = 'Email or License Number';
                 input.placeholder = 'Email or license number';
+                footer.classList.add('invisible');
             } else {
                 label.textContent = 'Email or ID Number';
                 input.placeholder = 'Email or ID number';
+                footer.classList.remove('invisible');
             }
         });
     });
+
+    // Run once on load to ensure correct state if radio was pre-selected
+    document.addEventListener('DOMContentLoaded', () => {
+        const activeRadio = document.querySelector('input[name="login_as"]:checked');
+        if (activeRadio && activeRadio.value === 'driver') {
+            document.getElementById('register-footer').classList.add('invisible');
+        }
+    });
+
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eye-icon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.classList.replace('ph-eye-slash', 'ph-eye');
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.classList.replace('ph-eye', 'ph-eye-slash');
+        }
+    }
 </script>
 
 </body>

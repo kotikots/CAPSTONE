@@ -1,229 +1,169 @@
 <?php
 /**
- * passenger/map.php — Live bus tracking map
- * Route: Cabanatuan Central Terminal → Rizal/Pob Sur Terminal (~40km)
- * Uses OSRM public routing API for road-accurate polyline
+ * PARE/passenger/map.php — Live Tracking Portal
+ * Integrates stationary Kiosk location and live bus movement.
  */
 $requiredRole = 'passenger';
-$pageTitle    = 'Live Map';
+$pageTitle    = 'Live Bus Map';
 $currentPage  = 'map.php';
 
 require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
+require_once '../config/kiosk_settings.php'; // Crucial for the stationary logic
 
-// Load all active stations
+// Fetch route stops to display on the map
 $stations = $pdo->query(
-    "SELECT station_name, km_marker, latitude, longitude, is_terminal
-     FROM   stations WHERE is_active=1 ORDER BY sort_order ASC"
+    "SELECT station_name, km_marker, latitude, longitude, is_terminal 
+     FROM stations WHERE is_active=1 ORDER BY km_marker ASC"
 )->fetchAll();
 
 include '../includes/header.php';
 ?>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-<div class="flex min-h-screen">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="flex min-h-screen bg-slate-50">
     <?php include '../includes/sidebar_passenger.php'; ?>
 
-    <main class="flex-1 flex flex-col p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
-
+    <main class="flex-1 p-4 md:p-8 pb-24">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-                <h2 class="text-2xl font-black text-slate-800">Live Bus Map</h2>
-                <p class="text-slate-500 text-sm mt-1">Cabanatuan Central Terminal → Rizal/Pob Sur · Updates every 5 seconds</p>
+                <h2 class="text-3xl font-black text-slate-800 tracking-tight">Live Fleet Tracker</h2>
+                <p class="text-slate-500 font-medium text-sm">
+                    Real-time Bus Locations
+                </p>
             </div>
-            <div id="map-status" class="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 text-sm font-medium shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span id="status-text">Connecting...</span>
-            </div>
-        </div>
-
-        <!-- Map container -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden" style="height:520px;">
-            <div id="map" class="w-full h-full"></div>
-        </div>
-
-        <!-- Legend -->
-        <div class="flex items-center gap-4 mt-3 px-1">
-            <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <div class="w-6 h-1 rounded" style="background:#2563eb;"></div> Road Route
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <div class="w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow"></div> Terminal
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <div class="w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white shadow"></div> Stop
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <span>🚌</span> Live Bus
+            <div id="status-pill" class="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-5 py-2 shadow-sm transition-all">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="status-text" class="text-sm font-bold text-slate-600">Connecting...</span>
             </div>
         </div>
 
-        <!-- Station list -->
-        <div class="mt-4 bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-            <h3 class="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
-                <i class="ph ph-map-pin text-blue-500"></i>
-                Route Stops (<?= count($stations) ?> stops · 40 km total)
-            </h3>
-            <div class="flex flex-wrap gap-2">
-                <?php foreach ($stations as $s): ?>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
-                    <?= $s['is_terminal'] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600' ?>">
-                    <?= $s['is_terminal'] ? '<i class="ph ph-map-pin-fill"></i>' : '<i class="ph ph-circle text-slate-400"></i>' ?>
-                    <?= htmlspecialchars($s['station_name']) ?>
-                    <span class="opacity-60">KM <?= (int)$s['km_marker'] ?></span>
-                </span>
-                <?php endforeach; ?>
+        <div class="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden" style="height: 600px;">
+            <div id="map" class="w-full h-full z-0"></div>
+            
+            <div class="hidden lg:block absolute top-6 right-6 z-[1000] w-72 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-5 max-h-[500px] overflow-y-auto">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Route Waypoints</h3>
+                <div class="space-y-4">
+                    <?php foreach ($stations as $s): ?>
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 w-2.5 h-2.5 rounded-full <?= $s['is_terminal'] ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]' : 'bg-slate-300' ?>"></div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-700 leading-none"><?= htmlspecialchars($s['station_name']) ?></p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-1">KM <?= number_format($s['km_marker'], 1) ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
     </main>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const stations = <?= json_encode(array_values($stations)) ?>;
 
-// ─── Init map ───────────────────────────────────────────────────────────────
-const map = L.map('map').setView([15.5950, 121.0200], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19
+<script>
+// 1. Initial Data & State
+const stations = <?= json_encode($stations) ?>;
+const defaultKioskPos = [<?= KIOSK_LAT ?>, <?= KIOSK_LNG ?>];
+
+// 2. Setup Map with Premium Tiles
+const map = L.map('map', { zoomControl: false }).setView(defaultKioskPos, 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// ─── Station markers ─────────────────────────────────────────────────────────
+// 3. Highlight Stations
 stations.forEach(s => {
-    if (!s.latitude || !s.longitude) return;
-    const ll = [parseFloat(s.latitude), parseFloat(s.longitude)];
-    const circle = L.circleMarker(ll, {
-        radius:      s.is_terminal ? 9 : 6,
-        fillColor:   s.is_terminal ? '#2563eb' : '#94a3b8',
-        color:       '#ffffff',
-        weight:      2,
-        fillOpacity: 1,
-        zIndexOffset: s.is_terminal ? 1000 : 0
-    }).addTo(map);
-    circle.bindPopup(`
-        <div style="min-width:140px">
-            <b style="color:#1e40af">${s.station_name}</b><br>
-            <span style="color:#64748b;font-size:12px">KM ${parseFloat(s.km_marker).toFixed(0)}</span>
-            ${s.is_terminal ? '<br><span style="color:#16a34a;font-size:11px;font-weight:bold">● TERMINAL</span>' : ''}
-        </div>
-    `);
+    if (s.is_terminal) {
+        L.circleMarker([s.latitude, s.longitude], {
+            radius: 8,
+            fillColor: '#2563eb',
+            color: '#fff',
+            weight: 3,
+            fillOpacity: 1
+        }).addTo(map).bindPopup(`<b>Terminal: ${s.station_name}</b>`);
+    }
 });
 
-// ─── Road-accurate route via OSRM public API ────────────────────────────────
-let routePolyline = null;
+// 4. Live Bus Tracking
+let busMarkers = {};
+const busColors = ['#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#3b82f6', '#ec4899'];
 
-function buildOsrmUrl(stationList) {
-    // Use all stations as waypoints for accurate road routing
-    const coordStr = stationList
-        .filter(s => s.latitude && s.longitude)
-        .map(s => `${parseFloat(s.longitude).toFixed(6)},${parseFloat(s.latitude).toFixed(6)}`)
-        .join(';');
-    return `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+function makeBusIcon(busId, bodyNumber) {
+    const color = busColors[(busId - 1) % busColors.length];
+    return L.divIcon({
+        html: `<div style="background:${color}" class="flex items-center justify-center w-12 h-12 rounded-full border-4 border-white shadow-xl">
+                 <span style="font-size:10px;font-weight:900;color:white;line-height:1;text-align:center">${bodyNumber.replace('BUS-','')}</span>
+               </div>`,
+        className: '', iconSize: [48, 48], iconAnchor: [24, 24]
+    });
 }
 
-function drawRoadRoute() {
-    const url = buildOsrmUrl(stations);
-    fetch(url)
-        .then(r => r.json())
-        .then(data => {
-            if (data.code !== 'Ok' || !data.routes.length) {
-                // Fallback: straight lines between stations
-                drawFallbackRoute();
-                return;
-            }
-            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            if (routePolyline) map.removeLayer(routePolyline);
-            routePolyline = L.polyline(coords, {
-                color:   '#2563eb',
-                weight:  5,
-                opacity: 0.80
-            }).addTo(map);
-            map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] });
-        })
-        .catch(() => drawFallbackRoute());
-}
-
-function drawFallbackRoute() {
-    const coords = stations
-        .filter(s => s.latitude && s.longitude)
-        .map(s => [parseFloat(s.latitude), parseFloat(s.longitude)]);
-    if (routePolyline) map.removeLayer(routePolyline);
-    routePolyline = L.polyline(coords, {
-        color: '#2563eb', weight: 4, opacity: 0.7, dashArray: '8,5'
-    }).addTo(map);
-    map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] });
-}
-
-drawRoadRoute();
-
-// ─── Live bus marker ─────────────────────────────────────────────────────────
-const busIcon = L.divIcon({
-    html: `<div style="background:#f59e0b;width:36px;height:36px;border-radius:50%;
-                border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.35);
-                display:flex;align-items:center;justify-content:center;font-size:18px;
-                transition:all .3s ease;">🚌</div>`,
-    className: '',
-    iconSize:   [36, 36],
-    iconAnchor: [18, 18]
-});
-let busMarkers = {}; // Keep track of active buses
-
-function updateMap() {
+function syncFleet() {
     fetch('get_bus_location.php')
         .then(r => r.json())
         .then(data => {
-            const statusEl = document.getElementById('status-text');
-            const dot      = document.querySelector('#map-status span:first-child');
-            
-            if (data.success && data.buses.length > 0) {
-                // Keep track of which buses are still active in this payload
-                const currentRouteBuses = new Set();
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.querySelector('#status-pill span');
 
-                data.buses.forEach(b => {
-                    currentRouteBuses.add(b.bus_id);
-                    const latLng = [parseFloat(b.latitude), parseFloat(b.longitude)];
-                    const speed = b.speed_kmh ? `${parseFloat(b.speed_kmh).toFixed(0)} km/h` : '';
+            if (data.success && data.buses.length > 0) {
+                const activeIds = new Set();
+                let visibleCount = 0;
+
+                data.buses.forEach(bus => {
+                    // Skip buses with no coordinates
+                    if (!bus.latitude || !bus.longitude) return;
+
+                    visibleCount++;
+                    activeIds.add(bus.bus_id);
+                    const pos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
                     
-                    if (!busMarkers[b.bus_id]) {
-                        busMarkers[b.bus_id] = L.marker(latLng, { icon: busIcon, zIndexOffset: 9999 }).addTo(map);
+                    if (!busMarkers[bus.bus_id]) {
+                        busMarkers[bus.bus_id] = L.marker(pos, { 
+                            icon: makeBusIcon(parseInt(bus.bus_id), bus.body_number),
+                            zIndexOffset: 1000
+                        }).addTo(map);
                     } else {
-                        busMarkers[b.bus_id].setLatLng(latLng);
+                        busMarkers[bus.bus_id].setLatLng(pos);
                     }
                     
-                    busMarkers[b.bus_id].bindPopup(`
-                        <b>🚌 ${b.body_number}</b><br>
-                        <span style="color:#64748b;font-size:12px">${b.start_name} &rarr; ${b.end_name}</span>
-                        ${speed ? `<br><span style="color:#16a34a;font-size:12px">⚡ ${speed}</span>` : ''}
+                    busMarkers[bus.bus_id].bindPopup(`
+                        <div class="p-2 min-w-[180px]">
+                            <p class="font-black text-slate-800 text-base">${bus.body_number}</p>
+                            <div class="mt-2 space-y-1 text-xs">
+                                <p class="text-slate-500">🧑‍✈️ <b>${bus.driver_name || 'Unknown'}</b></p>
+                                <p class="text-slate-500">📍 ${bus.start_name || '?'} → ${bus.end_name || '?'}</p>
+                                <p class="text-slate-500">👥 ${bus.passenger_count || 0} passengers</p>
+                                <p class="font-bold text-green-600">⚡ ${Math.round(bus.speed_kmh)} km/h</p>
+                            </div>
+                        </div>
                     `);
                 });
 
-                // Remove stale markers (buses that ended their trips)
-                Object.keys(busMarkers).forEach(busId => {
-                    if (!currentRouteBuses.has(parseInt(busId))) {
-                        map.removeLayer(busMarkers[busId]);
-                        delete busMarkers[busId];
+                // Cleanup inactive buses
+                Object.keys(busMarkers).forEach(id => {
+                    if (!activeIds.has(parseInt(id))) {
+                        map.removeLayer(busMarkers[id]);
+                        delete busMarkers[id];
                     }
                 });
 
-                statusEl.textContent = `Tracking ${data.buses.length} bus(es)`;
-                dot.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                statusText.textContent = `${visibleCount} Bus(es) Online`;
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
             } else {
-                statusEl.textContent = 'No active buses on route';
-                dot.className = 'w-2 h-2 rounded-full bg-slate-400';
-                // Clear all markers
-                Object.values(busMarkers).forEach(m => map.removeLayer(m));
-                busMarkers = {};
+                statusText.textContent = "Waiting for active buses...";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
             }
         })
         .catch(() => {
-            document.getElementById('status-text').textContent = 'Connection error';
+            document.getElementById('status-text').textContent = "Connection Error";
         });
 }
 
-updateMap();
-setInterval(updateMap, 5000);
+// Initial Sync and Loop
+syncFleet();
+setInterval(syncFleet, 5000);
 </script>
 
 <?php include '../includes/mobile_nav_passenger.php'; ?>
-</body></html>

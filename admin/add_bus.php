@@ -14,14 +14,26 @@ require_once '../includes/functions.php';
 $errors  = [];
 $success = false;
 
-// Fetch active drivers who are NOT yet assigned to a bus
+// Fetch active drivers who are NOT yet assigned to ANY bus (active or inactive)
 $drivers = $pdo->query("
     SELECT d.id, d.full_name, d.license_number 
     FROM drivers d 
-    LEFT JOIN buses b ON b.driver_id = d.id AND b.is_active = 1
+    LEFT JOIN buses b ON b.driver_id = d.id
     WHERE d.is_active = 1 AND b.id IS NULL
     ORDER BY d.full_name ASC
 ")->fetchAll();
+
+// Get the next Bus ID (Database Auto-Increment)
+$nextBusIdStmt = $pdo->query("SELECT MAX(id) + 1 FROM buses");
+$nextBusId = $nextBusIdStmt->fetchColumn() ?: 1;
+
+// Auto-generate next Body Number
+$nextBodyNumber = 'BUS-' . str_pad($nextBusId, 3, '0', STR_PAD_LEFT);
+$lastBody = $pdo->query("SELECT body_number FROM buses WHERE body_number LIKE 'BUS-%' ORDER BY LENGTH(body_number) DESC, body_number DESC LIMIT 1")->fetchColumn();
+if ($lastBody && preg_match('/BUS-(\d+)/i', $lastBody, $matches)) {
+    $nextNum = (int)$matches[1] + 1;
+    $nextBodyNumber = 'BUS-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plateNumber = strtoupper(trim($_POST['plate_number'] ?? ''));
@@ -33,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validation
     if (empty($plateNumber)) $errors[] = 'Plate number is required.';
     if (empty($bodyNumber))  $errors[] = 'Body number is required.';
-    if ($driverId <= 0)      $errors[] = 'Please select a driver.';
     if ($capacity <= 0)      $errors[] = 'Capacity must be greater than zero.';
 
     // Check duplicate plate/body
@@ -50,14 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO buses (plate_number, body_number, model, capacity, driver_id)
                 VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$plateNumber, $bodyNumber, $model, $capacity, $driverId]);
+            $stmt->execute([$plateNumber, $bodyNumber, $model, $capacity, ($driverId > 0 ? $driverId : null)]);
             $success = true;
             
             // Refetch drivers to update list
             $drivers = $pdo->query("
                 SELECT d.id, d.full_name, d.license_number 
                 FROM drivers d 
-                LEFT JOIN buses b ON b.driver_id = d.id AND b.is_active = 1
+                LEFT JOIN buses b ON b.driver_id = d.id
                 WHERE d.is_active = 1 AND b.id IS NULL
                 ORDER BY d.full_name ASC
             ")->fetchAll();
@@ -74,7 +85,7 @@ include '../includes/header.php';
     <?php include '../includes/sidebar_admin.php'; ?>
     
     <main class="flex-1 p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
-        <div class="max-w-2xl">
+        <div class="max-w-2xl mx-auto">
             <!-- Header -->
             <div class="mb-8 flex items-center justify-between">
                 <div>
@@ -114,12 +125,28 @@ include '../includes/header.php';
                 <form method="POST" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Header / ID Info row -->
+                        <div class="md:col-span-2 flex flex-col md:flex-row gap-6">
+                            <!-- Database ID (Readonly) -->
+                            <div class="flex-1">
+                                <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider">System Bus ID <span class="text-slate-400 font-normal normal-case">(Auto-generated)</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <i class="ph ph-database text-slate-400"></i>
+                                    </div>
+                                    <input type="text" value="#<?= str_pad($nextBusId, 4, '0', STR_PAD_LEFT) ?>" readonly
+                                           class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl pl-10 pr-4 py-3 font-mono font-bold cursor-not-allowed select-all">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Body Number -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Body Number</label>
                             <input type="text" name="body_number" required placeholder="BUS-001"
-                                   value="<?= htmlspecialchars($_POST['body_number'] ?? '') ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   value="<?= htmlspecialchars($_POST['body_number'] ?? $nextBodyNumber) ?>"
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold text-slate-800">
                         </div>
 
                         <!-- Plate Number -->
@@ -148,18 +175,16 @@ include '../includes/header.php';
                         <!-- Driver Assignment -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Assign Driver</label>
-                            <select name="driver_id" required
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none">
-                                <option value="">-- Select Driver --</option>
+                            <select name="driver_id"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none font-semibold">
+                                <option value="0">-- No Driver (Unassigned) --</option>
                                 <?php foreach ($drivers as $d): ?>
                                     <option value="<?= $d['id'] ?>" <?= (isset($_POST['driver_id']) && $_POST['driver_id'] == $d['id']) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($d['full_name']) ?> (<?= htmlspecialchars($d['license_number']) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <?php if (empty($drivers)): ?>
-                                <p class="text-red-500 text-xs mt-1 italic">No available drivers. Please add a new driver first.</p>
-                            <?php endif; ?>
+                            <p class="text-slate-400 text-[10px] mt-1 italic">Only drivers not assigned to any other bus are shown.</p>
                         </div>
                     </div>
 

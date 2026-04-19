@@ -9,7 +9,7 @@ $currentPage  = 'passengers.php';
 
 require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
-require_once '../includes/functions.php';
+require_once '../includes/functions_v2.php';
 
 $driverId = $_SESSION['driver_id'];
 
@@ -18,24 +18,51 @@ $busStmt = $pdo->prepare("SELECT id, body_number FROM buses WHERE driver_id = ? 
 $busStmt->execute([$driverId]);
 $bus = $busStmt->fetch();
 
+$search  = trim($_GET['q'] ?? '');
+$page    = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 10;
+$offset  = ($page - 1) * $perPage;
+
 $passengers = [];
-$totals = ['count' => 0, 'revenue' => 0];
+$totals = ['count' => 0, 'total_matching' => 0, 'revenue' => 0];
 
 if ($bus) {
+    // 1. Build the base WHERE clause
+    $where = "tr.driver_id = ? AND DATE(t.issued_at) = CURDATE()";
+    $params = [$driverId];
+
+    if ($search) {
+        $where .= " AND (t.ticket_code LIKE ? OR t.passenger_name LIKE ? OR t.origin_name LIKE ? OR t.dest_name LIKE ?)";
+        $searchTerm = "%$search%";
+        array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+    }
+
+    // 2. Get total matching count for pagination
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM tickets t JOIN trips tr ON tr.id = t.trip_id WHERE $where");
+    $countStmt->execute($params);
+    $totals['total_matching'] = (int)$countStmt->fetchColumn();
+    $pages = max(1, (int)ceil($totals['total_matching'] / $perPage));
+
+    // 3. Get total revenue for the day (unaffected by search/pagination for the summary)
+    $revStmt = $pdo->prepare("SELECT SUM(t.fare_amount), COUNT(*) FROM tickets t JOIN trips tr ON tr.id = t.trip_id WHERE tr.driver_id = ? AND DATE(t.issued_at) = CURDATE()");
+    $revStmt->execute([$driverId]);
+    $revData = $revStmt->fetch(PDO::FETCH_NUM);
+    $totals['revenue'] = (float)$revData[0];
+    $totals['count']   = (int)$revData[1];
+
+    // 4. Get paginated results
     $stmt = $pdo->prepare(
         "SELECT t.ticket_code, t.passenger_name, t.passenger_type,
                 t.origin_name, t.dest_name, t.distance_km,
                 t.fare_amount, t.issued_at, t.status
          FROM   tickets t
          JOIN   trips   tr ON tr.id = t.trip_id
-         WHERE  tr.driver_id = ? AND DATE(t.issued_at) = CURDATE()
-         ORDER  BY t.issued_at DESC"
+         WHERE  $where
+         ORDER  BY t.issued_at DESC
+         LIMIT  $perPage OFFSET $offset"
     );
-    $stmt->execute([$driverId]);
+    $stmt->execute($params);
     $passengers = $stmt->fetchAll();
-
-    $totals['count']   = count($passengers);
-    $totals['revenue'] = array_sum(array_column($passengers, 'fare_amount'));
 }
 
 include '../includes/header.php';
@@ -59,6 +86,20 @@ include '../includes/header.php';
                     <p class="font-black text-emerald-700 text-2xl"><?= peso((float)$totals['revenue']) ?></p>
                 </div>
             </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3">
+            <i class="ph ph-magnifying-glass text-slate-400 text-xl shrink-0"></i>
+            <form method="GET" class="flex-1 flex gap-3">
+                <input type="text" name="q" value="<?= htmlspecialchars($search) ?>"
+                       placeholder="Search ticket code, name, or route..."
+                       class="flex-1 outline-none text-slate-700 placeholder-slate-300 text-sm bg-transparent">
+                <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-blue-500 transition">Search</button>
+                <?php if ($search): ?>
+                <a href="passengers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition">Clear</a>
+                <?php endif; ?>
+            </form>
         </div>
 
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-x-auto">
@@ -113,6 +154,29 @@ include '../includes/header.php';
             </table>
             <?php endif; ?>
         </div>
+
+        <!-- Pagination -->
+        <?php if (isset($pages) && $pages > 1): ?>
+        <div class="mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-sm text-slate-400">
+                Found <?= number_format($totals['total_matching']) ?> results · Page <?= $page ?> of <?= $pages ?>
+            </p>
+            <div class="flex gap-2">
+                <?php if ($page > 1): ?>
+                <a href="?page=<?= $page-1 ?>&q=<?= urlencode($search) ?>" class="px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-100 transition flex items-center gap-2 shadow-sm">
+                    <i class="ph ph-caret-left font-bold"></i> Prev
+                </a>
+                <?php endif; ?>
+                
+                <?php if ($page < $pages): ?>
+                <a href="?page=<?= $page+1 ?>&q=<?= urlencode($search) ?>" class="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                    Next <i class="ph ph-caret-right font-bold"></i>
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </main>
 </div>
 <?php include '../includes/mobile_nav_driver.php'; ?>

@@ -31,12 +31,12 @@ if (!$bus) {
 }
 
 // Fetch active drivers:
-// 1. Currently assigned driver
-// 2. Unassigned active drivers
+// 1. Currently assigned driver (if any)
+// 2. Drivers NOT assigned to ANY bus
 $drivers = $pdo->prepare("
     SELECT d.id, d.full_name, d.license_number 
     FROM drivers d 
-    LEFT JOIN buses b ON b.driver_id = d.id AND b.is_active = 1
+    LEFT JOIN buses b ON b.driver_id = d.id
     WHERE d.is_active = 1 AND (b.id IS NULL OR b.id = ?)
     ORDER BY d.full_name ASC
 ");
@@ -54,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validation
     if (empty($plateNumber)) $errors[] = 'Plate number is required.';
     if (empty($bodyNumber))  $errors[] = 'Body number is required.';
-    if ($driverId <= 0)      $errors[] = 'Please select a driver.';
 
     // Check duplicate plate/body (excluding current ID)
     if (empty($errors)) {
@@ -71,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 SET plate_number = ?, body_number = ?, model = ?, capacity = ?, driver_id = ?, is_active = ?
                 WHERE id = ?
             ");
-            $stmt->execute([$plateNumber, $bodyNumber, $model, $capacity, $driverId, $isActive, $id]);
+            $stmt->execute([$plateNumber, $bodyNumber, $model, $capacity, ($driverId > 0 ? $driverId : null), $isActive, $id]);
             $success = true;
             
             // Refresh local bus data
@@ -79,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bus['body_number']  = $bodyNumber;
             $bus['model']        = $model;
             $bus['capacity']     = $capacity;
-            $bus['driver_id']    = $driverId;
+            $bus['driver_id']    = ($driverId > 0 ? $driverId : null);
             $bus['is_active']    = $isActive;
             
         } catch (PDOException $e) {
@@ -94,7 +93,7 @@ include '../includes/header.php';
     <?php include '../includes/sidebar_admin.php'; ?>
     
     <main class="flex-1 p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
-        <div class="max-w-2xl">
+        <div class="max-w-2xl mx-auto">
             <!-- Header -->
             <div class="mb-8 flex items-center justify-between">
                 <div>
@@ -169,15 +168,16 @@ include '../includes/header.php';
                         <!-- Driver Assignment -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Assign Driver</label>
-                            <select name="driver_id" required
+                            <select name="driver_id"
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none font-semibold">
-                                <option value="">-- Select Driver --</option>
+                                <option value="0">-- No Driver (Unassigned) --</option>
                                 <?php foreach ($drivers as $d): ?>
                                     <option value="<?= $d['id'] ?>" <?= ($bus['driver_id'] == $d['id']) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($d['full_name']) ?> (<?= htmlspecialchars($d['license_number']) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <p class="text-slate-400 text-[10px] mt-1 italic">Only drivers not assigned to any other bus are shown.</p>
                         </div>
 
                         <!-- Status Toggle -->

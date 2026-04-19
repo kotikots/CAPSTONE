@@ -4,7 +4,7 @@
  */
 session_start();
 require_once '../config/db.php';
-require_once '../includes/functions.php';
+require_once '../includes/functions_v2.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['driver_id'])) {
@@ -24,10 +24,17 @@ if (!$bus) {
 
 $busId = (int)$bus['id'];
 
-// Check if already has active trip
-$existing = getActiveTripForBus($pdo, $busId);
+// Check if the bus already has an active trip (regardless of driver)
+$existing = getLiveTrip($pdo, $busId, 0);
 if ($existing) {
-    echo json_encode(['success' => false, 'message' => 'You already have an active trip (ID: ' . $existing['id'] . ')']); exit;
+    if ((int)$existing['driver_id'] === $driverId) {
+        // Same driver — they already have a trip running
+        echo json_encode(['success' => false, 'message' => 'You already have an active trip on this bus (ID: ' . $existing['id'] . ')']); exit;
+    } else {
+        // Different driver — bus was reassigned by admin. Auto-end the orphaned trip.
+        $endStmt = $pdo->prepare("UPDATE trips SET status = 'completed', ended_at = NOW() WHERE id = ?");
+        $endStmt->execute([$existing['id']]);
+    }
 }
 
 // Read JSON input
@@ -51,7 +58,18 @@ if ($direction === 'backward') {
 try {
     $ins = $pdo->prepare("INSERT INTO trips (bus_id, driver_id, start_station_id, end_station_id, status) VALUES (?, ?, ?, ?, 'active')");
     $ins->execute([$busId, $driverId, $startId, $endId]);
-    echo json_encode(['success' => true, 'trip_id' => $pdo->lastInsertId()]);
+    $tripId = $pdo->lastInsertId();
+
+    // Seed initial GPS position from starting station so bus shows immediately on map
+    $stationGps = $pdo->prepare("SELECT latitude, longitude FROM stations WHERE id = ? LIMIT 1");
+    $stationGps->execute([$startId]);
+    $sGps = $stationGps->fetch();
+    if ($sGps && $sGps['latitude'] && $sGps['longitude']) {
+        $pdo->prepare("INSERT INTO bus_locations (bus_id, trip_id, latitude, longitude, speed_kmh) VALUES (?, ?, ?, ?, 0)")
+            ->execute([$busId, $tripId, $sGps['latitude'], $sGps['longitude']]);
+    }
+
+    echo json_encode(['success' => true, 'trip_id' => $tripId]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

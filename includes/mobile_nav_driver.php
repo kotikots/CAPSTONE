@@ -1,7 +1,7 @@
 <?php
 $currentPage = $currentPage ?? '';
 $navItems = [
-    ['href' => '/PARE/driver/dashboard.php',  'icon' => 'ph-steering-wheel',   'label' => 'Drive'],
+    ['href' => '/PARE/driver/dashboard_v2.php',  'icon' => 'ph-steering-wheel',   'label' => 'Drive'],
     ['href' => '/PARE/driver/earnings.php',   'icon' => 'ph-wallet',           'label' => 'Earnings'],
     ['href' => '/PARE/driver/passengers.php', 'icon' => 'ph-users',            'label' => 'Lists'],
 ];
@@ -10,9 +10,9 @@ $navItems = [
     <div class="flex items-center justify-around py-2">
         <?php foreach ($navItems as $item): 
             $active = str_contains($currentPage, basename($item['href']));
-            $color = $active ? 'text-amber-600' : 'text-slate-400';
-            $bg = $active ? 'bg-amber-50' : 'hover:bg-slate-50';
-            $weight = $active ? 'text-amber-600' : '';
+            $color = $active ? 'text-blue-600' : 'text-slate-400';
+            $bg = $active ? 'bg-blue-50' : 'hover:bg-slate-50';
+            $weight = $active ? 'text-blue-600' : '';
         ?>
         <a href="<?= $item['href'] ?>" class="flex flex-col items-center justify-center w-20 h-14 rounded-2xl <?= $color ?> <?= $bg ?> transition active:scale-90">
             <i class="ph <?= $item['icon'] ?> text-2xl <?= $weight ?> mb-1"></i>

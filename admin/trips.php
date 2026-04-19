@@ -69,19 +69,26 @@ include '../includes/header.php';
                 <tbody class="divide-y divide-slate-50">
                     <?php foreach ($trips as $tr): ?>
                     <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="toggleDetails(<?= $tr['id'] ?>)">
-                        <td class="px-5 py-4 text-slate-400 font-mono text-xs"><?= $tr['id'] ?></td>
-                        <td class="px-5 py-4 font-bold text-slate-800"><?= htmlspecialchars($tr['body_number']) ?></td>
-                        <td class="px-5 py-4 text-slate-600"><?= htmlspecialchars($tr['driver_name']) ?></td>
-                        <td class="px-5 py-4 text-slate-500 text-xs"><?= htmlspecialchars($tr['start_name']) ?> → <?= htmlspecialchars($tr['end_name']) ?></td>
-                        <td class="px-5 py-4 text-slate-500 text-xs"><?= date('M d, Y h:i A', strtotime($tr['started_at'])) ?></td>
-                        <td class="px-5 py-4 text-slate-500 text-xs"><?= $tr['ended_at'] ? date('h:i A', strtotime($tr['ended_at'])) : '—' ?></td>
-                        <td class="px-5 py-4 text-center font-semibold text-slate-800"><?= $tr['passenger_count'] ?></td>
-                        <td class="px-5 py-4 font-black text-emerald-700"><?= peso((float)$tr['total_revenue']) ?></td>
-                        <td class="px-5 py-4">
+                        <td class="px-5 py-4 text-slate-400 font-mono text-xs whitespace-nowrap"><?= $tr['id'] ?></td>
+                        <td class="px-5 py-4 font-bold text-slate-800 whitespace-nowrap"><?= htmlspecialchars($tr['body_number']) ?></td>
+                        <td class="px-5 py-4 text-slate-600 whitespace-nowrap"><?= htmlspecialchars($tr['driver_name']) ?></td>
+                        <td class="px-5 py-4 text-slate-500 text-xs min-w-[200px]"><?= htmlspecialchars($tr['start_name']) ?> &rarr; <?= htmlspecialchars($tr['end_name']) ?></td>
+                        <td class="px-5 py-4 text-slate-500 text-xs whitespace-nowrap"><?= date('M d, Y h:i A', strtotime($tr['started_at'])) ?></td>
+                        <td class="px-5 py-4 text-slate-500 text-xs whitespace-nowrap"><?= $tr['ended_at'] ? date('h:i A', strtotime($tr['ended_at'])) : '—' ?></td>
+                        <td class="px-5 py-4 text-center font-semibold text-slate-800 whitespace-nowrap"><?= $tr['passenger_count'] ?></td>
+                        <td class="px-5 py-4 font-black text-emerald-700 whitespace-nowrap"><?= peso((float)$tr['total_revenue']) ?></td>
+                        <td class="px-5 py-4 whitespace-nowrap">
                             <span class="px-2.5 py-1 rounded-lg text-xs font-bold
-                                <?= match($tr['status']) { 'active' => 'bg-green-100 text-green-700', 'completed' => 'bg-slate-100 text-slate-600', default => 'bg-red-100 text-red-600' } ?>">
+                                <?= match($tr['status']) { 'active' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-emerald-100 text-emerald-700', default => 'bg-red-100 text-red-600' } ?>">
                                 <?= ucfirst($tr['status']) ?>
                             </span>
+                            <?php if ($tr['status'] === 'active'): ?>
+                            <button onclick="event.stopPropagation(); forceEndTrip(<?= $tr['id'] ?>)" 
+                                    class="ml-2 text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-tighter"
+                                    title="Force End Trip">
+                                [Force End]
+                            </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <!-- Expandable passenger detail row -->
@@ -123,15 +130,78 @@ function toggleDetails(tripId) {
             .then(r => r.json())
             .then(data => {
                 if (!data.length) { content.textContent = 'No tickets in this trip.'; return; }
-                content.innerHTML = data.map(t =>
-                    `<span class="inline-block bg-white border border-slate-200 rounded-lg px-3 py-1 mr-2 mb-2 font-mono text-xs">
-                        ${t.ticket_code} · ${t.passenger_name} · ${t.origin_name}→${t.dest_name} · ₱${parseFloat(t.fare_amount).toFixed(2)}
-                     </span>`
-                ).join('');
+                let tableHtml = `
+                    <div class="border border-slate-200 rounded-xl overflow-x-auto bg-white mt-1 shadow-sm">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead class="bg-slate-100/80 text-slate-500 font-bold tracking-wider uppercase text-[10px]">
+                                <tr>
+                                    <th class="px-4 py-3 border-b border-slate-200">Time</th>
+                                    <th class="px-4 py-3 border-b border-slate-200">Ticket Code</th>
+                                    <th class="px-4 py-3 border-b border-slate-200">Passenger</th>
+                                    <th class="px-4 py-3 border-b border-slate-200">Route</th>
+                                    <th class="px-4 py-3 border-b border-slate-200 text-right">Fare</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                `;
+
+                data.forEach(t => {
+                    // Format time safely, assuming standard SQL YYYY-MM-DD HH:MM:SS
+                    const tDate = t.issued_at.replace(/-/g, '/'); // better Safari support
+                    const d = new Date(tDate);
+                    // Use fallback if invalid Date
+                    const timeStr = isNaN(d) ? t.issued_at.split(' ')[1].substring(0,5) : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    let badgeClass = 'bg-slate-100 text-slate-600';
+                    let typeRaw = (t.passenger_type || 'Regular').toLowerCase();
+                    let typeText = t.passenger_type || 'Regular';
+                    
+                    if (typeRaw.includes('student') || typeRaw.includes('pwd') || typeRaw.includes('senior')) {
+                        badgeClass = 'bg-amber-100 text-amber-700'; 
+                    } else if (typeRaw.includes('special') || typeRaw.includes('teacher') || typeRaw.includes('nurse')) {
+                        badgeClass = 'bg-fuchsia-100 text-fuchsia-700'; 
+                    } else if (typeRaw === 'regular') {
+                        badgeClass = 'bg-blue-50 text-blue-600'; 
+                    }
+
+                    tableHtml += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 text-slate-500 text-xs">${timeStr}</td>
+                            <td class="px-4 py-3 text-slate-600 font-mono text-xs font-semibold">${t.ticket_code}</td>
+                            <td class="px-4 py-3 text-slate-700 text-xs font-bold">
+                                ${t.passenger_name} <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] uppercase font-black tracking-tight ${badgeClass}">${typeText}</span>
+                            </td>
+                            <td class="px-4 py-3 text-slate-500 text-xs">${t.origin_name} &rarr; ${t.dest_name}</td>
+                            <td class="px-4 py-3 text-emerald-700 font-black text-xs text-right">₱${parseFloat(t.fare_amount).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `</tbody></table></div>`;
+                content.innerHTML = tableHtml;
             });
     } else {
         row.classList.add('hidden');
     }
+}
+
+function forceEndTrip(tripId) {
+    if (!confirm('Are you sure you want to FORCE END this trip?')) return;
+    
+    fetch('api_force_end_trip.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_id: tripId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Success: Trip has been ended.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
 }
 </script>
 

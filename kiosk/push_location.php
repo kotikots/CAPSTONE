@@ -29,8 +29,12 @@ if (!$lat || !$lng) {
     echo json_encode(['success' => false, 'message' => 'Invalid coordinates']); exit;
 }
 
-// Bus 1 is permanently assigned to this kiosk
-$busId = 1;
+// Bus ID is dynamically pushed from the individual Kiosk client
+$busId = isset($data['bus_id']) ? (int)$data['bus_id'] : 0;
+
+if (!$busId) {
+    echo json_encode(['success' => false, 'message' => 'No Bus ID configured on device']); exit;
+}
 
 // Get the active trip for this bus (if any)
 $tripStmt = $pdo->prepare(
@@ -39,12 +43,16 @@ $tripStmt = $pdo->prepare(
 $tripStmt->execute([$busId]);
 $tripId = (int)($tripStmt->fetchColumn() ?? 0);
 
-// Insert location record
+// Insert location record for historical tracking
 $ins = $pdo->prepare(
     "INSERT INTO bus_locations (bus_id, trip_id, latitude, longitude, speed_kmh)
      VALUES (?, ?, ?, ?, ?)"
 );
 $ins->execute([$busId, $tripId ?: null, $lat, $lng, $spd]);
+
+// Sync with buses table for real-time dashboard performance (Kiosk is trusted source)
+$upd = $pdo->prepare("UPDATE buses SET latitude = ?, longitude = ?, current_speed = ? WHERE id = ?");
+$upd->execute([$lat, $lng, $spd, $busId]);
 
 echo json_encode([
     'success' => true,

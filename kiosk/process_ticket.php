@@ -16,19 +16,60 @@ if (!$data) {
 }
 
 try {
-    // 1. Find the active trip for bus 1
-    $stmt = $pdo->prepare("SELECT id FROM trips WHERE bus_id = 1 AND status = 'active' ORDER BY started_at DESC LIMIT 1");
-    $stmt->execute();
+    // 1. Find the active trip for the dynamically assigned bus
+    $busId = isset($data['bus_id']) ? (int)$data['bus_id'] : 0;
+    
+    if (!$busId) {
+        echo json_encode(['status' => 'error', 'message' => 'Device not bound to any bus.']);
+        exit;
+    }
+
+    // Fetch Bus and Driver details for the receipt
+    $busStmt = $pdo->prepare("
+        SELECT b.body_number, b.driver_id, d.full_name as driver_name 
+        FROM buses b 
+        LEFT JOIN drivers d ON b.driver_id = d.id 
+        WHERE b.id = ?
+    ");
+    $busStmt->execute([$busId]);
+    $busInfo = $busStmt->fetch();
+    $driverName = $busInfo['driver_name'] ?? 'Not Assigned';
+    $busNumber = $busInfo['body_number'] ?? 'Unknown';
+
+    $stmt = $pdo->prepare("SELECT id FROM trips WHERE bus_id = ? AND status = 'active' ORDER BY started_at DESC LIMIT 1");
+    $stmt->execute([$busId]);
     $trip = $stmt->fetch();
 
-    // 2. If no active trip, auto-create one (kiosk fallback)
+    // 2. If no active trip, auto-create one with direction inference
     if (!$trip) {
+        // Try to infer direction from the bus's current GPS position
+        $gpsStmt = $pdo->prepare("SELECT latitude, longitude FROM buses WHERE id = ? LIMIT 1");
+        $gpsStmt->execute([$busId]);
+        $busGps = $gpsStmt->fetch();
+
+        // Get first and last station
+        $firstStation = $pdo->query("SELECT id, km_marker, latitude, longitude FROM stations WHERE is_active=1 ORDER BY sort_order ASC LIMIT 1")->fetch();
+        $lastStation  = $pdo->query("SELECT id, km_marker, latitude, longitude FROM stations WHERE is_active=1 ORDER BY sort_order DESC LIMIT 1")->fetch();
+
+        $startId = $firstStation['id'];
+        $endId   = $lastStation['id'];
+
+        // If we have GPS data, check if we're closer to the last station (backward trip)
+        if ($busGps && $busGps['latitude'] && $lastStation['latitude']) {
+            $distToFirst = abs($busGps['latitude'] - $firstStation['latitude']) + abs($busGps['longitude'] - $firstStation['longitude']);
+            $distToLast  = abs($busGps['latitude'] - $lastStation['latitude'])  + abs($busGps['longitude'] - $lastStation['longitude']);
+            
+            if ($distToLast < $distToFirst) {
+                // Bus is closer to the last station → backward trip
+                $startId = $lastStation['id'];
+                $endId   = $firstStation['id'];
+            }
+        }
+
         $ins = $pdo->prepare("INSERT INTO trips (bus_id, driver_id, start_station_id, end_station_id, status)
-                              SELECT 1, b.driver_id,
-                                     (SELECT id FROM stations WHERE sort_order = 1 LIMIT 1),
-                                     (SELECT id FROM stations ORDER BY sort_order DESC LIMIT 1)
-                              FROM buses b WHERE b.id = 1");
-        $ins->execute();
+                              SELECT ?, b.driver_id, ?, ?, 'active'
+                              FROM buses b WHERE b.id = ?");
+        $ins->execute([$busId, $startId, $endId, $busId]);
         $tripId = $pdo->lastInsertId();
     } else {
         $tripId = $trip['id'];
@@ -62,17 +103,23 @@ try {
     $distStmt->execute([$originId, $destId]);
     $distKm = (float) $distStmt->fetchColumn();
 
-    // 6. Insert ticket
+    // 6. Determine passenger info from verification step
+    $passengerId   = !empty($data['passenger_id']) ? (int)$data['passenger_id'] : null;
+    $passengerName = !empty($data['passenger_name']) ? $data['passenger_name'] : 'Walk-in';
+
+    // 7. Insert ticket
     $ticketStmt = $pdo->prepare("
         INSERT INTO tickets
-            (ticket_code, trip_id, passenger_name, passenger_type,
+            (ticket_code, trip_id, passenger_id, passenger_name, passenger_type,
              origin_station_id, dest_station_id, origin_name, dest_name,
              distance_km, fare_amount)
-        VALUES (?, ?, 'Walk-in', ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $ticketStmt->execute([
         $ticketCode,
         $tripId,
+        $passengerId,
+        $passengerName,
         $data['type'],
         $originId,
         $destId,
@@ -83,18 +130,17 @@ try {
     ]);
     $ticketId = $pdo->lastInsertId();
 
-    // 7. Insert payment record
-    $payStmt = $pdo->prepare("INSERT INTO payments (ticket_id, amount_paid, payment_method) VALUES (?, ?, 'cash')");
-    $payStmt->execute([$ticketId, $data['fare']]);
-
-    // 8. Update trip totals
-    $updateTrip = $pdo->prepare("UPDATE trips SET total_revenue = total_revenue + ?, passenger_count = passenger_count + 1 WHERE id = ?");
-    $updateTrip->execute([$data['fare'], $tripId]);
+    // 7. Update trip totals (Passenger count only)
+    $updateTrip = $pdo->prepare("UPDATE trips SET passenger_count = passenger_count + 1 WHERE id = ?");
+    $updateTrip->execute([$tripId]);
 
     echo json_encode([
         'status'      => 'success',
         'ticket_code' => $ticketCode,
         'trip_id'     => $tripId,
+        'bus_id'      => $busId,
+        'bus_number'  => $busNumber,
+        'driver_name' => $driverName,
         'message'     => 'Ticket saved successfully'
     ]);
 

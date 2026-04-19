@@ -62,7 +62,7 @@ include '../includes/header.php';
             </div>
             <!-- Export button -->
             <a href="export_csv.php?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>"
-               class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-emerald-500/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-blue-600/30 transition active:scale-95">
                 <i class="ph ph-download-simple text-xl"></i> Export CSV
             </a>
         </div>
