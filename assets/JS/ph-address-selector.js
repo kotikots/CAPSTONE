@@ -132,11 +132,37 @@ class PHAddressSelector {
     }
 
     /**
-     * Set values manually (used for Profile initialization)
+     * Set values manually and sequentially (handles cascading logic)
+     * @param {Object} values - { region: '...', province: '...', city: '...', barangay: '...' }
      */
     async setValues(values) {
-        // This is complex because we need the codes to filter the next levels
-        // We will implement this if needed for the profile page
+        if (!values) return;
+
+        // 1. Set Region
+        if (values.region) {
+            this.selectors.region.value = values.region;
+            await this.handleRegionChange();
+            
+            // 2. Set Province
+            if (values.province) {
+                this.selectors.province.value = values.province;
+                await this.handleProvinceChange();
+                
+                // 3. Set City
+                if (values.city) {
+                    this.selectors.city.value = values.city;
+                    await this.handleCityChange();
+                    
+                    // 4. Set Barangay
+                    if (values.barangay) {
+                        this.selectors.barangay.value = values.barangay;
+                        // No further change handler needed for barangay usually, 
+                        // but trigger change for any external listeners
+                        this.selectors.barangay.dispatchEvent(new Event('change'));
+                    }
+                }
+            }
+        }
     }
 }
 

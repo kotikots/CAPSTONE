@@ -25,7 +25,7 @@ function calculateFare(float $distanceKm, string $passengerType, PDO $pdo): floa
     $extra = max(0, $dist - (float)$rules['base_km']);
     $fare = (float)$rules['base_fare'] + ($extra * (float)$rules['per_km_rate']);
     
-    return round($fare, 2);
+    return round($fare);
 }
 
 /**

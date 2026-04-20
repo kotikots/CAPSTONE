@@ -27,23 +27,30 @@ $province  = trim($data['province'] ?? '');
 $city      = trim($data['city'] ?? '');
 $barangay  = trim($data['barangay'] ?? '');
 
-$ec_name   = trim($data['emergency_contact_name'] ?? '');
-$ec_addr   = trim($data['emergency_contact_address'] ?? '');
-$ec_region = trim($data['ec_region'] ?? '');
-$ec_prov   = trim($data['ec_province'] ?? '');
-$ec_city   = trim($data['ec_city'] ?? '');
-$ec_brgy   = trim($data['ec_barangay'] ?? '');
+$ec_name    = trim($data['emergency_contact_name'] ?? '');
+$ec_contact = trim($data['emergency_contact_number'] ?? '');
+$ec_addr    = trim($data['emergency_contact_address'] ?? '');
+$ec_region  = trim($data['ec_region'] ?? '');
+$ec_prov    = trim($data['ec_province'] ?? '');
+$ec_city    = trim($data['ec_city'] ?? '');
+$ec_brgy    = trim($data['ec_barangay'] ?? '');
 
-$contact   = trim($data['contact_number'] ?? '');
-$email     = trim($data['email'] ?? '');
+$contactRaw = trim($data['contact_number'] ?? '');
+$contact    = '+63' . $contactRaw;
+$ecContact  = '+63' . $ec_contact;
+$email      = trim($data['email'] ?? '');
 
 if (empty($full_name)) {
     echo json_encode(['success' => false, 'message' => 'Full Name is required']); exit;
 }
 
-// Contact Validation (Exactly 11 digits)
-if (!preg_match('/^[0-9]{11}$/', $contact)) {
-    echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 11 digits (e.g. 09123456789)']); exit;
+// Contact Validation (Exactly 10 digits)
+if (!preg_match('/^[0-9]{10}$/', $contactRaw)) {
+    echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 10 digits (e.g. 9123456789)']); exit;
+}
+
+if (!empty($ec_contact) && !preg_match('/^[0-9]{10}$/', $ec_contact)) {
+    echo json_encode(['success' => false, 'message' => 'Emergency contact number must be exactly 10 digits']); exit;
 }
 
 // Email Validation (@gmail.com)
@@ -61,7 +68,7 @@ try {
         UPDATE users 
         SET full_name = ?, email = ?, contact_number = ?, address = ?,
             region = ?, province = ?, city = ?, barangay = ?,
-            emergency_contact_name = ?, emergency_contact_address = ?,
+            emergency_contact_name = ?, emergency_contact_number = ?, emergency_contact_address = ?,
             ec_region = ?, ec_province = ?, ec_city = ?, ec_barangay = ?
         WHERE id = ?
     ");
@@ -69,7 +76,7 @@ try {
     $stmt->execute([
         $full_name, $email, $contact, $address, 
         $region, $province, $city, $barangay,
-        $ec_name, $ec_addr,
+        $ec_name, $ecContact, $ec_addr,
         $ec_region, $ec_prov, $ec_city, $ec_brgy,
         $uid
     ]);

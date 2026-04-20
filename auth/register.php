@@ -28,8 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $barangay   = $_POST['barangay']         ?? '';
 
     $contactRaw = trim($_POST['contact_number'] ?? '');
-    $contact    = $contactRaw;
+    $contact    = '+63' . $contactRaw;
     $ecName     = trim($_POST['ec_name']     ?? '');
+    $ecContactRaw = trim($_POST['ec_contact'] ?? '');
+    $ecContact    = '+63' . $ecContactRaw;
     $ecAddress  = trim($_POST['ec_address']  ?? ''); // Legacy/Combined
     $ecRegion   = $_POST['ec_region']        ?? '';
     $ecProvince = $_POST['ec_province']      ?? '';
@@ -46,9 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Full home address is required.';
     }
     if (empty($contactRaw)) $errors[] = 'Contact number is required.';
-    elseif (!preg_match('/^[0-9]{11}$/', $contactRaw)) $errors[] = 'Contact number must be exactly 11 digits (e.g. 09123456789).';
+    elseif (!preg_match('/^[0-9]{10}$/', $contactRaw)) $errors[] = 'Contact number must be exactly 10 digits (e.g. 9123456789).';
     
     if (empty($ecName))    $errors[] = 'Emergency contact name is required.';
+    if (empty($ecContactRaw)) $errors[] = 'Emergency contact number is required.';
+    elseif (!preg_match('/^[0-9]{10}$/', $ecContactRaw)) $errors[] = 'Emergency contact number must be exactly 10 digits.';
     if (empty($ecAddress)) $errors[] = 'Emergency contact address is required.';
     
     if (!empty($email) && !str_ends_with(strtolower($email), '@gmail.com')) {
@@ -110,13 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("
             INSERT INTO users
                 (full_name, id_number, id_picture, address, region, province, city, barangay, 
-                 contact_number, emergency_contact_name, emergency_contact_address, 
+                 contact_number, emergency_contact_name, emergency_contact_number, emergency_contact_address, 
                  ec_region, ec_province, ec_city, ec_barangay, email, password, role, discount_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'passenger', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'passenger', ?)
         ");
         $stmt->execute([
             $fullName, $idNumber, $picturePath, $address, $region, $province, $city, $barangay,
-            $contact, $ecName, $ecAddress,
+            $contact, $ecName, $ecContact, $ecAddress,
             $ecRegion, $ecProvince, $ecCity, $ecBarangay,
             ($email !== '' ? $email : null),
             $hashed,
@@ -211,15 +215,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div>
                         <label class="block text-slate-700 text-sm font-semibold mb-1.5">Contact Number <span class="text-red-500">*</span></label>
                         <div class="relative flex items-center">
+                            <div class="absolute left-4 text-slate-500 font-bold border-r border-slate-300 pr-3">+63</div>
                             <input type="tel" name="contact_number" id="contact_number"
                                    value="<?= htmlspecialchars($_POST['contact_number'] ?? '') ?>"
-                                   placeholder="09171234567"
+                                   placeholder="9171234567"
                                    required
-                                   maxlength="11"
-                                   pattern="[0-9]{11}"
-                                   title="Please enter exactly 11 digits"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                                   maxlength="10"
+                                   pattern="[0-9]{10}"
+                                   title="Please enter exactly 10 digits"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl pl-16 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white font-bold">
                         </div>
                     </div>
 
@@ -267,8 +272,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                required
                                class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
                     </div>
+                    <div>
+                        <label class="block text-slate-700 text-sm font-semibold mb-1.5">Emergency Contact Number <span class="text-red-500">*</span></label>
+                        <div class="relative flex items-center">
+                            <div class="absolute left-4 text-slate-500 font-bold border-r border-slate-300 pr-3">+63</div>
+                            <input type="tel" name="ec_contact" id="ec_contact"
+                                   value="<?= htmlspecialchars($_POST['ec_contact'] ?? '') ?>"
+                                   placeholder="9171234567"
+                                   required
+                                   maxlength="10"
+                                   pattern="[0-9]{10}"
+                                   title="Please enter exactly 10 digits"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl pl-16 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white font-bold">
+                        </div>
+                    </div>
                     <div class="md:col-span-2">
-                        <label class="block text-slate-700 text-sm font-semibold mb-3">Contact Address <span class="text-red-500">*</span></label>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-slate-700 text-sm font-semibold">Contact Address <span class="text-red-500">*</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" id="sync_address" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-xs text-slate-500 group-hover:text-blue-600 transition-colors">Same as home address</span>
+                            </label>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <select id="ec_region" name="ec_region" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white text-sm"></select>
                             <select id="ec_province" name="ec_province" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white text-sm"></select>
@@ -287,13 +313,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Email (optional) -->
+                    <!-- Email (required) -->
                     <div class="md:col-span-2">
-                        <label class="block text-slate-700 text-sm font-semibold mb-1.5">Email <span class="text-slate-400 text-xs font-normal">(optional)</span></label>
+                        <label class="block text-slate-700 text-sm font-semibold mb-1.5">Email <span class="text-red-500">*</span></label>
                         <input type="email" name="email" id="email"
                                value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                                placeholder="yourname@gmail.com"
                                pattern=".*@gmail\.com$"
+                               required
                                title="Please use a @gmail.com email address"
                                class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
                     </div>
@@ -301,19 +328,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!-- Password -->
                     <div>
                         <label class="block text-slate-700 text-sm font-semibold mb-1.5">Password <span class="text-red-500">*</span></label>
-                        <input type="password" name="password" id="password"
-                               placeholder="Min. 8 characters"
-                               required minlength="8"
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                        <div class="relative">
+                            <input type="password" name="password" id="password"
+                                   placeholder="Min. 8 characters"
+                                   required minlength="8"
+                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                            <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Confirm Password -->
                     <div>
                         <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password <span class="text-red-500">*</span></label>
-                        <input type="password" name="confirm_password" id="confirm_password"
-                               placeholder="Repeat password"
-                               required
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                        <div class="relative">
+                            <input type="password" name="confirm_password" id="confirm_password"
+                                   placeholder="Repeat password"
+                                   required
+                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                            <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
+                            </button>
+                        </div>
                     </div>
 
                         <!-- ID Picture Upload -->
@@ -342,6 +381,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
+
+                <!-- Data Privacy Disclosure -->
+                <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 text-blue-800">
+                    <i class="ph ph-shield-check text-2xl shrink-0 text-blue-500"></i>
+                    <div class="text-xs">
+                        <p class="font-bold">Data Privacy Notice</p>
+                        <p class="opacity-80 leading-relaxed mt-0.5">
+                            We value your data privacy. Your personal information is handled with care and used strictly for transportation services within the PARE system.
+                        </p>
+                    </div>
+                </div>
 
                 <!-- Submit -->
                 <button type="submit" id="submit-btn"
@@ -572,21 +622,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const cleanNeedle = needle.toLowerCase().trim();
         const cleanText = ocrText.toLowerCase();
         
-        // Special logic for ID Numbers: Ignore all non-alphanumeric chars
+        // Split OCR text into tokens for precision matching
+        const ocrTokens = cleanText.split(/\s+/);
+
+        // Special logic for ID Numbers
         if (isIdNumber) {
             const strippedNeedle = cleanNeedle.replace(/[^a-z0-9]/g, '');
-            const strippedText = cleanText.replace(/[^a-z0-9]/g, '');
-            if (strippedText.includes(strippedNeedle)) return 1.0;
-            
-            // Still check fuzzy if exact stripped match fails
-            if (similarity(strippedNeedle, strippedText) > 0.7) return 0.9;
+            if (strippedNeedle.length < 3) return 0; // Too short to verify reliably
+
+            let bestIdScore = 0;
+            for (let token of ocrTokens) {
+                const strippedToken = token.replace(/[^a-z0-9]/g, '');
+                if (strippedToken === strippedNeedle) {
+                    return 1.0; // Perfect match
+                }
+                if (strippedToken.includes(strippedNeedle)) {
+                    // Score is ratio of length. e.g. "SUM" (3) vs "SUM202301996" (12) = 0.25
+                    const score = strippedNeedle.length / strippedToken.length;
+                    if (score > bestIdScore) bestIdScore = score;
+                } else {
+                    // Try fuzzy matching on the token
+                    const sim = similarity(strippedNeedle, strippedToken);
+                    if (sim > bestIdScore) bestIdScore = sim;
+                }
+            }
+            return bestIdScore;
         }
 
-        // Exact substring match for names
-        if (cleanText.includes(cleanNeedle)) return 1.0;
+        // --- Logic for Names ---
         
-        // Try matching each word (token) individually
-        // Strip periods from names (e.g. "R." -> "R")
+        // Check for exact substring match first (but weight it if it's much shorter than the full name)
+        if (cleanText.includes(cleanNeedle)) {
+            // Determine if this is likely the whole name or just a fragment
+            // We search for the surrounding words in the OCR text
+            const words = cleanNeedle.split(/\s+/).filter(w => w.length > 1);
+            if (words.length > 1) return 1.0; // Multi-word exact match is very strong
+        }
+        
+        // Token-based matching for names
         const words = cleanNeedle.split(/\s+/).map(w => w.replace(/\.$/, ''));
         let totalScore = 0;
         
@@ -597,30 +670,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
             
+            let bestWordMatch = 0;
             if (cleanText.includes(word)) {
-                totalScore += 1;
+                bestWordMatch = 1.0;
             } else {
                 // Fuzzy check against each word in the OCR
-                const ocrTokens = cleanText.split(/\s+/);
-                let bestWordMatch = 0;
                 for (const ot of ocrTokens) {
                     const sim = similarity(word, ot);
                     if (sim > bestWordMatch) bestWordMatch = sim;
                 }
-                // If we found a decent fuzzy match, add partial score
-                if (bestWordMatch > 0.5) {
-                    totalScore += bestWordMatch;
-                }
+            }
+            
+            // Weight the word score
+            if (bestWordMatch > 0.5) {
+                totalScore += bestWordMatch;
             }
         }
         
         return words.length > 0 ? (totalScore / words.length) : 0;
     }
 
+    // ─── Show/Hide Password Toggle ───
+    function togglePasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('ph-eye-slash', 'ph-eye');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('ph-eye', 'ph-eye-slash');
+        }
+    }
 </script>
 
 <!-- Address Selection Script -->
-<script src="../assets/js/ph-address-selector.js?v=2"></script>
+<script src="../assets/js/ph-address-selector.js?v=3"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const homeSelect = initPHAddress('');
@@ -638,8 +723,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         ['region', 'province', 'city', 'barangay'].forEach(id => {
-            document.getElementById(id).addEventListener('change', () => updateLegacy('', 'full_address'));
+            document.getElementById(id).addEventListener('change', () => {
+                updateLegacy('', 'full_address');
+                if (document.getElementById('sync_address').checked) {
+                    syncAddressFields();
+                }
+            });
             document.getElementById(`ec_${id}`).addEventListener('change', () => updateLegacy('ec_', 'ec_full_address'));
+        });
+
+        // Sync Address Logic
+        const checkbox = document.getElementById('sync_address');
+        const syncAddressFields = async () => {
+            const values = {
+                region: document.getElementById('region').value,
+                province: document.getElementById('province').value,
+                city: document.getElementById('city').value,
+                barangay: document.getElementById('barangay').value
+            };
+            
+            // Use the new sequential setter to handle cascading async logic
+            await ecSelect.setValues(values);
+            
+            updateLegacy('ec_', 'ec_full_address');
+        };
+
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                syncAddressFields();
+                // Disable EC dropdowns while synced? User might want that. Let's just sync once for now.
+            }
         });
     });
 </script>

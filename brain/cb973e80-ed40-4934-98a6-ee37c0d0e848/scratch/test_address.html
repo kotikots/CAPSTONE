@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Address Test</title>
+</head>
+<body>
+    <select id="region"></select>
+    <select id="province"></select>
+    <select id="city"></select>
+    <select id="barangay"></select>
+
+    <select id="ec_region"></select>
+    <select id="ec_province"></select>
+    <select id="ec_city"></select>
+    <select id="ec_barangay"></select>
+
+    <input type="checkbox" id="sync_address"> Same as home address
+
+    <script src="assets/js/ph-address-selector.js"></script>
+    <script>
+        const homeSelect = initPHAddress('');
+        const ecSelect = initPHAddress('ec_');
+
+        const checkbox = document.getElementById('sync_address');
+        const syncAddressFields = async () => {
+            const values = {
+                region: document.getElementById('region').value,
+                province: document.getElementById('province').value,
+                city: document.getElementById('city').value,
+                barangay: document.getElementById('barangay').value
+            };
+            
+            console.log("Setting values:", values);
+            await ecSelect.setValues(values);
+            console.log("Done setting values");
+        };
+
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                syncAddressFields().catch(console.error);
+            }
+        });
+    </script>
+</body>
+</html>

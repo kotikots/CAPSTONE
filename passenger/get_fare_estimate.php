@@ -26,9 +26,9 @@ $stu_m = $matrix['Student/SR/PWD'] ?? ['base_km' => 4, 'base_fare' => 12, 'per_k
 $spc_m = $matrix['Teacher/Nurse'] ?? ['base_km' => 4, 'base_fare' => 14, 'per_km_rate' => 1.8];
 
 // 3. Mathematical calculation
-$regular = round((float)$reg_m['base_fare'] + (max(0, $distance - (float)$reg_m['base_km']) * (float)$reg_m['per_km_rate']), 2);
-$student = round((float)$stu_m['base_fare'] + (max(0, $distance - (float)$stu_m['base_km']) * (float)$stu_m['per_km_rate']), 2);
-$special = round((float)$spc_m['base_fare'] + (max(0, $distance - (float)$spc_m['base_km']) * (float)$spc_m['per_km_rate']), 2);
+$regular = round((float)$reg_m['base_fare'] + (max(0, $distance - (float)$reg_m['base_km']) * (float)$reg_m['per_km_rate']));
+$student = round((float)$stu_m['base_fare'] + (max(0, $distance - (float)$stu_m['base_km']) * (float)$stu_m['per_km_rate']));
+$special = round((float)$spc_m['base_fare'] + (max(0, $distance - (float)$spc_m['base_km']) * (float)$spc_m['per_km_rate']));
 
 echo json_encode([
     'regular' => number_format($regular, 2, '.', ''),

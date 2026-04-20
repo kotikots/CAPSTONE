@@ -1,12 +1,9 @@
 <?php
+$requiredRole = 'admin';
 require_once '../config/db.php';
-session_start();
+require_once '../includes/auth_guard.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: /PARE/auth/login.php');
-    exit;
-}
-
+$pageTitle = 'Fare Matrix Settings';
 $currentPage = 'fare_settings.php';
 $message = '';
 $status = '';
@@ -45,21 +42,15 @@ $stmt = $pdo->query("SELECT * FROM fare_matrix");
 while ($row = $stmt->fetch()) {
     $rates[$row['passenger_type']] = $row;
 }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fare Matrix Settings | PARE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-</head>
-<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
 
+include '../includes/header.php';
+?>
+
+<div class="flex min-h-screen">
     <?php include '../includes/sidebar_admin.php'; ?>
 
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+
         <!-- Top Bar -->
         <header class="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10">
             <h2 class="text-2xl font-black text-slate-800 drop-shadow-sm flex items-center gap-3">

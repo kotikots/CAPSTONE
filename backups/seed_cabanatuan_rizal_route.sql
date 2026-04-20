@@ -48,7 +48,7 @@ INSERT INTO stations (station_name, km_marker, latitude, longitude, is_terminal,
 ('Highway Marker KM 37',       37.00,  15.7060, 121.0920, 0, 37),
 ('Highway Marker KM 38',       38.00,  15.7080, 121.0970, 0, 38),
 ('Highway Marker KM 39',       39.00,  15.7100, 121.1010, 0, 39),
-('Rizal / Pob Sur Terminal',   40.00,  15.7118, 121.1061, 1, 40);
+('Rizal / Pob Sur Terminal',   40.00,  15.7126, 121.1071, 1, 40);
 
 -- Cancel all old trips that reference bad stations to prevent errors in driver dashboard
 UPDATE trips SET status = 'cancelled' WHERE status = 'active';

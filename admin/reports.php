@@ -72,11 +72,13 @@ include '../includes/header.php';
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">From</label>
                 <input type="date" name="from" value="<?= htmlspecialchars($from) ?>"
+                       max="<?= date('Y-m-d') ?>"
                        class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">To</label>
                 <input type="date" name="to" value="<?= htmlspecialchars($to) ?>"
+                       max="<?= date('Y-m-d') ?>"
                        class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <button type="submit" class="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-blue-500 transition">Apply Filter</button>

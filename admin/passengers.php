@@ -135,6 +135,7 @@ include '../includes/header.php';
                 email: <?= json_encode($p['email'] ?? 'N/A') ?>,
                 address: <?= json_encode($p['address']) ?>,
                 ec_name: <?= json_encode($p['emergency_contact_name'] ?? 'N/A') ?>,
+                ec_contact: <?= json_encode($p['emergency_contact_number'] ?? 'N/A') ?>,
                 ec_addr: <?= json_encode($p['emergency_contact_address'] ?? 'N/A') ?>,
                 date: "<?= date('F j, Y, g:i a', strtotime($p['created_at'])) ?>",
                 photo: <?= json_encode($p['id_picture']) ?>
@@ -153,6 +154,7 @@ include '../includes/header.php';
             document.getElementById('modal-email').textContent = data.email || 'N/A';
             document.getElementById('modal-address').textContent = data.address;
             document.getElementById('modal-ec-name').textContent = data.ec_name || 'N/A';
+            document.getElementById('modal-ec-contact').textContent = data.ec_contact || 'N/A';
             document.getElementById('modal-ec-addr').textContent = data.ec_addr || 'N/A';
             document.getElementById('modal-date').textContent = data.date;
 
@@ -326,6 +328,10 @@ include '../includes/header.php';
                             <p id="modal-ec-name" class="font-bold text-rose-900"></p>
                         </div>
                         <div>
+                            <p class="text-[10px] text-rose-600/70 font-bold uppercase tracking-wide mb-1">Contact Number</p>
+                            <p id="modal-ec-contact" class="font-bold text-rose-900 font-mono"></p>
+                        </div>
+                        <div class="col-span-2">
                             <p class="text-[10px] text-rose-600/70 font-bold uppercase tracking-wide mb-1">Address</p>
                             <p id="modal-ec-addr" class="font-medium text-rose-800 text-sm"></p>
                         </div>

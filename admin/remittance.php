@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             JOIN tickets t ON p.ticket_id = t.id
             JOIN trips tr ON t.trip_id = tr.id
             SET p.remitted = 1, p.remitted_at = NOW()
-            WHERE tr.driver_id = ? AND p.payment_method = 'cash' AND p.remitted IN (0, 2)
+            WHERE tr.driver_id = ? AND p.payment_method = 'cash' AND p.remitted = 2
         ");
         $stmt->execute([$driverId]);
 
@@ -73,7 +73,9 @@ include '../includes/header.php';
                         <span class="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> Driver Submitted
                     </span>
                 <?php elseif ($hasPending): ?>
-                    <span class="absolute top-4 right-4 bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">Action Required</span>
+                    <span class="absolute top-4 right-4 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="ph ph-hourglass-low"></i> Waiting for Driver
+                    </span>
                 <?php endif; ?>
 
                 <div class="flex items-center gap-4 mb-6">
@@ -86,12 +88,28 @@ include '../includes/header.php';
                     </div>
                 </div>
 
-                <div class="<?php if ($hasDriverClaimed || $hasPending): ?>bg-orange-50 border-orange-100<?php else: ?>bg-emerald-50 border-emerald-100<?php endif; ?> rounded-2xl p-5 mb-4 border shadow-inner">
-                    <p class="text-xs font-bold <?php if ($hasDriverClaimed || $hasPending): ?>text-orange-500<?php else: ?>text-emerald-600<?php endif; ?> uppercase tracking-wider mb-1">Unremitted Cash</p>
-                    <p class="font-black text-4xl <?php if ($hasDriverClaimed || $hasPending): ?>text-orange-600<?php else: ?>text-emerald-600<?php endif; ?>">
+                <div class="<?php 
+                    if ($hasDriverClaimed) echo 'bg-orange-50 border-orange-100';
+                    elseif ($hasPending) echo 'bg-slate-50 border-slate-100';
+                    else echo 'bg-emerald-50 border-emerald-100';
+                ?> rounded-2xl p-5 mb-4 border shadow-inner">
+                    <p class="text-xs font-bold <?php 
+                        if ($hasDriverClaimed) echo 'text-orange-500';
+                        elseif ($hasPending) echo 'text-slate-400';
+                        else echo 'text-emerald-600';
+                    ?> uppercase tracking-wider mb-1">Unremitted Cash</p>
+                    <p class="font-black text-4xl <?php 
+                        if ($hasDriverClaimed) echo 'text-orange-600';
+                        elseif ($hasPending) echo 'text-slate-600';
+                        else echo 'text-emerald-600';
+                    ?>">
                         <?= peso((float)$dr['pending_amount']) ?>
                     </p>
-                    <p class="<?php if ($hasDriverClaimed || $hasPending): ?>text-orange-600/70<?php else: ?>text-emerald-600/70<?php endif; ?> text-xs mt-2 font-bold"><?= $dr['pending_tickets'] ?> pending tickets</p>
+                    <p class="<?php 
+                        if ($hasDriverClaimed) echo 'text-orange-600/70';
+                        elseif ($hasPending) echo 'text-slate-400';
+                        else echo 'text-emerald-600/70';
+                    ?> text-xs mt-2 font-bold"><?= $dr['pending_tickets'] ?> pending tickets</p>
                 </div>
 
                 <?php if ($hasDriverClaimed): ?>
@@ -108,14 +126,14 @@ include '../includes/header.php';
 
                 <div class="mt-auto">
                     <?php if ($hasDriverClaimed): ?>
-                        <button onclick="handleRemit(<?= $dr['id'] ?>, '<?= addslashes($dr['full_name']) ?>', '<?= peso((float)$dr['pending_amount']) ?>')" 
+                        <button onclick="handleRemit(<?= $dr['id'] ?>, '<?= addslashes($dr['full_name']) ?>', '<?= peso((float)$dr['driver_claimed_amount']) ?>')" 
                                 class="w-full flex justify-center items-center gap-2 bg-orange-600 text-white font-bold py-3.5 rounded-xl hover:bg-orange-500 hover:shadow-lg hover:shadow-orange-500/30 transition active:scale-95 text-sm uppercase tracking-wider">
                             <i class="ph ph-check-fat text-lg"></i> Confirm Remittance
                         </button>
                     <?php elseif ($hasPending): ?>
-                        <button onclick="handleRemit(<?= $dr['id'] ?>, '<?= addslashes($dr['full_name']) ?>', '<?= peso((float)$dr['pending_amount']) ?>')" 
-                                class="w-full flex justify-center items-center gap-2 bg-orange-600 text-white font-bold py-3.5 rounded-xl hover:bg-orange-500 hover:shadow-lg hover:shadow-orange-500/30 transition active:scale-95 text-sm uppercase tracking-wider">
-                            <i class="ph ph-check-fat text-lg"></i> Mark as Remitted
+                        <button disabled 
+                                class="w-full flex justify-center items-center gap-2 bg-slate-100 border border-slate-200 text-slate-400 font-bold py-3.5 rounded-xl cursor-not-allowed text-sm uppercase tracking-wider">
+                            <i class="ph ph-hourglass text-lg"></i> Waiting for Driver
                         </button>
                     <?php else: ?>
                         <button disabled class="w-full bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 cursor-not-allowed text-sm uppercase tracking-wider">

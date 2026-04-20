@@ -14,8 +14,9 @@ $userId = null;
 
 // Validate token
 if (!empty($token)) {
+    $tokenHash = hash('sha256', $token);
     $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE reset_token = ? AND reset_token_expiry > NOW() AND is_active = 1 LIMIT 1");
-    $stmt->execute([$token]);
+    $stmt->execute([$tokenHash]);
     $user = $stmt->fetch();
 
     if ($user) {
@@ -90,15 +91,27 @@ include '../includes/header.php';
             <form method="POST" class="space-y-4">
                 <div>
                     <label class="block text-slate-700 text-sm font-semibold mb-1.5">New Password</label>
-                    <input type="password" name="password" required minlength="8"
-                           placeholder="Min. 8 characters"
-                           class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                    <div class="relative">
+                        <input type="password" name="password" id="password" required minlength="8"
+                               placeholder="Min. 8 characters"
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                        <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                            <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password</label>
-                    <input type="password" name="confirm_password" required
-                           placeholder="Repeat new password"
-                           class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                    <div class="relative">
+                        <input type="password" name="confirm_password" id="confirm_password" required
+                               placeholder="Repeat new password"
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                        <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                            <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit"
                         class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black text-base py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all">
@@ -124,4 +137,17 @@ include '../includes/header.php';
     </div>
 </div>
 
+<script>
+    function togglePasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('ph-eye-slash', 'ph-eye');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('ph-eye', 'ph-eye-slash');
+        }
+    }
+</script>
 </body></html>

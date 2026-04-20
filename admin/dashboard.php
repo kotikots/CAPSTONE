@@ -46,15 +46,21 @@ foreach ($chartRaw as $row) { $chartData[$row['day']] = (float)$row['total']; }
 $chartLabels = array_map(fn($d) => date('D M j', strtotime($d)), array_keys($chartData));
 $chartValues = array_values($chartData);
 
-// Revenue per bus
+// Revenue per bus (Remitted vs Pending breakdown)
+// Revenue per bus (Today's Earnings + Total Pending Remittance)
 $buseRev = $pdo->query(
     "SELECT b.body_number, b.plate_number, d.full_name AS driver,
-            COUNT(t.id) AS tickets, COALESCE(SUM(t.fare_amount),0) AS revenue
+            COUNT(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.id END) AS tickets, 
+            COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.fare_amount ELSE 0 END),0) AS total_revenue,
+            COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND p.remitted = 1 THEN p.amount_paid ELSE 0 END), 0) AS remitted_revenue,
+            -- Pending revenue shows the absolute total unremitted (including previous days)
+            COALESCE(SUM(CASE WHEN p.remitted IN (0, 2) THEN p.amount_paid ELSE 0 END), 0) AS pending_revenue
      FROM   buses b
      JOIN   drivers d ON d.id = b.driver_id
      LEFT JOIN trips  tr ON tr.bus_id = b.id
      LEFT JOIN tickets t ON t.trip_id = tr.id
-     GROUP  BY b.id ORDER BY revenue DESC"
+     LEFT JOIN payments p ON p.ticket_id = t.id
+     GROUP  BY b.id ORDER BY total_revenue DESC"
 )->fetchAll();
 
 // Recent trips
@@ -145,25 +151,58 @@ include '../includes/header.php';
 
             <!-- Revenue per Bus -->
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                    <i class="ph ph-bus text-blue-600"></i> Earnings per Bus
+                <h3 class="font-bold text-slate-700 mb-5 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="ph ph-bus text-blue-600"></i> Today's Earnings per Bus
+                    </span>
+                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest animate-pulse">Live Today</span>
                 </h3>
-                <div class="space-y-4">
-                    <?php foreach ($buseRev as $b): ?>
+                <div class="space-y-6">
+                    <?php foreach ($buseRev as $b): 
+                        $total = (float)$b['total_revenue'];
+                        $remitted = (float)$b['remitted_revenue'];
+                        $pending = (float)$b['pending_revenue'];
+                        
+                        // Percentages for the bar
+                        $remittedPct = $total > 0 ? ($remitted / $total) * 100 : 0;
+                        $pendingPct  = $total > 0 ? ($pending / $total) * 100 : 0;
+                        
+                        // Scale relative to highest earning bus? No, let's just show absolute status for THIS bus
+                        // or scale relative to all time revenue for context.
+                        // Let's stick to showing the REMITTANCE STATUS of this bus's total.
+                    ?>
                     <div>
-                        <div class="flex items-center justify-between text-sm mb-1">
+                        <div class="flex items-center justify-between text-sm mb-2">
                             <div>
-                                <p class="font-bold text-slate-700"><?= htmlspecialchars($b['body_number']) ?></p>
+                                <p class="font-bold text-slate-700 flex items-center gap-2">
+                                    <?= htmlspecialchars($b['body_number']) ?>
+                                    <span class="text-[10px] font-medium text-slate-400 border border-slate-200 px-1.5 rounded uppercase"><?= $b['tickets'] ?> tix</span>
+                                </p>
                                 <p class="text-slate-400 text-xs"><?= htmlspecialchars($b['driver']) ?></p>
                             </div>
                             <div class="text-right">
-                                <p class="font-black text-emerald-700"><?= peso((float)$b['revenue']) ?></p>
-                                <p class="text-xs text-slate-400"><?= $b['tickets'] ?> tickets</p>
+                                <p class="font-black text-slate-800 leading-tight"><?= peso($total) ?></p>
+                                <p class="text-[10px] font-bold uppercase tracking-tight">
+                                    <span class="text-emerald-600">₱<?= number_format($remitted, 2) ?></span>
+                                    <span class="text-slate-300 mx-1">|</span>
+                                    <span class="<?= $pending > 1000 ? 'text-red-500 animate-pulse' : 'text-orange-500' ?>">₱<?= number_format($pending, 2) ?></span>
+                                </p>
                             </div>
                         </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2">
-                            <?php $pct = $revAll > 0 ? min(100, ($b['revenue'] / $revAll) * 100) : 0; ?>
-                            <div class="bg-emerald-500 h-2 rounded-full transition-all" style="width: <?= $pct ?>%"></div>
+                        
+                        <!-- Dual-Color Progress Bar -->
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 flex overflow-hidden shadow-inner">
+                            <div class="bg-emerald-500 h-full transition-all duration-500" 
+                                 style="width: <?= $remittedPct ?>%" 
+                                 title="Remitted: <?= peso($remitted) ?>"></div>
+                            <div class="bg-orange-500 h-full transition-all duration-500 shadow-[inset_1px_0_2px_rgba(0,0,0,0.1)]" 
+                                 style="width: <?= $pendingPct ?>%" 
+                                 title="Pending: <?= peso($pending) ?>"></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mt-1.5 px-0.5">
+                            <span class="text-[9px] font-black text-emerald-600 uppercase">Remitted</span>
+                            <span class="text-[9px] font-black text-orange-600 uppercase">With Driver</span>
                         </div>
                     </div>
                     <?php endforeach; ?>

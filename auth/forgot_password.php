@@ -6,6 +6,9 @@
  */
 session_start();
 require_once '../config/db.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 $message = '';
 $messageType = ''; // 'success' or 'error'
@@ -31,13 +34,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user) {
-            // Generate token
-            $token = bin2hex(random_bytes(32));
+            // Generate a random token and store its SHA-256 hash for secure DB lookup
+            $rawToken = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $rawToken);
             $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
-            $pdo->prepare("UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?")->execute([$token, $expiry, $user['id']]);
+            
+            // Store hash and expiry
+            $pdo->prepare("UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?")->execute([$tokenHash, $expiry, $user['id']]);
 
-            $resetLink = '/PARE/auth/reset_password.php?token=' . $token;
-            $message = 'Reset link generated! Since this is a local system, use the link below.';
+            // Build a full URL for the reset link (using IP address so it works on mobile/other devices)
+            $resetLink = 'http://192.168.11.186/PARE/auth/reset_password.php?token=' . $rawToken;
+
+            // Send the reset link via PHPMailer
+            $subject = 'Password Reset Request';
+            $body = "Hi {$user['full_name']},\n\nWe received a request to reset your password. Click the link below to set a new password (valid for 1 hour):\n\n{$resetLink}\n\nIf you didn't request this, you can ignore this email.\n\nRegards,\nPARE Team";
+
+            $mail = new PHPMailer(true);
+            try {
+                // Server settings for Gmail
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'khianvivar@gmail.com';         // [REPLACE] Your Gmail address
+                $mail->Password   = 'zqip kriq dnir obzp';     // [REPLACE] Your Gmail App Password
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                // Recipients
+                $mail->setFrom($mail->Username, 'PARE System');
+                $mail->addAddress($user['email'], $user['full_name']);
+
+                // Content
+                $mail->isHTML(false); // Set email format to plain text
+                $mail->Subject = $subject;
+                $mail->Body    = $body;
+
+                $mail->send();
+                $message = 'Reset link sent to your email address.';
+            } catch (Exception $e) {
+                // Fallback: If email fails, show the link (useful for debugging/local testing)
+                error_log("PHPMailer Error: {$mail->ErrorInfo}");
+                $message = 'Reset link generated! Use the link below (Email failed to send).';
+            }
             $messageType = 'success';
         } else {
             // Don't reveal whether user exists — generic message
@@ -81,7 +119,7 @@ include '../includes/header.php';
                 <?php if ($resetLink): ?>
                 <div class="mt-3 bg-white rounded-xl p-3 border border-green-200">
                     <p class="text-xs text-slate-400 mb-1.5">Click below to reset your password:</p>
-                    <a href="<?= htmlspecialchars($resetLink) ?>" class="text-blue-600 font-bold text-sm hover:underline break-all"><?= htmlspecialchars($_SERVER['HTTP_HOST'] . $resetLink) ?></a>
+                    <a href="<?= htmlspecialchars($resetLink) ?>" class="text-blue-600 font-bold text-sm hover:underline break-all"><?= htmlspecialchars($resetLink) ?></a>
                 </div>
                 <?php endif; ?>
             </div>

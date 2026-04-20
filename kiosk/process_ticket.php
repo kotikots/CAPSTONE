@@ -88,10 +88,21 @@ try {
     $destId   = $destRow   ? $destRow['id']   : 1;
 
     // 4. Generate unique ticket code: TKT-YYYYMMDD-NNNNN
+    // Use MAX sequence number instead of COUNT to avoid collisions if records are deleted.
     $datePart  = date('Ymd');
-    $countStmt = $pdo->query("SELECT COUNT(*) FROM tickets WHERE DATE(issued_at) = CURDATE()");
-    $todayCount = (int) $countStmt->fetchColumn() + 1;
-    $ticketCode = 'TKT-' . $datePart . '-' . str_pad($todayCount, 5, '0', STR_PAD_LEFT);
+    $maxStmt   = $pdo->query("SELECT MAX(CAST(SUBSTRING_INDEX(ticket_code, '-', -1) AS UNSIGNED)) FROM tickets WHERE ticket_code LIKE 'TKT-{$datePart}-%'");
+    $maxSeq    = (int) $maxStmt->fetchColumn();
+    $nextSeq   = $maxSeq + 1;
+    $ticketCode = 'TKT-' . $datePart . '-' . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+
+    // Safety net: if somehow still duplicate (race condition), keep incrementing
+    while (true) {
+        $chk = $pdo->prepare("SELECT id FROM tickets WHERE ticket_code = ? LIMIT 1");
+        $chk->execute([$ticketCode]);
+        if (!$chk->fetch()) break;
+        $nextSeq++;
+        $ticketCode = 'TKT-' . $datePart . '-' . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+    }
 
     // 5. Compute distance (absolute difference in km_marker)
     $distStmt = $pdo->prepare(

@@ -15,8 +15,12 @@ $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 15;
 $offset  = ($page - 1) * $perPage;
 
-$where  = $filterDate ? "WHERE DATE(tr.started_at) = '" . $pdo->quote($filterDate) . "'" : '';
-$countStmt = $pdo->query("SELECT COUNT(*) FROM trips tr $where");
+$where = '';
+if ($filterDate) {
+    $where = "WHERE DATE(tr.started_at) = " . $pdo->quote($filterDate);
+}
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM trips tr $where");
+$countStmt->execute();
 $total = (int)$countStmt->fetchColumn();
 $pages = max(1, (int)ceil($total / $perPage));
 
@@ -47,8 +51,7 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= number_format($total) ?> trips recorded</p>
             </div>
             <form method="GET" class="flex items-center gap-2">
-                <input type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>"
-                       class="border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" max="<?= date('Y-m-d') ?>" class="border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <button type="submit" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-blue-500 transition">Filter</button>
                 <?php if ($filterDate): ?>
                 <a href="trips.php" class="text-slate-400 font-semibold px-3 py-2 rounded-xl text-sm hover:bg-slate-100">Clear</a>

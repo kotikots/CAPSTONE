@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 $profileStmt = $pdo->prepare(
     "SELECT full_name, id_number, id_picture, address, contact_number, email,
             region, province, city, barangay,
-            emergency_contact_name, emergency_contact_address, 
+            emergency_contact_name, emergency_contact_number, emergency_contact_address, 
             ec_region, ec_province, ec_city, ec_barangay,
             discount_type, created_at
      FROM users WHERE id = ?"
@@ -190,17 +190,22 @@ include '../includes/header.php';
                                         </div>
                                         <input type="hidden" id="input-address" value="<?= htmlspecialchars($value) ?>">
                                     </div>
+                                <?php elseif ($key === 'contact_number'): ?>
+                                    <div class="relative flex items-center">
+                                        <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
+                                        <input type="tel" id="input-contact_number" 
+                                               value="<?= htmlspecialchars(str_replace('+63', '', $value)) ?>"
+                                               maxlength="10"
+                                               pattern="[0-9]{10}"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                               class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
+                                    </div>
                                 <?php else: ?>
                                     <i class="ph <?= $icon ?> absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
                                     <input type="<?= $key === 'email' ? 'email' : 'text' ?>" 
                                            id="input-<?= $key ?>"
                                            value="<?= htmlspecialchars($value) ?>"
-                                           <?php if ($key === 'contact_number'): ?>
-                                           maxlength="11"
-                                           pattern="[0-9]{11}"
-                                           title="Please enter exactly 11 digits"
-                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-                                           <?php elseif ($key === 'email'): ?>
+                                           <?php if ($key === 'email'): ?>
                                            pattern=".*@gmail\.com$"
                                            title="Please use a @gmail.com email address"
                                            <?php endif; ?>
@@ -241,7 +246,33 @@ include '../includes/header.php';
                             </div>
                         </div>
                         <div>
-                            <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider">Contact Address</label>
+                            <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider">Emergency Contact Number</label>
+                            
+                            <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
+                                <i class="ph ph-phone text-slate-400 text-lg"></i>
+                                <span id="label-emergency_contact_number" class="text-slate-700 text-sm font-semibold truncate"><?= htmlspecialchars($p['emergency_contact_number'] ?: '—') ?></span>
+                            </div>
+                            
+                            <div class="edit-mode hidden space-y-3">
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
+                                    <input type="tel" id="input-emergency_contact_number" 
+                                           value="<?= htmlspecialchars(str_replace('+63', '', $p['emergency_contact_number'] ?? '')) ?>"
+                                           maxlength="10"
+                                           pattern="[0-9]{10}"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                           class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-slate-400 text-[10px] font-black uppercase tracking-wider">Contact Address</label>
+                                <label class="flex items-center gap-2 cursor-pointer edit-mode hidden">
+                                    <input type="checkbox" id="sync_address" class="w-3 h-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-[10px] text-slate-500">Same as home address</span>
+                                </label>
+                            </div>
                             
                             <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
                                 <i class="ph ph-map-pin text-slate-400 text-lg"></i>
@@ -285,19 +316,37 @@ include '../includes/header.php';
                         <input type="hidden" name="change_password" value="1">
                         <div>
                             <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">Current Password</label>
-                            <input type="password" name="current_password" required
-                                   class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                            <div class="relative">
+                                <input type="password" name="current_password" id="current_password" required
+                                       class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                                <button type="button" onclick="togglePasswordVisibility('current_password', 'eye-current')" 
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                    <i id="eye-current" class="ph ph-eye-slash text-xl"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">New Password</label>
-                                <input type="password" name="new_password" required minlength="8" placeholder="Min. 8 characters"
-                                       class="w-full bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                                <div class="relative">
+                                    <input type="password" name="new_password" id="new_password" required minlength="8" placeholder="Min. 8 characters"
+                                           class="w-full bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                                    <button type="button" onclick="togglePasswordVisibility('new_password', 'eye-new')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                        <i id="eye-new" class="ph ph-eye-slash text-xl"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">Confirm New Password</label>
-                                <input type="password" name="confirm_password" required placeholder="Repeat new password"
-                                       class="w-full bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                                <div class="relative">
+                                    <input type="password" name="confirm_password" id="confirm_password" required placeholder="Repeat new password"
+                                           class="w-full bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                                    <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                        <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -338,7 +387,7 @@ function toggleEdit(isActive) {
 }
 
 async function saveProfile() {
-    const fields = ['full_name', 'contact_number', 'email', 'address', 'emergency_contact_name', 'emergency_contact_address'];
+    const fields = ['full_name', 'contact_number', 'email', 'address', 'emergency_contact_name', 'emergency_contact_number', 'emergency_contact_address'];
     const data = {};
     fields.forEach(f => {
         const el = document.getElementById(`input-${f}`);
@@ -352,11 +401,17 @@ async function saveProfile() {
     });
 
     // Validation
-    const contact = data.contact_number;
+    const contact = data.contact_number; // This is the 10-digit part
+    const ecContact = data.emergency_contact_number;
     const email = data.email;
 
-    if (contact.length !== 11 || !/^\d+$/.test(contact)) {
-        window.showToast('Validation Error', 'Contact number must be exactly 11 digits.', 'error');
+    if (contact.length !== 10 || !/^\d+$/.test(contact)) {
+        window.showToast('Validation Error', 'Contact number must be exactly 10 digits.', 'error');
+        return;
+    }
+
+    if (ecContact && (ecContact.length !== 10 || !/^\d+$/.test(ecContact))) {
+        window.showToast('Validation Error', 'Emergency contact number must be exactly 10 digits.', 'error');
         return;
     }
 
@@ -381,19 +436,37 @@ async function saveProfile() {
             fields.forEach(f => {
                 const val = data[f];
                 const label = document.getElementById(`label-${f}`);
-                if (label) label.textContent = val || '—';
+                if (label) {
+                    if (f === 'contact_number' || f === 'emergency_contact_number') {
+                        label.textContent = '+63' + val;
+                    } else {
+                        label.textContent = val || '—';
+                    }
+                }
             });
-
+ 
             // Update profile card name
             const cardName = document.querySelector('h3.text-xl.font-black.text-slate-800');
             if (cardName) cardName.textContent = data.full_name;
-
+ 
             toggleEdit(false);
         } else {
             window.showToast('Update Failed', result.message, 'error');
         }
     } catch (err) {
         window.showToast('Network Error', 'Could not reach the server.', 'error');
+    }
+}
+ 
+function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('ph-eye-slash', 'ph-eye');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('ph-eye', 'ph-eye-slash');
     }
 }
 </script>
@@ -416,8 +489,34 @@ async function saveProfile() {
         };
 
         ['region', 'province', 'city', 'barangay'].forEach(id => {
-            document.getElementById(id).addEventListener('change', () => updateHidden('', 'address'));
+            document.getElementById(id).addEventListener('change', () => {
+                updateHidden('', 'address');
+                if (document.getElementById('sync_address').checked) {
+                    syncAddressFields();
+                }
+            });
             document.getElementById(`ec_${id}`).addEventListener('change', () => updateHidden('ec_', 'emergency_contact_address'));
+        });
+
+        // Sync Address Logic
+        const checkbox = document.getElementById('sync_address');
+        const syncAddressFields = () => {
+            const fields = ['region', 'province', 'city', 'barangay'];
+            fields.forEach(f => {
+                const source = document.getElementById(f);
+                const target = document.getElementById(`ec_${f}`);
+                if (source && target) {
+                    target.value = source.value;
+                    target.dispatchEvent(new Event('change'));
+                }
+            });
+            updateHidden('ec_', 'emergency_contact_address');
+        };
+
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                syncAddressFields();
+            }
         });
 
         // Pre-populating dropdowns works better if we select them sequentially.

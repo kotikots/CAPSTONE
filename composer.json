@@ -1,13 +1,5 @@
 {
-  "name": "pare-system",
-  "description": "PARE bus management system",
-  "require": {
-    "php": ">=7.4",
-    "vlucas/phpdotenv": "^5.5"
-  },
-  "autoload": {
-    "psr-4": {
-      "PARE\\": "src/"
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
     }
-  }
 }

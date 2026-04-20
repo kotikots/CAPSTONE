@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 
         if ($loginAs === 'driver') {
             // --- Driver Login ---
-            $stmt = $pdo->prepare("SELECT * FROM drivers WHERE (email = ? OR license_number = ?) AND is_active = 1 LIMIT 1");
-            $stmt->execute([$identifier, $identifier]);
+            $stmt = $pdo->prepare("SELECT * FROM drivers WHERE email = ? AND is_active = 1 LIMIT 1");
+            $stmt->execute([$identifier]);
             $driver = $stmt->fetch();
 
             if ($driver && password_verify($password, $driver['password'])) {
@@ -66,8 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 
         } else {
             // --- Passenger / Admin Login ---
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE (email = ? OR id_number = ?) AND is_active = 1 LIMIT 1");
-            $stmt->execute([$identifier, $identifier]);
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1 LIMIT 1");
+            $stmt->execute([$identifier]);
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password'])) {
@@ -174,13 +174,13 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
                     <!-- Identifier -->
                     <div>
                         <label class="block text-white/70 text-sm font-medium mb-1.5" id="id-label">
-                            Email or ID Number
+                            Email Address
                         </label>
                         <div class="relative">
-                            <i class="ph ph-identification-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
-                            <input type="text" name="identifier" id="identifier"
+                            <i class="ph ph-envelope-simple absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
+                            <input type="email" name="identifier" id="identifier"
                                    value="<?= htmlspecialchars($_POST['identifier'] ?? '') ?>"
-                                   placeholder="Email or ID number"
+                                   placeholder="Your email address"
                                    required
                                    class="w-full bg-white/10 border border-white/20 text-slate-700 placeholder-slate-400 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
                         </div>
@@ -234,19 +234,13 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
 
 <script>
     // Update label hint and footer visibility based on role selection
+    // Register behavior listener
     document.querySelectorAll('input[name="login_as"]').forEach(radio => {
         radio.addEventListener('change', () => {
-            const label = document.getElementById('id-label');
-            const input = document.getElementById('identifier');
             const footer = document.getElementById('register-footer');
-            
             if (radio.value === 'driver') {
-                label.textContent = 'Email or License Number';
-                input.placeholder = 'Email or license number';
                 footer.classList.add('invisible');
             } else {
-                label.textContent = 'Email or ID Number';
-                input.placeholder = 'Email or ID number';
                 footer.classList.remove('invisible');
             }
         });
