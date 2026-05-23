@@ -13,10 +13,10 @@ $currentPage = $currentPage ?? '';
     scrollbar-width: none;  /* Firefox */
 }
 </style>
-<aside class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
+<aside class="w-64 bg-gradient-to-b from-brand-900 to-brand-700 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
     <!-- Logo -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-white/10">
-        <i class="ph ph-bus-fill text-2xl text-blue-400"></i>
+        <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-10 h-10 object-contain drop-shadow-md">
         <div>
             <h1 class="text-xl font-black tracking-tight">PARE</h1>
             <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Admin Panel</p>
@@ -41,21 +41,21 @@ $currentPage = $currentPage ?? '';
         <?php
         $navGroups = [
             'Overview' => [
-                ['href' => '/PARE/admin/dashboard.php', 'icon' => 'ph-chart-pie',         'label' => 'Dashboard'],
+                ['href' => '/PARE/admin/dashboard', 'icon' => 'ph-chart-pie',         'label' => 'Dashboard'],
             ],
             'Management' => [
-                ['href' => '/PARE/admin/passengers.php','icon' => 'ph-users',              'label' => 'Passengers'],
-                ['href' => '/PARE/admin/drivers.php',   'icon' => 'ph-steering-wheel',     'label' => 'Drivers'],
-                ['href' => '/PARE/admin/buses.php',     'icon' => 'ph-bus',                'label' => 'Buses'],
+                ['href' => '/PARE/admin/passengers','icon' => 'ph-users',              'label' => 'Passengers'],
+                ['href' => '/PARE/admin/drivers',   'icon' => 'ph-steering-wheel',     'label' => 'Drivers'],
+                ['href' => '/PARE/admin/buses',     'icon' => 'ph-bus',                'label' => 'Buses'],
             ],
             'Security' => [
-                ['href' => '/PARE/admin/security.php',  'icon' => 'ph-shield-checkered',   'label' => 'Security Logs'],
+                ['href' => '/PARE/admin/security',  'icon' => 'ph-shield-checkered',   'label' => 'Security Logs'],
             ],
             'Operations' => [
-                ['href' => '/PARE/admin/trips.php',     'icon' => 'ph-map-pin-line',       'label' => 'Trip Logs'],
-                ['href' => '/PARE/admin/fare_settings.php','icon' => 'ph-money',           'label' => 'Fare Settings'],
-                ['href' => '/PARE/admin/reports.php',   'icon' => 'ph-file-text',          'label' => 'Reports & Export'],
-                ['href' => '/PARE/admin/remittance.php','icon' => 'ph-wallet',             'label' => 'Remittances'],
+                ['href' => '/PARE/admin/trips',     'icon' => 'ph-map-pin-line',       'label' => 'Trip Logs'],
+                ['href' => '/PARE/admin/fare_settings','icon' => 'ph-money',           'label' => 'Fare Settings'],
+                ['href' => '/PARE/admin/reports',   'icon' => 'ph-file-text',          'label' => 'Reports & Export'],
+                ['href' => '/PARE/admin/remittance','icon' => 'ph-wallet',             'label' => 'Remittances'],
             ],
         ];
         foreach ($navGroups as $group => $items):
@@ -66,7 +66,7 @@ $currentPage = $currentPage ?? '';
         ?>
         <a href="<?= $item['href'] ?>"
            class="flex items-center gap-3 px-4 py-2 rounded-xl font-semibold text-xs
-                  <?= $active ? 'bg-blue-600/20 text-blue-300 shadow-inner' : 'text-slate-400 hover:bg-white/5 hover:text-white' ?>">
+                  <?= $active ? 'bg-white/20 text-white shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' ?>">
             <i class="ph <?= $item['icon'] ?> text-base w-5 text-center"></i>
             <?= $item['label'] ?>
         </a>

@@ -33,7 +33,8 @@ try {
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Invalid Admin Password']);
     }
+    exit;
 } catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    exit;
 }
-?>

@@ -21,7 +21,7 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
 <aside class="w-64 bg-gradient-to-b from-brand-900 to-brand-700 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
     <!-- Logo -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-white/10">
-        <i class="ph ph-bus-fill text-2xl text-blue-300"></i>
+        <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-10 h-10 object-contain drop-shadow-md">
         <div>
             <h1 class="text-xl font-black tracking-tight">PARE</h1>
             <p class="text-[10px] text-blue-200 font-medium uppercase tracking-wider">Passenger Portal</p>
@@ -48,10 +48,10 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => '/PARE/passenger/dashboard.php', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
-            ['href' => '/PARE/passenger/map.php',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
-            ['href' => '/PARE/passenger/rides.php',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
-            ['href' => '/PARE/passenger/profile.php',   'icon' => 'ph-user-circle',            'label' => 'My Profile'],
+            ['href' => '/PARE/passenger/dashboard', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
+            ['href' => '/PARE/passenger/map',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
+            ['href' => '/PARE/passenger/rides',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
+            ['href' => '/PARE/passenger/profile',   'icon' => 'ph-user-circle',            'label' => 'My Profile'],
         ];
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));

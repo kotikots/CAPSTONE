@@ -11,7 +11,7 @@ require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
 require_once '../includes/functions.php';
 
-$id = (int)($_GET['id'] ?? 0);
+$id = decryptId($_GET['id'] ?? '');
 if (!$id) {
     header('Location: buses.php');
     exit;
@@ -138,7 +138,7 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Body Number</label>
                             <input type="text" name="body_number" required placeholder="BUS-001"
                                    value="<?= htmlspecialchars($bus['body_number']) ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold uppercase">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold uppercase">
                         </div>
 
                         <!-- Plate Number -->
@@ -146,7 +146,7 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Plate Number</label>
                             <input type="text" name="plate_number" required placeholder="ABC-1234"
                                    value="<?= htmlspecialchars($bus['plate_number']) ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold uppercase">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold uppercase">
                         </div>
 
                         <!-- Model -->
@@ -154,7 +154,7 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Bus Model</label>
                             <input type="text" name="model" placeholder="E-Jeepney CMCI 2023"
                                    value="<?= htmlspecialchars($bus['model'] ?? '') ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
 
                         <!-- Capacity -->
@@ -162,14 +162,14 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Seating Capacity</label>
                             <input type="number" name="capacity" required min="1" 
                                    value="<?= htmlspecialchars($bus['capacity']) ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
 
                         <!-- Driver Assignment -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Assign Driver</label>
                             <select name="driver_id"
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none font-semibold">
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 appearance-none font-semibold">
                                 <option value="0">-- No Driver (Unassigned) --</option>
                                 <?php foreach ($drivers as $d): ?>
                                     <option value="<?= $d['id'] ?>" <?= ($bus['driver_id'] == $d['id']) ? 'selected' : '' ?>>
@@ -184,7 +184,7 @@ include '../includes/header.php';
                         <div class="md:col-span-2">
                              <label class="flex items-center gap-3 cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" <?= $bus['is_active'] ? 'checked' : '' ?> 
-                                       class="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                       class="w-5 h-5 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
                                 <span class="text-slate-700 font-bold">This bus is currently active</span>
                              </label>
                              <p class="text-slate-400 text-xs mt-1 ml-8">Deactivating a bus will prevent it from starting new trips.</p>
@@ -192,7 +192,7 @@ include '../includes/header.php';
                     </div>
 
                     <div class="pt-5 border-t border-slate-100 flex gap-4">
-                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition active:scale-95 text-lg">
+                        <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95 text-lg">
                             Save Changes
                         </button>
                         <a href="buses.php" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl text-center transition">

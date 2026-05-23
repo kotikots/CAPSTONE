@@ -62,3 +62,4 @@ echo json_encode([
     'lng'     => $lng,
     'recorded_at' => date('Y-m-d H:i:s')
 ]);
+exit;

@@ -145,7 +145,7 @@ include '../includes/header.php';
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button type="submit" name="update_fares" class="bg-blue-600 hover:bg-blue-500 text-white font-black text-base py-3 px-8 rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2">
+                    <button type="submit" name="update_fares" class="bg-amber-600 hover:bg-amber-500 text-white font-black text-base py-3 px-8 rounded-xl shadow-lg shadow-amber-600/30 transition-all flex items-center gap-2">
                         <i class="ph ph-floppy-disk text-xl"></i>
                         Save New Matrix
                     </button>

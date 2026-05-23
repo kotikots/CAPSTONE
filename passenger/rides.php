@@ -65,8 +65,8 @@ include '../includes/header.php';
         <!-- Stats Bar -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <i class="ph ph-ticket text-xl text-blue-600"></i>
+                <div class="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <i class="ph ph-ticket text-xl text-amber-600"></i>
                 </div>
                 <div>
                     <p class="text-slate-400 text-xs font-medium">Total Rides</p>
@@ -145,20 +145,20 @@ include '../includes/header.php';
             <?php if ($totalPages > 1): ?>
             <div class="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-slate-100">
                 <?php if ($page > 1): ?>
-                <a href="?page=<?= $page - 1 ?>" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 flex items-center justify-center transition">
+                <a href="?page=<?= $page - 1 ?>" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-blue-700 flex items-center justify-center transition">
                     <i class="ph ph-caret-left font-bold"></i>
                 </a>
                 <?php endif; ?>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <a href="?page=<?= $i ?>" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition
-                   <?= $i === $page ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700' ?>">
+                   <?= $i === $page ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/30' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-blue-700' ?>">
                     <?= $i ?>
                 </a>
                 <?php endfor; ?>
 
                 <?php if ($page < $totalPages): ?>
-                <a href="?page=<?= $page + 1 ?>" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 flex items-center justify-center transition">
+                <a href="?page=<?= $page + 1 ?>" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-blue-700 flex items-center justify-center transition">
                     <i class="ph ph-caret-right font-bold"></i>
                 </a>
                 <?php endif; ?>

@@ -46,3 +46,4 @@ echo json_encode([
         ? 'Discount verified: ' . ucfirst($user['discount_type'])
         : 'Registered but no discount type on file.'
 ]);
+exit;

@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mail->isSMTP();
                 $mail->Host       = 'smtp.gmail.com';
                 $mail->SMTPAuth   = true;
-                $mail->Username   = 'khianvivar@gmail.com';         // [REPLACE] Your Gmail address
-                $mail->Password   = 'zqip kriq dnir obzp';     // [REPLACE] Your Gmail App Password
+                $mail->Username   = 'khianvivar@gmail.com';         //  Gmail address
+                $mail->Password   = 'zqip kriq dnir obzp';     // Gmail App Password
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
 
@@ -89,7 +89,7 @@ $pageTitle = 'Forgot Password';
 include '../includes/header.php';
 ?>
 
-<div class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+<div class="min-h-screen flex items-center justify-center p-6">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl"></div>

@@ -65,18 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- ID Picture Upload ---
     $picturePath = null;
     if (!empty($_FILES['id_picture']['name'])) {
-        $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
-        $maxSize   = 5 * 1024 * 1024; // 5MB
+        $allowed   = ['jpg', 'jpeg', 'png'];
+        $maxSize   = 2 * 1024 * 1024; // 2MB
         $ext       = strtolower(pathinfo($_FILES['id_picture']['name'], PATHINFO_EXTENSION));
-        $mimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        $mimeTypes = ['image/jpeg', 'image/png'];
         $finfo     = finfo_open(FILEINFO_MIME_TYPE);
         $mime      = finfo_file($finfo, $_FILES['id_picture']['tmp_name']);
         finfo_close($finfo);
 
         if (!in_array($ext, $allowed) || !in_array($mime, $mimeTypes)) {
-            $errors[] = 'ID picture must be a JPG, PNG, or WebP image.';
+            $errors[] = 'ID picture must be a JPG or PNG image.';
         } elseif ($_FILES['id_picture']['size'] > $maxSize) {
-            $errors[] = 'ID picture must be smaller than 5MB.';
+            $errors[] = 'ID picture must be smaller than 2MB.';
         } elseif ($_FILES['id_picture']['error'] !== UPLOAD_ERR_OK) {
             $errors[] = 'File upload error. Please try again.';
         } else {
@@ -132,36 +132,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <?php $pageTitle = 'Create Account'; include '../includes/header.php'; ?>
 
-<div class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+<style>
+/* Dark Neon Blue Theme — Registration Page */
+body {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e3a8a 100%) !important;
+    color: #ffffff !important;
+}
+/* All form inputs & selects */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+select, textarea {
+    background-color: rgba(255,255,255,0.08) !important;
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3) !important; }
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
+    background-color: rgba(255,255,255,0.12) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.2) !important;
+    outline: none !important;
+}
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+select option { background-color: #0f172a; color: #ffffff; }
+/* Text overrides */
+.text-slate-700, .text-slate-800 { color: rgba(255,255,255,0.85) !important; }
+.text-slate-500, .text-slate-400 { color: rgba(255,255,255,0.45) !important; }
+.border-slate-200, .border-slate-300 { border-color: rgba(255,255,255,0.12) !important; }
+</style>
+
+<div class="min-h-screen flex items-center justify-center p-6">
 
     <!-- Background decoration -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl"></div>
     </div>
 
     <div class="relative w-full max-w-2xl">
         <!-- Header -->
         <div class="text-center mb-8">
-            <div class="inline-flex items-center gap-3 mb-4">
-                <i class="ph ph-bus-fill text-5xl text-blue-300"></i>
-                <h1 class="text-4xl font-black text-white tracking-tight">PARE</h1>
+            <div class="inline-flex flex-col items-center gap-2 mb-4">
+                <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-40 h-40 object-contain drop-shadow-2xl">
             </div>
             <p class="text-blue-200 text-lg">Create your passenger account</p>
         </div>
 
         <!-- Card -->
-        <div class="bg-white rounded-3xl shadow-2xl p-8">
+        <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8">
 
             <?php if ($success): ?>
             <!-- Success State -->
             <div class="text-center py-8">
-                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="ph ph-check-circle text-5xl text-green-500"></i>
+                <div class="w-20 h-20 bg-emerald-500/20 border border-emerald-400/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph ph-check-circle text-5xl text-emerald-400"></i>
                 </div>
-                <h2 class="text-2xl font-black text-slate-800 mb-2">Account Created!</h2>
-                <p class="text-slate-500 mb-8">You can now log in to book your rides.</p>
-                <a href="login.php" class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all">
+                <h2 class="text-2xl font-black text-white mb-2">Account Created!</h2>
+                <p class="text-blue-200 mb-8">You can now log in to book your rides.</p>
+                <a href="login.php" class="inline-block bg-blue-500 hover:bg-blue-400 text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all">
                     Go to Login →
                 </a>
             </div>
@@ -169,14 +199,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- Error Messages -->
             <?php if (!empty($errors)): ?>
-            <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
+            <div class="bg-red-500/15 border border-red-400/30 rounded-2xl p-4 mb-6">
                 <div class="flex items-center gap-2 mb-2">
-                    <i class="ph ph-warning-circle text-red-500 text-xl"></i>
-                    <span class="text-red-700 font-bold text-sm">Please fix the following:</span>
+                    <i class="ph ph-warning-circle text-red-400 text-xl"></i>
+                    <span class="text-red-300 font-bold text-sm">Please fix the following:</span>
                 </div>
                 <ul class="space-y-1 pl-6">
                     <?php foreach ($errors as $err): ?>
-                    <li class="text-red-600 text-sm list-disc"><?= htmlspecialchars($err) ?></li>
+                    <li class="text-red-300 text-sm list-disc"><?= htmlspecialchars($err) ?></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -186,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST" enctype="multipart/form-data" class="space-y-5" id="register-form">
 
                 <!-- Section: Personal Info -->
-                <p class="text-blue-600 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                     <i class="ph ph-user-circle"></i> Personal Information
                 </p>
 
@@ -198,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>"
                                placeholder="e.g. Juan Dela Cruz"
                                required
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 focus:bg-white">
                     </div>
 
                     <!-- ID Number -->
@@ -208,14 +238,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                value="<?= htmlspecialchars($_POST['id_number'] ?? '') ?>"
                                placeholder="e.g. QR-1234567"
                                required
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 focus:bg-white">
                     </div>
 
                     <!-- Contact Number -->
                     <div>
                         <label class="block text-slate-700 text-sm font-semibold mb-1.5">Contact Number <span class="text-red-500">*</span></label>
                         <div class="relative flex items-center">
-                            <div class="absolute left-4 text-slate-500 font-bold border-r border-slate-300 pr-3">+63</div>
+                            <div class="absolute left-4 text-white/50 font-bold border-r border-white/20 pr-3">+63</div>
                             <input type="tel" name="contact_number" id="contact_number"
                                    value="<?= htmlspecialchars($_POST['contact_number'] ?? '') ?>"
                                    placeholder="9171234567"
@@ -257,8 +287,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <!-- Divider -->
-                <div class="border-t border-slate-200 pt-4">
-                    <p class="text-blue-600 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                <div class="border-t border-white/10 pt-4">
+                    <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                         <i class="ph ph-warning-circle"></i> Emergency Contact
                     </p>
                 </div>
@@ -275,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div>
                         <label class="block text-slate-700 text-sm font-semibold mb-1.5">Emergency Contact Number <span class="text-red-500">*</span></label>
                         <div class="relative flex items-center">
-                            <div class="absolute left-4 text-slate-500 font-bold border-r border-slate-300 pr-3">+63</div>
+                            <div class="absolute left-4 text-white/50 font-bold border-r border-white/20 pr-3">+63</div>
                             <input type="tel" name="ec_contact" id="ec_contact"
                                    value="<?= htmlspecialchars($_POST['ec_contact'] ?? '') ?>"
                                    placeholder="9171234567"
@@ -291,8 +321,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="flex items-center justify-between mb-3">
                             <label class="block text-slate-700 text-sm font-semibold">Contact Address <span class="text-red-500">*</span></label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" id="sync_address" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                <span class="text-xs text-slate-500 group-hover:text-blue-600 transition-colors">Same as home address</span>
+                                <input type="checkbox" id="sync_address" class="w-4 h-4 rounded border-white/20 text-blue-500 focus:ring-blue-400">
+                                <span class="text-xs text-white/50 group-hover:text-blue-400 transition-colors">Same as home address</span>
                             </label>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -306,8 +336,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <!-- Divider -->
-                <div class="border-t border-slate-200 pt-4">
-                    <p class="text-blue-600 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                <div class="border-t border-white/10 pt-4">
+                    <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                         <i class="ph ph-identification-card"></i> Account & ID Photo
                     </p>
                 </div>
@@ -325,33 +355,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
                     </div>
 
-                    <!-- Password -->
-                    <div>
-                        <label class="block text-slate-700 text-sm font-semibold mb-1.5">Password <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="password" name="password" id="password"
-                                   placeholder="Min. 8 characters"
-                                   required minlength="8"
-                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
-                            <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
-                                <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Password Section Container -->
+                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
+                        <!-- Left Side: Password Inputs -->
+                        <div class="space-y-4">
+                            <!-- Initial Password -->
+                            <div>
+                                <label class="block text-slate-700 text-sm font-semibold mb-1.5">Initial Password <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <input type="password" name="password" id="password"
+                                           placeholder="Min. 8 characters"
+                                           required minlength="8"
+                                           class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                                    <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-blue-400 transition p-1">
+                                        <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
+                                    </button>
+                                </div>
+                            </div>
 
-                    <!-- Confirm Password -->
-                    <div>
-                        <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="password" name="confirm_password" id="confirm_password"
-                                   placeholder="Repeat password"
-                                   required
-                                   class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
-                            <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
-                                <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
-                            </button>
+                            <!-- Confirm Password -->
+                            <div>
+                                <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <input type="password" name="confirm_password" id="confirm_password"
+                                           placeholder="Repeat password"
+                                           required
+                                           class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
+                                    <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-blue-400 transition p-1">
+                                        <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side: Checklist -->
+                        <div class="md:h-full flex flex-col justify-end">
+                            <div class="p-4 bg-white/5 rounded-2xl border border-white/10 mt-[26px]">
+                                <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-3">Password Combination Status</p>
+                                <div class="grid grid-cols-1 gap-y-2">
+                                    <div id="req-length" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                        <i class="ph ph-circle text-[10px] icon"></i>
+                                        <span class="text-xs font-semibold">At least 8 characters</span>
+                                    </div>
+                                    <div id="req-upper" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                        <i class="ph ph-circle text-[10px] icon"></i>
+                                        <span class="text-xs font-semibold">Uppercase letter</span>
+                                    </div>
+                                    <div id="req-lower" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                        <i class="ph ph-circle text-[10px] icon"></i>
+                                        <span class="text-xs font-semibold">Lowercase letter</span>
+                                    </div>
+                                    <div id="req-number" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                        <i class="ph ph-circle text-[10px] icon"></i>
+                                        <span class="text-xs font-semibold">Number</span>
+                                    </div>
+                                    <div id="req-special" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                        <i class="ph ph-circle text-[10px] icon"></i>
+                                        <span class="text-xs font-semibold">Special character</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -360,11 +425,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="block text-slate-700 text-sm font-semibold mb-1.5">ID Picture <span class="text-red-500">*</span></label>
                             <div class="flex flex-col gap-3">
                                 <label for="id_picture"
-                                       class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                                       class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-500/10 transition-all group">
                                     <div id="upload-placeholder" class="flex flex-col items-center">
-                                        <i class="ph ph-camera text-3xl text-blue-500 group-hover:text-blue-600 mb-2"></i>
-                                        <p class="text-slate-500 text-sm">Click to upload ID photo</p>
-                                        <p class="text-slate-400 text-xs">JPG, PNG, WebP · Max 5MB</p>
+                                        <i class="ph ph-camera text-3xl text-blue-400 group-hover:text-blue-300 mb-2"></i>
+                                        <p class="text-white/50 text-sm mb-2">Click to upload ID photo</p>
+                                        <div class="bg-blue-500/20 border border-blue-400/30 text-blue-200 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm animate-[pulse_2s_ease-in-out_infinite]">
+                                            <i class="ph-shield-check inline-block mr-1"></i> Tanging JPG o PNG lang ang pwede, maximum 2MB
+                                        </div>
                                     </div>
                                     <img id="upload-preview" src="" alt="Preview" class="hidden h-24 object-contain rounded-lg">
                                 </label>
@@ -377,14 +444,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </button>
                                 
                                 <!-- ID Verification Status -->
-                                <div id="ocr-status" class="hidden text-center text-xs text-blue-300"></div>
+                                <div id="ocr-status" class="hidden text-center text-xs text-amber-300"></div>
                             </div>
                         </div>
                     </div>
 
                 <!-- Data Privacy Disclosure -->
-                <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 text-blue-800">
-                    <i class="ph ph-shield-check text-2xl shrink-0 text-blue-500"></i>
+                <div class="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-4 flex gap-3 text-blue-100">
+                    <i class="ph ph-shield-check text-2xl shrink-0 text-blue-400"></i>
                     <div class="text-xs">
                         <p class="font-bold">Data Privacy Notice</p>
                         <p class="opacity-80 leading-relaxed mt-0.5">
@@ -395,13 +462,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Submit -->
                 <button type="submit" id="submit-btn"
-                        class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black text-lg py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all mt-2">
+                        class="w-full bg-blue-500 hover:bg-blue-400 active:scale-95 text-white font-black text-lg py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all mt-2">
                     Create Account
                 </button>
 
-                <p class="text-center text-slate-400 text-sm">
+                <p class="text-center text-white/40 text-sm">
                     Already have an account?
-                    <a href="login.php" class="text-blue-600 font-semibold hover:text-blue-800">Sign in here</a>
+                    <a href="login.php" class="text-blue-300 font-semibold hover:text-white">Sign in here</a>
                 </p>
 
             </form>
@@ -432,15 +499,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     let verificationPassed = false;
     
     document.getElementById('register-form')?.addEventListener('submit', function(e) {
-        const p  = document.getElementById('password').value;
+        // --- 1. Check Password Requirements ---
+        const password = document.getElementById('password').value;
+        const requirementsMet = 
+            /.{8,}/.test(password) &&
+            /[A-Z]/.test(password) &&
+            /[a-z]/.test(password) &&
+            /[0-9]/.test(password) &&
+            /[^A-Za-z0-9]/.test(password);
+
+        if (!requirementsMet) {
+            e.preventDefault();
+            alert('Your password does not meet all security requirements.');
+            document.getElementById('password').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // --- 2. Check Password Match ---
         const cp = document.getElementById('confirm_password').value;
-        
-        if (p !== cp) {
+        if (password !== cp) {
             e.preventDefault();
             alert('Passwords do not match. Please check and try again.');
             return;
         }
 
+        // --- 3. Check OCR Verification ---
         if (!verificationPassed) {
             e.preventDefault();
             const statusEl = document.getElementById('ocr-status');
@@ -449,6 +532,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             document.getElementById('ocr-btn').parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
+    });
+
+    // --- Password Strength Real-time Validation ---
+    const passwordInput = document.getElementById('password');
+    const reqElements = {
+        length:  { regex: /.{8,}/,          el: document.getElementById('req-length') },
+        upper:   { regex: /[A-Z]/,          el: document.getElementById('req-upper') },
+        lower:   { regex: /[a-z]/,          el: document.getElementById('req-lower') },
+        number:  { regex: /[0-9]/,          el: document.getElementById('req-number') },
+        special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
+    };
+
+    passwordInput.addEventListener('input', () => {
+        const val = passwordInput.value;
+        Object.keys(reqElements).forEach(key => {
+            const req = reqElements[key];
+            const isMet = req.regex.test(val);
+            const icon = req.el.querySelector('.icon');
+            
+            if (isMet) {
+                req.el.classList.remove('text-slate-400');
+                req.el.classList.add('text-emerald-500');
+                icon.classList.replace('ph-circle', 'ph-check-circle-fill');
+            } else {
+                req.el.classList.remove('text-emerald-500');
+                req.el.classList.add('text-slate-400');
+                icon.classList.replace('ph-check-circle-fill', 'ph-circle');
+            }
+        });
     });
 
     async function startIdVerification() {
@@ -491,27 +603,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const idScore = bestMatchScore(typedId, ocrText, true);
             const namePct = Math.round(nameScore * 100);
             const idPct = Math.round(idScore * 100);
-            const overallPass = nameScore >= 0.5 && idScore >= 0.5;
+            const overallPass = nameScore >= 1.0 && idScore >= 1.0;
 
-            const nameIcon = nameScore >= 0.7 ? '✅' : nameScore >= 0.4 ? '⚠️' : '❌';
-            const idIcon = idScore >= 0.7 ? '✅' : idScore >= 0.4 ? '⚠️' : '❌';
-            const nameColor = nameScore >= 0.7 ? 'emerald' : nameScore >= 0.4 ? 'amber' : 'red';
-            const idColor = idScore >= 0.7 ? 'emerald' : idScore >= 0.4 ? 'amber' : 'red';
+            const nameIcon = nameScore >= 1.0 ? '✅' : '❌';
+            const idIcon = idScore >= 1.0 ? '✅' : '❌';
+            const nameColor = nameScore >= 1.0 ? 'emerald' : 'red';
+            const idColor = idScore >= 1.0 ? 'emerald' : 'red';
 
             if (overallPass) {
                 // ✅ Passed — show success
                 statusEl.innerHTML = `
                     <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center shadow-sm">
-                        <p class="text-emerald-800 font-black text-lg">✅ ID Verified!</p>
-                        <p class="text-emerald-600 text-[11px] mb-3 font-medium">You can now proceed to create your account.</p>
+                        <p class="text-emerald-800 font-black text-lg">✅ ID Verified 100%!</p>
+                        <p class="text-emerald-600 text-[11px] mb-3 font-medium">Your details exactly match the document. You can now proceed.</p>
                         <div class="grid grid-cols-2 gap-2">
                             <div class="bg-white border border-emerald-100 rounded-lg p-2 shadow-sm">
                                 <p class="text-[10px] text-emerald-500 uppercase font-black tracking-wider">Name Match</p>
-                                <p class="text-emerald-700 font-black text-xl leading-tight">${namePct}%</p>
+                                <p class="text-emerald-700 font-black text-xl leading-tight">MATCHED</p>
                             </div>
                             <div class="bg-white border border-emerald-100 rounded-lg p-2 shadow-sm">
                                 <p class="text-[10px] text-emerald-500 uppercase font-black tracking-wider">ID Match</p>
-                                <p class="text-emerald-700 font-black text-xl leading-tight">${idPct}%</p>
+                                <p class="text-emerald-700 font-black text-xl leading-tight">MATCHED</p>
                             </div>
                         </div>
                     </div>
@@ -526,16 +638,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="space-y-3 mt-1">
                         <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center shadow-sm">
                             <p class="text-red-700 font-black text-lg">❌ Verification Failed</p>
-                            <p class="text-red-500 text-[11px] mt-1 font-medium">Details don't match the photo.</p>
+                            <p class="text-red-500 text-[11px] mt-1 font-medium">Details must match 100%. Please check your inputs or photo.</p>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div class="bg-white border border-${nameColor}-200 rounded-lg p-3 text-center shadow-sm">
                                 <p class="text-[10px] text-${nameColor}-500 font-black uppercase tracking-wider mb-1">Full Name</p>
-                                <p class="text-${nameColor}-700 font-black text-xl leading-none">${nameIcon} ${namePct}%</p>
+                                <p class="text-${nameColor}-700 font-black text-xl leading-none">${nameIcon} ${nameScore === 1 ? '100%' : 'NO MATCH'}</p>
                             </div>
                             <div class="bg-white border border-${idColor}-200 rounded-lg p-3 text-center shadow-sm">
                                 <p class="text-[10px] text-${idColor}-500 font-black uppercase tracking-wider mb-1">ID Number</p>
-                                <p class="text-${idColor}-700 font-black text-xl leading-none">${idIcon} ${idPct}%</p>
+                                <p class="text-${idColor}-700 font-black text-xl leading-none">${idIcon} ${idScore === 1 ? '100%' : 'NO MATCH'}</p>
                             </div>
                         </div>
                     </div>
@@ -619,75 +731,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if a string appears (even partially) anywhere in the OCR text
     function bestMatchScore(needle, ocrText, isIdNumber = false) {
-        const cleanNeedle = needle.toLowerCase().trim();
-        const cleanText = ocrText.toLowerCase();
+        const cleanNeedle = needle.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanText = ocrText.toLowerCase().replace(/[^a-z0-9]/g, '');
         
-        // Split OCR text into tokens for precision matching
-        const ocrTokens = cleanText.split(/\s+/);
+        if (cleanNeedle.length < 2) return 0;
 
-        // Special logic for ID Numbers
-        if (isIdNumber) {
-            const strippedNeedle = cleanNeedle.replace(/[^a-z0-9]/g, '');
-            if (strippedNeedle.length < 3) return 0; // Too short to verify reliably
-
-            let bestIdScore = 0;
-            for (let token of ocrTokens) {
-                const strippedToken = token.replace(/[^a-z0-9]/g, '');
-                if (strippedToken === strippedNeedle) {
-                    return 1.0; // Perfect match
-                }
-                if (strippedToken.includes(strippedNeedle)) {
-                    // Score is ratio of length. e.g. "SUM" (3) vs "SUM202301996" (12) = 0.25
-                    const score = strippedNeedle.length / strippedToken.length;
-                    if (score > bestIdScore) bestIdScore = score;
-                } else {
-                    // Try fuzzy matching on the token
-                    const sim = similarity(strippedNeedle, strippedToken);
-                    if (sim > bestIdScore) bestIdScore = sim;
-                }
-            }
-            return bestIdScore;
-        }
-
-        // --- Logic for Names ---
-        
-        // Check for exact substring match first (but weight it if it's much shorter than the full name)
+        // For 100% match, the cleaned needle must be a substring of the cleaned OCR text
         if (cleanText.includes(cleanNeedle)) {
-            // Determine if this is likely the whole name or just a fragment
-            // We search for the surrounding words in the OCR text
-            const words = cleanNeedle.split(/\s+/).filter(w => w.length > 1);
-            if (words.length > 1) return 1.0; // Multi-word exact match is very strong
+            return 1.0;
         }
-        
-        // Token-based matching for names
-        const words = cleanNeedle.split(/\s+/).map(w => w.replace(/\.$/, ''));
-        let totalScore = 0;
-        
-        for (const word of words) {
-            if (word.length < 2) {
-                // For initials (1 char), we need an exact match in the text
-                if (new RegExp(`\\b${word}\\b`).test(cleanText)) totalScore += 1;
-                continue;
-            }
-            
-            let bestWordMatch = 0;
-            if (cleanText.includes(word)) {
-                bestWordMatch = 1.0;
-            } else {
-                // Fuzzy check against each word in the OCR
-                for (const ot of ocrTokens) {
-                    const sim = similarity(word, ot);
-                    if (sim > bestWordMatch) bestWordMatch = sim;
-                }
-            }
-            
-            // Weight the word score
-            if (bestWordMatch > 0.5) {
-                totalScore += bestWordMatch;
-            }
-        }
-        
-        return words.length > 0 ? (totalScore / words.length) : 0;
+
+        return 0.0;
     }
 
     // ─── Show/Hide Password Toggle ───

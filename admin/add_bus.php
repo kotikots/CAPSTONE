@@ -146,7 +146,7 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Body Number</label>
                             <input type="text" name="body_number" required placeholder="BUS-001"
                                    value="<?= htmlspecialchars($_POST['body_number'] ?? $nextBodyNumber) ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold text-slate-800">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold text-slate-800">
                         </div>
 
                         <!-- Plate Number -->
@@ -154,7 +154,7 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Plate Number</label>
                             <input type="text" name="plate_number" required placeholder="ABC-1234"
                                    value="<?= htmlspecialchars($_POST['plate_number'] ?? '') ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
 
                         <!-- Model -->
@@ -162,21 +162,21 @@ include '../includes/header.php';
                             <label class="block text-slate-700 text-sm font-bold mb-2">Bus Model</label>
                             <input type="text" name="model" placeholder="E-Jeepney CMCI 2023"
                                    value="<?= htmlspecialchars($_POST['model'] ?? '') ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
 
                         <!-- Capacity -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Seating Capacity</label>
                             <input type="number" name="capacity" required min="1" value="<?= htmlspecialchars($_POST['capacity'] ?? 22) ?>"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
 
                         <!-- Driver Assignment -->
                         <div>
                             <label class="block text-slate-700 text-sm font-bold mb-2">Assign Driver</label>
                             <select name="driver_id"
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none font-semibold">
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 appearance-none font-semibold">
                                 <option value="0">-- No Driver (Unassigned) --</option>
                                 <?php foreach ($drivers as $d): ?>
                                     <option value="<?= $d['id'] ?>" <?= (isset($_POST['driver_id']) && $_POST['driver_id'] == $d['id']) ? 'selected' : '' ?>>
@@ -189,7 +189,7 @@ include '../includes/header.php';
                     </div>
 
                     <div class="pt-5">
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition active:scale-95 text-lg">
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95 text-lg">
                             Register Bus
                         </button>
                     </div>

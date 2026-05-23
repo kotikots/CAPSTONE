@@ -101,7 +101,7 @@ include '../includes/header.php';
             <!-- Recent trips -->
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                 <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <i class="ph ph-clock-counter-clockwise text-blue-500"></i> Recent Trips
+                    <i class="ph ph-clock-counter-clockwise text-amber-500"></i> Recent Trips
                 </h3>
                 <?php if (empty($trips)): ?>
                 <div class="text-center py-8 text-slate-400"><p class="text-sm">No trips yet.</p></div>
@@ -150,7 +150,7 @@ include '../includes/header.php';
         </div>
         <div class="p-6 overflow-y-auto no-scrollbar flex-1 bg-white relative">
             <div id="records-modal-loader" class="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center hidden">
-                 <i class="ph ph-spinner-gap animate-spin text-4xl text-blue-500 mb-2"></i>
+                 <i class="ph ph-spinner-gap animate-spin text-4xl text-amber-500 mb-2"></i>
                  <p class="text-sm font-bold text-slate-500">Loading records...</p>
             </div>
             <div id="records-modal-content" class="space-y-3">
@@ -288,8 +288,8 @@ new Chart(document.getElementById('earningsChart'), {
         datasets: [{
             label: 'Revenue (₱)',
             data:  <?= json_encode(array_map(fn($r) => (float)$r['revenue'], $daily)) ?>,
-            backgroundColor: 'rgba(249,115,22,0.15)',
-            borderColor:     'rgb(249,115,22)',
+            backgroundColor: 'rgba(6,182,212,0.15)',
+            borderColor:     'rgb(6,182,212)',
             borderWidth: 2, borderRadius: 6,
         }]
     },
@@ -297,8 +297,8 @@ new Chart(document.getElementById('earningsChart'), {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, ticks: { callback: v => '₱'+v } },
-            x: { grid: { display: false } }
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.6)', callback: v => '₱'+v } },
+            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } }
         }
     }
 });

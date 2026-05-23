@@ -39,6 +39,8 @@ try {
 
     $buses = $stmt->fetchAll();
     echo json_encode(['success' => true, 'buses' => $buses]);
+    exit;
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    exit;
 }

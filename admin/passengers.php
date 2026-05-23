@@ -65,7 +65,7 @@ include '../includes/header.php';
                 <input type="text" name="q" value="<?= htmlspecialchars($search) ?>"
                        placeholder="Search by name, ID number, or contact..."
                        class="flex-1 outline-none text-slate-700 placeholder-slate-300 text-sm">
-                <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-blue-500 transition">Search</button>
+                <button type="submit" class="bg-amber-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-amber-500 transition">Search</button>
                 <?php if ($search): ?>
                 <a href="passengers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition">Clear</a>
                 <?php endif; ?>
@@ -79,11 +79,11 @@ include '../includes/header.php';
                 <!-- Clickable Area -->
                 <div class="flex-1 flex items-start gap-4 cursor-pointer hover:opacity-80 transition" onclick="showPassengerModal(<?= $p['id'] ?>)">
                     <!-- ID Photo -->
-                    <div class="w-16 h-16 rounded-2xl bg-blue-100 overflow-hidden shrink-0 shadow-inner">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-100 overflow-hidden shrink-0 shadow-inner">
                         <?php if ($p['id_picture']): ?>
                         <img src="/PARE/<?= htmlspecialchars($p['id_picture']) ?>" alt="ID" class="w-full h-full object-cover">
                         <?php else: ?>
-                        <div class="w-full h-full flex items-center justify-center"><i class="ph ph-user text-blue-400 text-3xl"></i></div>
+                        <div class="w-full h-full flex items-center justify-center"><i class="ph ph-user text-amber-400 text-3xl"></i></div>
                         <?php endif; ?>
                     </div>
 
@@ -111,19 +111,59 @@ include '../includes/header.php';
                         <?= $p['is_active'] ? 'Active' : 'Inactive' ?>
                     </span>
                     
-                    <button id="toggle-btn-<?= $p['id'] ?>"
-                            onclick="toggleStatus(<?= $p['id'] ?>, <?= $p['is_active'] ? 0 : 1 ?>, '<?= addslashes($p['full_name']) ?>')"
-                            class="w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm
-                                   <?= $p['is_active'] ? 'bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' ?>"
-                            title="<?= $p['is_active'] ? 'Deactivate Account' : 'Activate Account' ?>">
-                        <i id="icon-<?= $p['id'] ?>" class="ph <?= $p['is_active'] ? 'ph-power' : 'ph-check-circle' ?> text-lg font-bold"></i>
-                    </button>
+                    <div class="flex flex-col gap-2">
+                        <button id="toggle-btn-<?= $p['id'] ?>"
+                                onclick="toggleStatus(<?= $p['id'] ?>, <?= $p['is_active'] ? 0 : 1 ?>, '<?= addslashes($p['full_name']) ?>')"
+                                class="w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm
+                                       <?= $p['is_active'] ? 'bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' ?>"
+                                title="<?= $p['is_active'] ? 'Deactivate Account' : 'Activate Account' ?>">
+                            <i id="icon-<?= $p['id'] ?>" class="ph <?= $p['is_active'] ? 'ph-power' : 'ph-check-circle' ?> text-lg font-bold"></i>
+                        </button>
+
+                        <button onclick="removeAccount(<?= $p['id'] ?>, 'passenger', '<?= addslashes($p['full_name']) ?>')"
+                                class="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all"
+                                title="Remove Permanently">
+                            <i class="ph ph-trash text-lg"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
 
         <script>
+        async function removeAccount(id, type, name) {
+            event.stopPropagation();
+            const isConfirmed = await window.showConfirm({
+                title: 'Remove Account Permanently?',
+                message: `Are you sure you want to delete ${name}? This action cannot be undone and will only succeed if the account has no historical trip data.`,
+                type: 'danger',
+                confirmText: 'Yes, Remove Permanently'
+            });
+
+            if (!isConfirmed) return;
+
+            try {
+                const res = await fetch('api_delete_account.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, type })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.showToast('Account Removed', `${name} has been deleted.`, 'success');
+                    const card = document.getElementById(`card-${id}`);
+                    card.style.transform = 'scale(0.9)';
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    window.showToast('Action Denied', data.message, 'error');
+                }
+            } catch (err) {
+                window.showToast('Network Error', 'Could not reach server.', 'error');
+            }
+        }
         // Store passenger data securely in JS
         const passengersData = {
             <?php foreach ($passengers as $p): ?>
@@ -253,7 +293,7 @@ include '../includes/header.php';
                 <a href="?page=<?= $page-1 ?>&q=<?= urlencode($search) ?>" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-100">← Prev</a>
                 <?php endif; ?>
                 <?php if ($page < $pages): ?>
-                <a href="?page=<?= $page+1 ?>&q=<?= urlencode($search) ?>" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500">Next →</a>
+                <a href="?page=<?= $page+1 ?>&q=<?= urlencode($search) ?>" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-sm hover:bg-amber-500">Next →</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -272,7 +312,7 @@ include '../includes/header.php';
         <!-- Header -->
         <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50 shrink-0">
             <h3 class="font-black text-slate-800 text-[17px] flex items-center gap-2">
-                <i class="ph ph-identification-card text-blue-600 text-xl"></i> Passenger Details
+                <i class="ph ph-identification-card text-amber-600 text-xl"></i> Passenger Details
             </h3>
             <button onclick="closePassengerModal()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-100 border border-transparent hover:border-rose-200 flex items-center justify-center text-slate-500 hover:text-rose-600 transition">
                 <i class="ph ph-x font-bold"></i>
@@ -302,7 +342,7 @@ include '../includes/header.php';
                 </div>
                 <div>
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Discount Type</p>
-                    <p id="modal-discount" class="font-bold text-blue-700 bg-blue-50 inline-block px-2.5 py-0.5 rounded-md border border-blue-100 text-sm"></p>
+                    <p id="modal-discount" class="font-bold text-blue-700 bg-amber-50 inline-block px-2.5 py-0.5 rounded-md border border-blue-100 text-sm"></p>
                 </div>
                 <div>
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Contact</p>

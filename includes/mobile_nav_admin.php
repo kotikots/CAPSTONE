@@ -1,12 +1,12 @@
 <?php
 $currentPage = $currentPage ?? '';
 $navItems = [
-    ['href' => '/PARE/admin/dashboard.php',  'icon' => 'ph-chart-pie-slice',    'label' => 'Overview'],
-    ['href' => '/PARE/admin/buses.php',      'icon' => 'ph-bus',                'label' => 'Buses'],
-    ['href' => '/PARE/admin/trips.php',      'icon' => 'ph-map-pin-line',       'label' => 'Trips'],
-    ['href' => '/PARE/admin/passengers.php', 'icon' => 'ph-users',              'label' => 'Pax'],
-    ['href' => '/PARE/admin/reports.php',    'icon' => 'ph-file-text',          'label' => 'Reports'],
-    ['href' => '/PARE/admin/remittance.php', 'icon' => 'ph-wallet',             'label' => 'Cash'],
+    ['href' => '/PARE/admin/dashboard',  'icon' => 'ph-chart-pie-slice',    'label' => 'Overview'],
+    ['href' => '/PARE/admin/buses',      'icon' => 'ph-bus',                'label' => 'Buses'],
+    ['href' => '/PARE/admin/trips',      'icon' => 'ph-map-pin-line',       'label' => 'Trips'],
+    ['href' => '/PARE/admin/passengers', 'icon' => 'ph-users',              'label' => 'Pax'],
+    ['href' => '/PARE/admin/reports',    'icon' => 'ph-file-text',          'label' => 'Reports'],
+    ['href' => '/PARE/admin/remittance', 'icon' => 'ph-wallet',             'label' => 'Cash'],
 ];
 ?>
 <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-2xl border-t border-slate-200/50 z-50 px-1 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">

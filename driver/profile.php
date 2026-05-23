@@ -1,9 +1,9 @@
 <?php
 /**
- * passenger/profile.php
- * View profile + change password.
+ * driver/profile.php
+ * View profile + change password for drivers.
  */
-$requiredRole = 'passenger';
+$requiredRole = 'driver';
 $pageTitle    = 'My Profile';
 $currentPage  = 'profile.php';
 
@@ -11,7 +11,7 @@ require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
 require_once '../includes/functions_v2.php';
 
-$uid = $_SESSION['user_id'];
+$driverId = $_SESSION['driver_id'];
 $success = $_SESSION['flash_success'] ?? '';
 $error = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
@@ -23,114 +23,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     $confirm  = $_POST['confirm_password'] ?? '';
     $captcha  = trim($_POST['captcha'] ?? '');
 
-    // Validate Captcha (Alphanumeric)
+    // Validate Captcha
     if (strtoupper($captcha) !== strtoupper($_SESSION['captcha_code'] ?? '')) {
         $_SESSION['flash_error'] = 'Security check failed. Please enter the correct captcha text.';
     } else {
         // Validate Password
-        $userStmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
-        $userStmt->execute([$uid]);
-        $user = $userStmt->fetch();
+        $stmt = $pdo->prepare("SELECT password FROM drivers WHERE id = ?");
+        $stmt->execute([$driverId]);
+        $driver = $stmt->fetch();
 
-        if (!password_verify($current, $user['password'])) {
+        if (!password_verify($current, $driver['password'])) {
             $_SESSION['flash_error'] = 'Current password is incorrect.';
         } elseif (strlen($new) < 8) {
             $_SESSION['flash_error'] = 'New password must be at least 8 characters.';
+        } elseif (!preg_match('/[A-Z]/', $new) || !preg_match('/[a-z]/', $new) || !preg_match('/[0-9]/', $new) || !preg_match('/[^A-Za-z0-9]/', $new)) {
+            $_SESSION['flash_error'] = 'Password must contain uppercase, lowercase, number, and special character.';
         } elseif ($new !== $confirm) {
             $_SESSION['flash_error'] = 'New passwords do not match.';
         } else {
             $hash = password_hash($new, PASSWORD_BCRYPT);
-            $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$hash, $uid]);
+            $pdo->prepare("UPDATE drivers SET password = ? WHERE id = ?")->execute([$hash, $driverId]);
             $_SESSION['flash_success'] = 'Password changed successfully!';
         }
     }
     
-    // Always clear captcha after an attempt so it MUST regenerate
     unset($_SESSION['captcha_code']);
-    
     header("Location: profile.php");
     exit;
 }
 
 // Fetch full profile
 $profileStmt = $pdo->prepare(
-    "SELECT full_name, id_number, id_picture, address, contact_number, email,
-            region, province, city, barangay,
-            emergency_contact_name, emergency_contact_number, emergency_contact_address, 
-            ec_region, ec_province, ec_city, ec_barangay,
-            discount_type, created_at
-     FROM users WHERE id = ?"
+    "SELECT full_name, license_number, profile_picture, contact_number, email, 
+            address, region, province, city, barangay, created_at
+     FROM drivers WHERE id = ?"
 );
-$profileStmt->execute([$uid]);
-$p = $profileStmt->fetch();
+$profileStmt->execute([$driverId]);
+$dr = $profileStmt->fetch();
 
-// Ride stats
+// Trip stats for driver
 $statsStmt = $pdo->prepare(
-    "SELECT COUNT(*) AS rides, COALESCE(SUM(fare_amount),0) AS spent FROM tickets WHERE passenger_id = ?"
+    "SELECT COUNT(*) AS total_trips FROM trips WHERE driver_id = ?"
 );
-$statsStmt->execute([$uid]);
-$stats = $statsStmt->fetch();
+$statsStmt->execute([$driverId]);
+$totalTrips = $statsStmt->fetchColumn();
 
-$discountLabels = [
-    'none' => ['Regular Passenger', 'bg-slate-100 text-slate-600', 'ph-user'],
-    'student' => ['Student Discount', 'bg-amber-100 text-blue-700', 'ph-graduation-cap'],
-    'senior' => ['Senior Citizen', 'bg-amber-100 text-amber-700', 'ph-heart'],
-    'pwd' => ['PWD Discount', 'bg-purple-100 text-purple-700', 'ph-wheelchair'],
-    'teacher' => ['Teacher Discount', 'bg-emerald-100 text-emerald-700', 'ph-chalkboard-teacher'],
-    'nurse' => ['Nurse Discount', 'bg-pink-100 text-pink-700', 'ph-first-aid'],
-];
-$dt = $p['discount_type'] ?? 'none';
-$dl = $discountLabels[$dt] ?? $discountLabels['none'];
+// Attendance/Revenue stats (Placeholder for consistency with passenger design)
+$revStmt = $pdo->prepare(
+    "SELECT COALESCE(SUM(fare_amount), 0) AS total_lifetime_revenue 
+     FROM tickets t JOIN trips tr ON t.trip_id = tr.id 
+     WHERE tr.driver_id = ?"
+);
+$revStmt->execute([$driverId]);
+$totalRev = $revStmt->fetchColumn();
 
-// Initialize Alphanumeric Captcha Session
+// Init Captcha session
 if (!isset($_SESSION['captcha_code'])) {
-    $_SESSION['captcha_code'] = 'PARE'; // Placeholder for first hit
+    $_SESSION['captcha_code'] = 'PARE'; 
 }
 
 include '../includes/header.php';
 ?>
 
 <div class="flex min-h-screen">
-    <?php include '../includes/sidebar_passenger.php'; ?>
+    <?php include '../includes/sidebar_driver.php'; ?>
 
     <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
 
         <div class="mb-8">
             <h2 class="text-2xl font-black text-slate-800 tracking-tight">My Profile</h2>
-            <p class="text-slate-500 text-sm mt-1">Manage your account information</p>
+            <p class="text-slate-500 text-sm mt-1">Manage your professional driver account</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             <!-- LEFT: Profile Card -->
             <div class="lg:col-span-1 space-y-6">
-                <!-- Avatar + Name -->
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 text-center">
-                    <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-amber-100 flex items-center justify-center border-4 border-blue-200">
-                        <?php if ($p['id_picture']): ?>
-                        <img src="/PARE/<?= htmlspecialchars($p['id_picture']) ?>" class="w-full h-full object-cover">
+                    <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-orange-100 flex items-center justify-center border-4 border-orange-200">
+                        <?php if ($dr['profile_picture']): ?>
+                        <img src="/PARE/<?= htmlspecialchars($dr['profile_picture']) ?>" class="w-full h-full object-cover">
                         <?php else: ?>
-                        <i class="ph ph-user text-4xl text-amber-400"></i>
+                        <i class="ph ph-steering-wheel text-4xl text-orange-400"></i>
                         <?php endif; ?>
                     </div>
-                    <h3 class="text-xl font-black text-slate-800"><?= htmlspecialchars($p['full_name']) ?></h3>
-                    <p class="text-slate-400 text-sm mt-1">ID: <?= htmlspecialchars($p['id_number']) ?></p>
+                    <h3 class="text-xl font-black text-slate-800"><?= htmlspecialchars($dr['full_name']) ?></h3>
+                    <p class="text-slate-400 text-sm mt-1">License: <?= htmlspecialchars($dr['license_number']) ?></p>
                     <div class="mt-3">
-                        <span class="inline-flex items-center gap-1.5 <?= $dl[1] ?> text-xs font-bold px-4 py-2 rounded-full">
-                            <i class="ph <?= $dl[2] ?>"></i> <?= $dl[0] ?>
+                        <span class="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 text-xs font-bold px-4 py-2 rounded-full">
+                            <i class="ph ph-shield-check"></i> Verified Driver
                         </span>
                     </div>
                     <div class="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-100">
                         <div>
-                            <p class="text-2xl font-black text-slate-800"><?= number_format((int)$stats['rides']) ?></p>
-                            <p class="text-xs text-slate-400">Total Rides</p>
+                            <p class="text-2xl font-black text-slate-800"><?= number_format((int)$totalTrips) ?></p>
+                            <p class="text-xs text-slate-400">Total Trips</p>
                         </div>
                         <div>
-                            <p class="text-2xl font-black text-emerald-700"><?= peso((float)$stats['spent']) ?></p>
-                            <p class="text-xs text-slate-400">Total Spent</p>
+                            <p class="text-2xl font-black text-emerald-700"><?= peso((float)$totalRev) ?></p>
+                            <p class="text-xs text-slate-400">Lifetime Revenue</p>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-300 mt-4">Member since <?= date('M d, Y', strtotime($p['created_at'])) ?></p>
+                    <p class="text-xs text-slate-300 mt-4">Partner since <?= date('M d, Y', strtotime($dr['created_at'])) ?></p>
                 </div>
             </div>
 
@@ -141,7 +135,7 @@ include '../includes/header.php';
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                     <div class="flex items-center justify-between mb-5">
                         <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                            <i class="ph ph-user-circle text-amber-600"></i> Personal Information
+                            <i class="ph ph-identification-card text-amber-600"></i> Driver Information
                         </h3>
                         <div id="toolbar-view">
                             <button onclick="toggleEdit(true)" class="flex items-center gap-2 bg-amber-50 text-amber-600 hover:bg-amber-100 font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95">
@@ -160,24 +154,22 @@ include '../includes/header.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <?php
                         $fields = [
-                            ['Full Name', $p['full_name'], 'ph-user', 'full_name', true],
-                            ['ID Number', $p['id_number'], 'ph-identification-card', 'id_number', false],
-                            ['Contact', $p['contact_number'], 'ph-phone', 'contact_number', true],
-                            ['Email', $p['email'] ?: '', 'ph-envelope', 'email', true],
-                            ['Address', $p['address'], 'ph-map-pin', 'address', true],
+                            ['Full Name', $dr['full_name'], 'ph-user', 'full_name', true],
+                            ['License Number', $dr['license_number'], 'ph-certificate', 'license_number', false],
+                            ['Contact', $dr['contact_number'], 'ph-phone', 'contact_number', true],
+                            ['Email', $dr['email'] ?: '', 'ph-envelope', 'email', true],
+                            ['Address', $dr['address'], 'ph-map-pin', 'address', true],
                         ];
                         foreach ($fields as [$label, $value, $icon, $key, $editable]):
                         ?>
                         <div class="<?= $key === 'address' ? 'md:col-span-2' : '' ?>">
                             <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider"><?= $label ?></label>
                             
-                            <!-- View mode -->
                             <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
                                 <i class="ph <?= $icon ?> text-slate-400 text-lg"></i>
                                 <span id="label-<?= $key ?>" class="text-slate-700 text-sm font-semibold truncate"><?= htmlspecialchars($value ?: '—') ?></span>
                             </div>
 
-                            <!-- Edit mode -->
                             <?php if ($editable): ?>
                             <div class="edit-mode hidden relative">
                                 <?php if ($key === 'address'): ?>
@@ -192,23 +184,18 @@ include '../includes/header.php';
                                     </div>
                                 <?php elseif ($key === 'contact_number'): ?>
                                     <div class="relative flex items-center">
-                                        <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
                                         <input type="tel" id="input-contact_number" 
-                                               value="<?= htmlspecialchars(str_replace('+63', '', $value)) ?>"
-                                               maxlength="10"
-                                               pattern="[0-9]{10}"
-                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-                                               class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
+                                               value="<?= htmlspecialchars($value) ?>"
+                                               maxlength="11"
+                                               pattern="[0-9]{11}"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                                               class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
                                     </div>
                                 <?php else: ?>
                                     <i class="ph <?= $icon ?> absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
                                     <input type="<?= $key === 'email' ? 'email' : 'text' ?>" 
                                            id="input-<?= $key ?>"
                                            value="<?= htmlspecialchars($value) ?>"
-                                           <?php if ($key === 'email'): ?>
-                                           pattern=".*@gmail\.com$"
-                                           title="Please use a @gmail.com email address"
-                                           <?php endif; ?>
                                            class="w-full bg-white border-2 border-blue-100 rounded-xl pl-11 pr-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
                                 <?php endif; ?>
                             </div>
@@ -220,75 +207,6 @@ include '../includes/header.php';
                             <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <!-- Emergency Contact -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                    <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                        <i class="ph ph-warning-circle text-orange-500"></i> Emergency Contact
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider">Contact Person</label>
-                            
-                            <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                                <i class="ph ph-user text-slate-400 text-lg"></i>
-                                <span id="label-emergency_contact_name" class="text-slate-700 text-sm font-semibold truncate"><?= htmlspecialchars($p['emergency_contact_name'] ?: '—') ?></span>
-                            </div>
-                            
-                            <div class="edit-mode hidden space-y-3">
-                                <div class="relative">
-                                    <i class="ph ph-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                                    <input type="text" id="input-emergency_contact_name" value="<?= htmlspecialchars($p['emergency_contact_name']) ?>"
-                                           class="w-full bg-white border-2 border-blue-100 rounded-xl pl-11 pr-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 text-[10px] font-black mb-1.5 uppercase tracking-wider">Emergency Contact Number</label>
-                            
-                            <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                                <i class="ph ph-phone text-slate-400 text-lg"></i>
-                                <span id="label-emergency_contact_number" class="text-slate-700 text-sm font-semibold truncate"><?= htmlspecialchars($p['emergency_contact_number'] ?: '—') ?></span>
-                            </div>
-                            
-                            <div class="edit-mode hidden space-y-3">
-                                <div class="relative flex items-center">
-                                    <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
-                                    <input type="tel" id="input-emergency_contact_number" 
-                                           value="<?= htmlspecialchars(str_replace('+63', '', $p['emergency_contact_number'] ?? '')) ?>"
-                                           maxlength="10"
-                                           pattern="[0-9]{10}"
-                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-                                           class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="md:col-span-2">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <label class="block text-slate-400 text-[10px] font-black uppercase tracking-wider">Contact Address</label>
-                                <label class="flex items-center gap-2 cursor-pointer edit-mode hidden">
-                                    <input type="checkbox" id="sync_address" class="w-3 h-3 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                                    <span class="text-[10px] text-slate-500">Same as home address</span>
-                                </label>
-                            </div>
-                            
-                            <div class="view-mode flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                                <i class="ph ph-map-pin text-slate-400 text-lg"></i>
-                                <span id="label-emergency_contact_address" class="text-slate-700 text-sm font-semibold truncate"><?= htmlspecialchars($p['emergency_contact_address'] ?: '—') ?></span>
-                            </div>
-                            
-                            <div class="edit-mode hidden space-y-3">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <select id="ec_region" class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all"></select>
-                                    <select id="ec_province" class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all"></select>
-                                    <select id="ec_city" class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all"></select>
-                                    <select id="ec_barangay" class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all"></select>
-                                </div>
-                                <input type="hidden" id="input-emergency_contact_address" value="<?= htmlspecialchars($p['emergency_contact_address']) ?>">
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -312,7 +230,7 @@ include '../includes/header.php';
                     </div>
                     <?php endif; ?>
 
-                    <form method="POST" id="password-form" class="space-y-4">
+                    <form method="POST" class="space-y-4">
                         <input type="hidden" name="change_password" value="1">
                         <div>
                             <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">Current Password</label>
@@ -348,6 +266,7 @@ include '../includes/header.php';
                                             <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
                                         </button>
                                     </div>
+                                    <p id="match-hint" class="text-[10px] mt-1.5 font-bold hidden"></p>
                                 </div>
                             </div>
                             
@@ -382,21 +301,18 @@ include '../includes/header.php';
                         </div>
                         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div class="flex flex-col md:flex-row items-center gap-3">
-                                <!-- Captcha Image -->
                                 <div class="bg-white border-2 border-slate-200 rounded-xl p-1.5 h-12 w-32 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                                     <img id="captchaImg" src="../includes/api_captcha_svg.php?v=<?= time() ?>" alt="Captcha" class="max-h-full opacity-90">
                                 </div>
-
-                                <!-- Input Area -->
                                 <div class="flex-1 w-full relative">
                                     <input type="text" name="captcha" required placeholder="Type the text" autocomplete="off"
-                                           class="w-full bg-white border-2 border-slate-200 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm font-black text-slate-700 uppercase tracking-widest focus:outline-none transition-all shadow-sm">
+                                           class="w-full bg-white border-2 border-slate-200 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm font-black text-slate-700 uppercase tracking-widest focus:outline-none transition-all shadow-sm">
                                 </div>
                             </div>
                         </div>
 
                         <button type="submit"
-                                class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-red-500/20 transition active:scale-95">
+                                class="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-orange-500/20 transition active:scale-95">
                             <i class="ph ph-lock-simple mr-1"></i> Update Password
                         </button>
                     </form>
@@ -418,38 +334,16 @@ function toggleEdit(isActive) {
 }
 
 async function saveProfile() {
-    const fields = ['full_name', 'contact_number', 'email', 'address', 'emergency_contact_name', 'emergency_contact_number', 'emergency_contact_address'];
+    const fields = ['full_name', 'contact_number', 'email', 'address'];
     const data = {};
     fields.forEach(f => {
         const el = document.getElementById(`input-${f}`);
         if (el) data[f] = el.value.trim();
     });
 
-    // Add structured address fields
     ['region', 'province', 'city', 'barangay'].forEach(key => {
         data[key] = document.getElementById(key).value;
-        data[`ec_${key}`] = document.getElementById(`ec_${key}`).value;
     });
-
-    // Validation
-    const contact = data.contact_number; // This is the 10-digit part
-    const ecContact = data.emergency_contact_number;
-    const email = data.email;
-
-    if (contact.length !== 10 || !/^\d+$/.test(contact)) {
-        window.showToast('Validation Error', 'Contact number must be exactly 10 digits.', 'error');
-        return;
-    }
-
-    if (ecContact && (ecContact.length !== 10 || !/^\d+$/.test(ecContact))) {
-        window.showToast('Validation Error', 'Emergency contact number must be exactly 10 digits.', 'error');
-        return;
-    }
-
-    if (email && !email.toLowerCase().endsWith('@gmail.com')) {
-        window.showToast('Validation Error', 'Email must end with @gmail.com', 'error');
-        return;
-    }
 
     try {
         const res = await fetch('api_update_profile.php', {
@@ -463,20 +357,12 @@ async function saveProfile() {
         if (result.success) {
             window.showToast('Profile Updated', 'Your information has been saved successfully.', 'success');
             
-            // Update labels locally
             fields.forEach(f => {
                 const val = data[f];
                 const label = document.getElementById(`label-${f}`);
-                if (label) {
-                    if (f === 'contact_number' || f === 'emergency_contact_number') {
-                        label.textContent = '+63' + val;
-                    } else {
-                        label.textContent = val || '—';
-                    }
-                }
+                if (label) label.textContent = val || '—';
             });
  
-            // Update profile card name
             const cardName = document.querySelector('h3.text-xl.font-black.text-slate-800');
             if (cardName) cardName.textContent = data.full_name;
  
@@ -500,112 +386,101 @@ function togglePasswordVisibility(inputId, iconId) {
         icon.classList.replace('ph-eye', 'ph-eye-slash');
     }
 }
+
+// ─── Password Strength Real-time Validation ───
+const passwordInput = document.getElementById('new_password');
+const confirmInput = document.getElementById('confirm_password');
+
+const reqElements = {
+    length:  { regex: /.{8,}/,          el: document.getElementById('req-length') },
+    upper:   { regex: /[A-Z]/,          el: document.getElementById('req-upper') },
+    lower:   { regex: /[a-z]/,          el: document.getElementById('req-lower') },
+    number:  { regex: /[0-9]/,          el: document.getElementById('req-number') },
+    special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
+};
+
+passwordInput.addEventListener('input', () => {
+    const val = passwordInput.value;
+    Object.keys(reqElements).forEach(key => {
+        const req = reqElements[key];
+        const isMet = req.regex.test(val);
+        const icon = req.el.querySelector('.icon');
+        
+        if (isMet) {
+            req.el.classList.remove('text-slate-300');
+            req.el.classList.add('text-emerald-500');
+            icon.classList.replace('ph-circle', 'ph-check-circle-fill');
+        } else {
+            req.el.classList.remove('text-emerald-500');
+            req.el.classList.add('text-slate-300');
+            icon.classList.replace('ph-check-circle-fill', 'ph-circle');
+        }
+    });
+    checkMatch();
+});
+
+confirmInput.addEventListener('input', checkMatch);
+
+function checkMatch() {
+    const hint = document.getElementById('match-hint');
+    const pw = passwordInput.value;
+    const cpw = confirmInput.value;
+    if (!cpw) { hint.classList.add('hidden'); return; }
+    hint.classList.remove('hidden');
+    if (pw === cpw) {
+        hint.textContent = '✅ Passwords match';
+        hint.className = 'text-[10px] mt-1.5 font-bold text-green-600';
+    } else {
+        hint.textContent = '❌ Passwords do not match';
+        hint.className = 'text-[10px] mt-1.5 font-bold text-red-500';
+    }
+}
+
+// Form Submit check
+document.querySelector('form[method="POST"]').addEventListener('submit', function(e) {
+    if (this.querySelector('input[name="change_password"]')) {
+        const password = passwordInput.value;
+        const requirementsMet = 
+            /.{8,}/.test(password) &&
+            /[A-Z]/.test(password) &&
+            /[a-z]/.test(password) &&
+            /[0-9]/.test(password) &&
+            /[^A-Za-z0-9]/.test(password);
+
+        if (!requirementsMet) {
+            e.preventDefault();
+            alert('New password does not meet all security requirements.');
+            return;
+        }
+
+        if (password !== confirmInput.value) {
+            e.preventDefault();
+            alert('Passwords do not match.');
+        }
+    }
+});
 </script>
 
 <script src="../assets/js/ph-address-selector.js?v=2"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const homeSelect = initPHAddress('');
-        const ecSelect = initPHAddress('ec_');
+        const addrSelect = initPHAddress('');
 
-        // Logic to update the "combined" hidden fields for legacy support
-        const updateHidden = (prefix, targetId) => {
-            const r = document.getElementById(`${prefix}region`).value;
-            const p = document.getElementById(`${prefix}province`).value;
-            const c = document.getElementById(`${prefix}city`).value;
-            const b = document.getElementById(`${prefix}barangay`).value;
+        const updateHidden = () => {
+            const r = document.getElementById(`region`).value;
+            const p = document.getElementById(`province`).value;
+            const c = document.getElementById(`city`).value;
+            const b = document.getElementById(`barangay`).value;
             if (r && p && c && b) {
-                document.getElementById(`input-${targetId}`).value = `${b}, ${c}, ${p}, ${r}`;
+                document.getElementById(`input-address`).value = `${b}, ${c}, ${p}, ${r}`;
             }
         };
 
         ['region', 'province', 'city', 'barangay'].forEach(id => {
-            document.getElementById(id).addEventListener('change', () => {
-                updateHidden('', 'address');
-                if (document.getElementById('sync_address').checked) {
-                    syncAddressFields();
-                }
-            });
-            document.getElementById(`ec_${id}`).addEventListener('change', () => updateHidden('ec_', 'emergency_contact_address'));
+            document.getElementById(id).addEventListener('change', updateHidden);
         });
-
-        // Sync Address Logic
-        const checkbox = document.getElementById('sync_address');
-        const syncAddressFields = () => {
-            const fields = ['region', 'province', 'city', 'barangay'];
-            fields.forEach(f => {
-                const source = document.getElementById(f);
-                const target = document.getElementById(`ec_${f}`);
-                if (source && target) {
-                    target.value = source.value;
-                    target.dispatchEvent(new Event('change'));
-                }
-            });
-            updateHidden('ec_', 'emergency_contact_address');
-        };
-
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                syncAddressFields();
-            }
-        });
-
-        // Pre-populating dropdowns works better if we select them sequentially.
-        // For now, these will start empty in Edit mode unless we add a sequential loader in the utility.
-        // --- Password Strength Real-time Validation ---
-        const newPwInput = document.getElementById('new_password');
-        if (newPwInput) {
-            const reqElements = {
-                length:  { regex: /.{8,}/,          el: document.getElementById('req-length') },
-                upper:   { regex: /[A-Z]/,          el: document.getElementById('req-upper') },
-                lower:   { regex: /[a-z]/,          el: document.getElementById('req-lower') },
-                number:  { regex: /[0-9]/,          el: document.getElementById('req-number') },
-                special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
-            };
-
-            newPwInput.addEventListener('input', () => {
-                const val = newPwInput.value;
-                Object.keys(reqElements).forEach(key => {
-                    const req = reqElements[key];
-                    const isMet = req.regex.test(val);
-                    const icon = req.el.querySelector('.icon');
-                    
-                    if (isMet) {
-                        req.el.classList.remove('text-slate-300');
-                        req.el.classList.add('text-emerald-500');
-                        icon.classList.replace('ph-circle', 'ph-check-circle-fill');
-                    } else {
-                        req.el.classList.remove('text-emerald-500');
-                        req.el.classList.add('text-slate-300');
-                        icon.classList.replace('ph-check-circle-fill', 'ph-circle');
-                    }
-                });
-            });
-
-            // Form submission check
-            document.getElementById('password-form')?.addEventListener('submit', function(e) {
-                const password = newPwInput.value;
-                const requirementsMet = 
-                    /.{8,}/.test(password) &&
-                    /[A-Z]/.test(password) &&
-                    /[a-z]/.test(password) &&
-                    /[0-9]/.test(password) &&
-                    /[^A-Za-z0-9]/.test(password);
-
-                if (!requirementsMet) {
-                    e.preventDefault();
-                    alert('New password does not meet all security requirements.');
-                    return;
-                }
-
-                if (password !== document.getElementById('confirm_password').value) {
-                    e.preventDefault();
-                    alert('Passwords do not match.');
-                }
-            });
-        }
     });
 </script>
 
-<?php include '../includes/mobile_nav_passenger.php'; ?>
+<?php include '../includes/mobile_nav_driver.php'; ?>
 </body></html>

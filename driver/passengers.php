@@ -95,7 +95,7 @@ include '../includes/header.php';
                 <input type="text" name="q" value="<?= htmlspecialchars($search) ?>"
                        placeholder="Search ticket code, name, or route..."
                        class="flex-1 outline-none text-slate-700 placeholder-slate-300 text-sm bg-transparent">
-                <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-blue-500 transition">Search</button>
+                <button type="submit" class="bg-amber-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-amber-500 transition">Search</button>
                 <?php if ($search): ?>
                 <a href="passengers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition">Clear</a>
                 <?php endif; ?>
@@ -121,11 +121,11 @@ include '../includes/header.php';
                 <tbody class="divide-y divide-slate-50">
                     <?php foreach ($passengers as $p): ?>
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="px-5 py-4 font-mono text-xs text-blue-600"><?= htmlspecialchars($p['ticket_code']) ?></td>
+                        <td class="px-5 py-4 font-mono text-xs text-amber-600"><?= htmlspecialchars($p['ticket_code']) ?></td>
                         <td class="px-5 py-4 font-semibold text-slate-800"><?= htmlspecialchars($p['passenger_name']) ?></td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 rounded-lg text-xs font-bold
-                                <?= match(strtolower($p['passenger_type'])) { 'regular' => 'bg-blue-100 text-blue-700', 'student' => 'bg-yellow-100 text-yellow-700', 'special' => 'bg-pink-100 text-pink-700', default => 'bg-slate-100 text-slate-600' } ?>">
+                                <?= match(strtolower($p['passenger_type'])) { 'regular' => 'bg-amber-100 text-blue-700', 'student' => 'bg-yellow-100 text-yellow-700', 'special' => 'bg-pink-100 text-pink-700', default => 'bg-slate-100 text-slate-600' } ?>">
                                 <?= ucfirst(htmlspecialchars($p['passenger_type'])) ?>
                             </span>
                         </td>
@@ -137,7 +137,7 @@ include '../includes/header.php';
                         <td class="px-5 py-4 font-black text-slate-800"><?= peso((float)$p['fare_amount']) ?></td>
                         <td class="px-5 py-4">
                             <span class="text-xs font-bold px-2 py-1 rounded-full
-                                <?= $p['status']==='validated' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-600' ?>">
+                                <?= $p['status']==='validated' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-600' ?>">
                                 <?= ucfirst($p['status']) ?>
                             </span>
                         </td>
@@ -169,7 +169,7 @@ include '../includes/header.php';
                 <?php endif; ?>
                 
                 <?php if ($page < $pages): ?>
-                <a href="?page=<?= $page+1 ?>&q=<?= urlencode($search) ?>" class="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                <a href="?page=<?= $page+1 ?>&q=<?= urlencode($search) ?>" class="px-5 py-2 rounded-xl bg-amber-600 text-white font-bold text-sm hover:bg-amber-500 transition shadow-lg shadow-amber-500/20 flex items-center gap-2">
                     Next <i class="ph ph-caret-right font-bold"></i>
                 </a>
                 <?php endif; ?>

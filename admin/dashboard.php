@@ -1,34 +1,42 @@
 <?php
 /**
- * admin/dashboard.php   — STEP 10
- * Admin dashboard: revenue cards, Chart.js graphs, stats, recent trips.
+ * admin/dashboard.php
+ * 
+ * ROLE: Admin Only
+ * PURPOSE: The main overview page for administrators. 
+ * It shows thermal-style revenue cards, real-time bus locations, 
+ * and interactive charts for financial monitoring.
  */
 $requiredRole = 'admin';
 $pageTitle    = 'Admin Dashboard';
 $currentPage  = 'dashboard.php';
 
-require_once '../config/db.php';
-require_once '../includes/auth_guard.php';
-require_once '../includes/functions.php';
+require_once '../config/db.php'; // Database connection
+require_once '../includes/auth_guard.php'; // Security: only logged-in admins allowed
+require_once '../includes/functions.php'; // Utility functions like peso() formatting
 
-// Revenue figures
+/**
+ * Helper function to query revenue based on a time condition.
+ * It joins the 'payments' and 'tickets' tables to get the total amount.
+ */
 function revQuery(PDO $pdo, string $where): float {
     return (float)$pdo->query("SELECT COALESCE(SUM(p.amount_paid),0) FROM payments p JOIN tickets t ON t.id=p.ticket_id WHERE $where")->fetchColumn();
 }
 
-$revToday  = revQuery($pdo, "DATE(p.paid_at) = CURDATE()");
-$revWeek   = revQuery($pdo, "YEARWEEK(p.paid_at) = YEARWEEK(NOW())");
-$revMonth  = revQuery($pdo, "MONTH(p.paid_at)=MONTH(NOW()) AND YEAR(p.paid_at)=YEAR(NOW())");
-$revAll    = revQuery($pdo, "1=1");
+// 1. CALCULATE REVENUE STATS
+$revToday  = revQuery($pdo, "DATE(p.paid_at) = CURDATE()"); // Today's money
+$revWeek   = revQuery($pdo, "YEARWEEK(p.paid_at) = YEARWEEK(NOW())"); // This week
+$revMonth  = revQuery($pdo, "MONTH(p.paid_at)=MONTH(NOW()) AND YEAR(p.paid_at)=YEAR(NOW())"); // This month
+$revAll    = revQuery($pdo, "1=1"); // Total revenue since the system started
 
-// Counts
+// 2. FETCH SYSTEM COUNTS (Active buses, drivers, etc.)
 $totalPassengers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='passenger'")->fetchColumn();
 $totalDrivers    = (int)$pdo->query("SELECT COUNT(*) FROM drivers WHERE is_active=1")->fetchColumn();
 $totalBuses      = (int)$pdo->query("SELECT COUNT(*) FROM buses WHERE is_active=1")->fetchColumn();
 $activeTrips     = (int)$pdo->query("SELECT COUNT(*) FROM trips WHERE status='active'")->fetchColumn();
 $totalTickets    = (int)$pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
 
-// Last 7 days revenue (for chart)
+// 3. CHART DATA: Fetch daily revenue for the last 7 days
 $chartStmt = $pdo->query(
     "SELECT DATE(paid_at) AS day, COALESCE(SUM(amount_paid),0) AS total
      FROM   payments
@@ -37,23 +45,26 @@ $chartStmt = $pdo->query(
      ORDER  BY day ASC"
 );
 $chartRaw  = $chartStmt->fetchAll();
+
+// Fill in missing days so the chart always shows 7 bars even if some days have 0 income
 $chartData = [];
 for ($i = 6; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
     $chartData[$d] = 0;
 }
 foreach ($chartRaw as $row) { $chartData[$row['day']] = (float)$row['total']; }
+
+// Prepare labels (e.g., "Mon Apr 21") and final values for Chart.js
 $chartLabels = array_map(fn($d) => date('D M j', strtotime($d)), array_keys($chartData));
 $chartValues = array_values($chartData);
 
-// Revenue per bus (Remitted vs Pending breakdown)
-// Revenue per bus (Today's Earnings + Total Pending Remittance)
+// 4. REMITTANCE MONITORING: Revenue per bus (Remitted vs Pending breakdown)
+// This query calculates how much money is still in the driver's hands (pending) vs. turned over (remitted).
 $buseRev = $pdo->query(
     "SELECT b.body_number, b.plate_number, d.full_name AS driver,
             COUNT(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.id END) AS tickets, 
             COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.fare_amount ELSE 0 END),0) AS total_revenue,
             COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND p.remitted = 1 THEN p.amount_paid ELSE 0 END), 0) AS remitted_revenue,
-            -- Pending revenue shows the absolute total unremitted (including previous days)
             COALESCE(SUM(CASE WHEN p.remitted IN (0, 2) THEN p.amount_paid ELSE 0 END), 0) AS pending_revenue
      FROM   buses b
      JOIN   drivers d ON d.id = b.driver_id
@@ -63,7 +74,7 @@ $buseRev = $pdo->query(
      GROUP  BY b.id ORDER BY total_revenue DESC"
 )->fetchAll();
 
-// Recent trips
+// 5. RECENT TRIPS: Get the most recent bus journeys to display in the table
 $recentTrips = $pdo->query(
     "SELECT tr.*, b.body_number, b.plate_number, d.full_name AS driver_name,
             s1.station_name AS start_name, s2.station_name AS end_name
@@ -75,8 +86,9 @@ $recentTrips = $pdo->query(
      ORDER  BY tr.started_at DESC LIMIT 8"
 )->fetchAll();
 
-include '../includes/header.php';
+include '../includes/header.php'; // HTML <head> and styling
 ?>
+
 <!-- Leaflet CSS for Maps -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -94,7 +106,7 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= date('l, F j, Y') ?></p>
             </div>
             <a href="reports.php"
-               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-blue-600/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-amber-600/30 transition active:scale-95">
                 <i class="ph ph-file-text text-xl"></i> Reports & Export
             </a>
         </div>
@@ -109,8 +121,8 @@ include '../includes/header.php';
             ] as [$label, $value, $icon, $color, $sub]): ?>
             <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-<?= $color ?>-100 flex items-center justify-center">
-                        <i class="ph <?= $icon ?> text-xl text-<?= $color ?>-600"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-<?= $color ?>-100 border border-<?= $color ?>-200 flex items-center justify-center shadow-inner">
+                        <i class="ph ph-fill <?= $icon ?> text-2xl text-<?= $color ?>-700"></i>
                     </div>
                     <span class="text-xs text-slate-400 font-medium"><?= $sub ?></span>
                 </div>
@@ -130,7 +142,7 @@ include '../includes/header.php';
                 ['Total Tickets',$totalTickets,    'ph-ticket',        'blue'],
             ] as [$label, $val, $icon, $color]): ?>
             <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-slate-100 flex items-center gap-3">
-                <i class="ph <?= $icon ?> text-xl text-<?= $color ?>-500"></i>
+                <i class="ph ph-fill <?= $icon ?> text-2xl text-<?= $color ?>-600"></i>
                 <div>
                     <p class="text-xl font-black text-slate-800"><?= number_format($val) ?></p>
                     <p class="text-slate-400 text-xs"><?= $label ?></p>
@@ -153,9 +165,9 @@ include '../includes/header.php';
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                 <h3 class="font-bold text-slate-700 mb-5 flex items-center justify-between">
                     <span class="flex items-center gap-2">
-                        <i class="ph ph-bus text-blue-600"></i> Today's Earnings per Bus
+                        <i class="ph ph-bus text-amber-600"></i> Today's Earnings per Bus
                     </span>
-                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest animate-pulse">Live Today</span>
+                    <span class="bg-amber-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest animate-pulse">Live Today</span>
                 </h3>
                 <div class="space-y-6">
                     <?php foreach ($buseRev as $b): 
@@ -213,7 +225,7 @@ include '../includes/header.php';
         <!-- Fleet Live Tracking Map -->
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-6">
             <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                <i class="ph ph-map-pin-line text-blue-600"></i> Live Fleet Tracking
+                <i class="ph ph-map-pin-line text-amber-600"></i> Live Fleet Tracking
             </h3>
             <div id="fleetMap" class="w-full h-[400px] rounded-2xl z-0"></div>
         </div>
@@ -222,9 +234,9 @@ include '../includes/header.php';
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-x-auto">
             <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                 <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                    <i class="ph ph-map-pin-line text-blue-600"></i> Recent Trips
+                    <i class="ph ph-map-pin-line text-amber-600"></i> Recent Trips
                 </h3>
-                <a href="trips.php" class="text-blue-500 text-sm font-semibold hover:underline">View all →</a>
+                <a href="trips.php" class="text-amber-500 text-sm font-semibold hover:underline">View all →</a>
             </div>
             <table class="w-full text-sm">
                 <thead class="bg-slate-50">
@@ -274,8 +286,8 @@ new Chart(document.getElementById('revenueChart'), {
         datasets: [{
             label: 'Revenue (₱)',
             data:  <?= json_encode($chartValues) ?>,
-            backgroundColor: 'rgba(16,185,129,0.15)',
-            borderColor:     'rgb(16,185,129)',
+            backgroundColor: 'rgba(6,182,212,0.15)',
+            borderColor:     'rgb(6,182,212)',
             borderWidth:     2,
             borderRadius:    8,
             fill:            true,
@@ -285,9 +297,9 @@ new Chart(document.getElementById('revenueChart'), {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' },
-                 ticks: { callback: v => '₱' + v.toLocaleString() } },
-            x: { grid: { display: false } }
+            y: { beginAtZero: true, grid: { color: 'rgba(15, 23, 42, 0.05)' },
+                 ticks: { color: 'rgba(15, 23, 42, 0.5)', font: { weight: 'bold' }, callback: v => '₱' + v.toLocaleString() } },
+            x: { grid: { display: false }, ticks: { color: 'rgba(15, 23, 42, 0.5)', font: { weight: 'bold' } } }
         }
     }
 });
@@ -302,7 +314,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 
 // Custom Bus Icons
 const busIconActive = L.divIcon({
-    html: '<div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
+    html: '<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
     className: 'custom-leaflet-icon',
     iconSize: [32, 32],
     iconAnchor: [16, 16]
@@ -361,7 +373,7 @@ function syncFleetMap() {
                         <p class="font-bold text-slate-800 text-sm">${bus.plate_number}</p>
                         <p class="text-xs text-slate-500 mb-2">${bus.driver_name || ''}</p>
                         <div class="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded">
-                            <i class="ph ph-gauge text-blue-500"></i>
+                            <i class="ph ph-gauge text-amber-500"></i>
                             <span>${speed} km/h</span>
                         </div>
                     </div>

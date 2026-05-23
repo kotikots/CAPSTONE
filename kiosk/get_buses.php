@@ -11,7 +11,8 @@ try {
     $buses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(['status' => 'success', 'buses' => $buses]);
+    exit;
 } catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    exit;
 }
-?>

@@ -18,6 +18,7 @@ $bus_id     = (int)($_GET['bus_id'] ?? 0);
 
 // ─── Determine trip direction ───────────────────────────────────────
 $direction = 'forward'; // default
+$trip = null;
 
 if ($bus_id > 0) {
     // Find the active trip for this bus
@@ -53,10 +54,10 @@ $stu = $matrix['Student/SR/PWD'] ?? ['base_km' => 4, 'base_fare' => 12, 'per_km_
 $spc = $matrix['Teacher/Nurse']  ?? ['base_km' => 4, 'base_fare' => 14, 'per_km_rate' => 1.8];
 
 // ─── Get stations based on direction ────────────────────────────────
-// Use the trip's start_km as reference if GPS position is at/near a terminal edge
 $reference_km = $current_km;
+$no_trip = ($trip === null || $trip === false);
 
-if (isset($trip) && $trip) {
+if (!$no_trip) {
     if ($direction === 'backward') {
         // If GPS km is at or below the endpoint, use the trip's start as reference instead
         // This handles: driver starts "Rizal→Cab" trip but kiosk GPS is still at Cabanatuan
@@ -71,17 +72,30 @@ if (isset($trip) && $trip) {
     }
 }
 
-if ($direction === 'backward') {
+// ─── Build directional station query ─────────────────────────────────
+if ($no_trip) {
+    // No active trip: show ALL stations so the kiosk still works
+    $stmt = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker ASC");
+    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} elseif ($direction === 'backward') {
     // Traveling Rizal → Cabanatuan: show stations with LOWER km markers
-    $sql = "SELECT * FROM stations WHERE km_marker < ? AND is_active = 1 ORDER BY km_marker DESC";
+    $stmt = $pdo->prepare("SELECT * FROM stations WHERE km_marker < ? AND is_active = 1 ORDER BY km_marker DESC");
+    $stmt->execute([$reference_km]);
+    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
     // Traveling Cabanatuan → Rizal: show stations with HIGHER km markers
-    $sql = "SELECT * FROM stations WHERE km_marker > ? AND is_active = 1 ORDER BY km_marker ASC";
+    $stmt = $pdo->prepare("SELECT * FROM stations WHERE km_marker > ? AND is_active = 1 ORDER BY km_marker ASC");
+    $stmt->execute([$reference_km]);
+    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$reference_km]);
-$stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ─── Fallback: if directional filter returned empty, show ALL active stations ───
+// This prevents a blank screen when GPS is at a terminal edge and trip data is stale
+if (empty($stations)) {
+    $fallback = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker ASC");
+    $stations = $fallback->fetchAll(PDO::FETCH_ASSOC);
+    $direction = 'all'; // signal to frontend (no direction filtering applied)
+}
 
 // ─── Calculate dynamic fare for each destination ────────────────────
 foreach ($stations as &$s) {
@@ -106,8 +120,9 @@ $originStmt->execute([$reference_km]);
 $originName = $originStmt->fetchColumn() ?: 'Current Location';
 
 echo json_encode([
-    'origin'   => $originName,
+    'origin'    => $originName,
     'direction' => $direction,
-    'stations' => $stations
+    'no_trip'   => $no_trip,
+    'stations'  => $stations
 ]);
-?>
+exit;

@@ -39,7 +39,7 @@
 
     <header class="bg-blue-600 p-6 shadow-xl text-white flex items-center justify-between">
         <div class="flex items-center gap-4 select-none tracking-tight" onclick="handleLogoClick()">
-            <i class="ph ph-bus text-4xl"></i>
+            <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-12 h-12 object-contain drop-shadow-lg">
             <h1 class="text-3xl font-black italic">PARE</h1>
         </div>
         <div class="bg-blue-700 px-6 py-2 rounded-2xl border border-blue-400/30">
@@ -148,7 +148,11 @@
 
             <!-- Step 2: Destination Selection -->
             <div id="step-2" class="w-full hidden">
-                <h2 class="text-4xl font-black mb-8 text-slate-800 text-center">Where are you going?</h2>
+                <h2 class="text-4xl font-black mb-4 text-slate-800 text-center">Where are you going?</h2>
+                <div id="origin-banner" class="flex items-center justify-center gap-2 mb-8">
+                    <span class="text-slate-400 text-sm font-semibold uppercase tracking-widest">Boarding from</span>
+                    <span id="origin-station-label" class="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-full uppercase tracking-wide">Detecting…</span>
+                </div>
                 <div id="dest-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
 
@@ -594,6 +598,11 @@
                     // Use the direction-aware origin from the backend
                     if (response.origin) {
                         currentLoc.name = response.origin;
+                    }
+                    // Show the origin station label on Step 2
+                    const originLabel = document.getElementById('origin-station-label');
+                    if (originLabel) {
+                        originLabel.textContent = currentLoc.name || 'Current Location';
                     }
 
                     const data = response.stations || response;

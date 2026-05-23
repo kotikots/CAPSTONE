@@ -52,7 +52,7 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= count($drivers) ?> active driver(s)</p>
             </div>
             <a href="add_driver.php" 
-               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-blue-600/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-600/30 transition active:scale-95">
                 <i class="ph ph-plus-circle text-xl"></i> Add New Driver
             </a>
         </div>
@@ -133,10 +133,16 @@ include '../includes/header.php';
                 <div class="flex items-center gap-2 pt-4 border-t border-slate-100">
                     <button id="toggle-btn-<?= $d['id'] ?>"
                             onclick="toggleDriverStatus(<?= $d['id'] ?>, <?= $d['is_active'] ? 0 : 1 ?>, '<?= addslashes($d['full_name']) ?>')" 
-                            class="w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all
+                            class="flex-1 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all
                                    <?= $d['is_active'] ? 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg' ?>">
                         <i id="icon-<?= $d['id'] ?>" class="ph <?= $d['is_active'] ? 'ph-power' : 'ph-check-circle' ?> text-lg"></i>
-                        <span id="text-<?= $d['id'] ?>"><?= $d['is_active'] ? 'Deactivate Account' : 'Activate Account' ?></span>
+                        <span id="text-<?= $d['id'] ?>"><?= $d['is_active'] ? 'Deactivate' : 'Activate' ?></span>
+                    </button>
+                    <!-- Remove Button -->
+                    <button onclick="removeAccount(<?= $d['id'] ?>, 'driver', '<?= addslashes($d['full_name']) ?>')"
+                            class="w-11 h-11 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shrink-0"
+                            title="Remove Account Permanently">
+                        <i class="ph ph-trash text-xl"></i>
                     </button>
                 </div>
             </div>
@@ -146,6 +152,38 @@ include '../includes/header.php';
 </div>
 
 <script>
+async function removeAccount(id, type, name) {
+    const isConfirmed = await window.showConfirm({
+        title: 'Remove Account Permanently?',
+        message: `Are you sure you want to delete ${name}? This action cannot be undone and will only succeed if the account has no historical trip data.`,
+        type: 'danger',
+        confirmText: 'Yes, Remove Permanently'
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+        const res = await fetch('api_delete_account.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, type })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            window.showToast('Account Removed', `${name} has been deleted from the system.`, 'success');
+            const card = document.getElementById(`card-${id}`);
+            card.style.transform = 'scale(0.9)';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+        } else {
+            window.showToast('Action Denied', data.message, 'error');
+        }
+    } catch (err) {
+        window.showToast('Network Error', 'Could not reach server.', 'error');
+    }
+}
+
 async function toggleDriverStatus(driverId, newState, name) {
     const verb = newState ? 'Activate' : 'Deactivate';
     

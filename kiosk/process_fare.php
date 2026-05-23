@@ -16,6 +16,4 @@ if ($distance <= 4) {
 } else {
     // Logic to look up the specific row in your Fare Matrix table
 }
-
-// Save to 'transactions' table for the Admin and Print
-?>
+

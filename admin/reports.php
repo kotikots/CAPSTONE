@@ -62,7 +62,7 @@ include '../includes/header.php';
             </div>
             <!-- Export button -->
             <a href="export_csv.php?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>"
-               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-blue-600/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-amber-600/30 transition active:scale-95">
                 <i class="ph ph-download-simple text-xl"></i> Export CSV
             </a>
         </div>
@@ -73,15 +73,15 @@ include '../includes/header.php';
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">From</label>
                 <input type="date" name="from" value="<?= htmlspecialchars($from) ?>"
                        max="<?= date('Y-m-d') ?>"
-                       class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                       class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">To</label>
                 <input type="date" name="to" value="<?= htmlspecialchars($to) ?>"
                        max="<?= date('Y-m-d') ?>"
-                       class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                       class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
             </div>
-            <button type="submit" class="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-blue-500 transition">Apply Filter</button>
+            <button type="submit" class="bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-amber-500 transition">Apply Filter</button>
             <div class="ml-auto text-right">
                 <p class="text-xs text-slate-400">Total Period Revenue</p>
                 <p class="text-2xl font-black text-emerald-700"><?= peso((float)$totalRev) ?></p>
@@ -93,7 +93,7 @@ include '../includes/header.php';
             <!-- Daily Revenue Chart -->
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                 <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <i class="ph ph-chart-line text-blue-600"></i> Daily Revenue
+                    <i class="ph ph-chart-line text-amber-600"></i> Daily Revenue
                 </h3>
                 <canvas id="dailyChart" height="120"></canvas>
             </div>

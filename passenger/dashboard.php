@@ -62,7 +62,7 @@ $recentRides = $ridesStmt->fetchAll();
 $discountType = $profile['discount_type'] ?? 'none';
 $discountLabels = [
     'none' => ['Regular', 'bg-slate-100 text-slate-600', 'ph-user'],
-    'student' => ['Student', 'bg-blue-100 text-blue-700', 'ph-graduation-cap'],
+    'student' => ['Student', 'bg-amber-100 text-blue-700', 'ph-graduation-cap'],
     'senior' => ['Senior Citizen', 'bg-amber-100 text-amber-700', 'ph-heart'],
     'pwd' => ['PWD', 'bg-purple-100 text-purple-700', 'ph-wheelchair'],
     'teacher' => ['Teacher', 'bg-emerald-100 text-emerald-700', 'ph-chalkboard-teacher'],
@@ -140,9 +140,9 @@ include '../includes/header.php';
             <div class="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                        <i class="ph ph-bus text-blue-600"></i> Live Fleet Status
+                        <i class="ph ph-bus text-amber-600"></i> Live Fleet Status
                     </h3>
-                    <a href="map.php" class="text-blue-600 text-xs font-bold hover:text-blue-800 flex items-center gap-1">
+                    <a href="map.php" class="text-amber-600 text-xs font-bold hover:text-amber-800 flex items-center gap-1">
                         <i class="ph ph-map-trifold"></i> View Map
                     </a>
                 </div>
@@ -200,7 +200,7 @@ include '../includes/header.php';
                 <div class="space-y-4">
                     <div>
                         <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">From</label>
-                        <select id="fare-from" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium">
+                        <select id="fare-from" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium">
                             <option value="">Select origin...</option>
                             <?php foreach ($stations as $s): ?>
                             <option value="<?= $s['km_marker'] ?>"><?= htmlspecialchars($s['station_name']) ?></option>
@@ -209,7 +209,7 @@ include '../includes/header.php';
                     </div>
                     <div>
                         <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">To</label>
-                        <select id="fare-to" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium">
+                        <select id="fare-to" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium">
                             <option value="">Select destination...</option>
                             <?php foreach ($stations as $s): ?>
                             <option value="<?= $s['km_marker'] ?>"><?= htmlspecialchars($s['station_name']) ?></option>
@@ -256,7 +256,7 @@ include '../includes/header.php';
                     <i class="ph ph-clock-counter-clockwise text-orange-500"></i> Recent Rides
                 </h3>
                 <?php if (count($recentRides) > 0): ?>
-                <a href="rides.php" class="text-blue-600 text-xs font-bold hover:text-blue-800 flex items-center gap-1">
+                <a href="rides.php" class="text-amber-600 text-xs font-bold hover:text-amber-800 flex items-center gap-1">
                     View All <i class="ph ph-arrow-right"></i>
                 </a>
                 <?php endif; ?>

@@ -1,1 +1,17 @@
-/.env
+# Dependencies
+/vendor
+
+# Sensitive config files
+/config/db.php
+.env
+.htaccess
+
+# Editor folders
+.vscode
+
+# OS junk files
+Thumbs.db
+Desktop.ini
+
+# Database folders
+mysql-8.4/

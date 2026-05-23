@@ -49,7 +49,7 @@ $pageTitle = 'Reset Password';
 include '../includes/header.php';
 ?>
 
-<div class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+<div class="min-h-screen flex items-center justify-center p-6">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl"></div>
@@ -88,29 +88,64 @@ include '../includes/header.php';
             </div>
             <?php endif; ?>
 
-            <form method="POST" class="space-y-4">
-                <div>
-                    <label class="block text-slate-700 text-sm font-semibold mb-1.5">New Password</label>
-                    <div class="relative">
-                        <input type="password" name="password" id="password" required minlength="8"
-                               placeholder="Min. 8 characters"
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
-                        <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
-                            <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
-                        </button>
+            <form method="POST" id="reset-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
+                    <!-- Left Side: Password Inputs -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-slate-700 text-sm font-semibold mb-1.5">New Password</label>
+                            <div class="relative">
+                                <input type="password" name="password" id="password" required minlength="8"
+                                       placeholder="Min. 8 characters"
+                                       class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                                <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" 
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                    <i id="eye-password" class="ph ph-eye-slash text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password</label>
+                            <div class="relative">
+                                <input type="password" name="confirm_password" id="confirm_password" required
+                                       placeholder="Repeat new password"
+                                       class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                                <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
+                                    <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-slate-700 text-sm font-semibold mb-1.5">Confirm Password</label>
-                    <div class="relative">
-                        <input type="password" name="confirm_password" id="confirm_password" required
-                               placeholder="Repeat new password"
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
-                        <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-confirm')" 
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition p-1">
-                            <i id="eye-confirm" class="ph ph-eye-slash text-xl"></i>
-                        </button>
+
+                    <!-- Right Side: Checklist -->
+                    <div class="md:pt-[26px]">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Password Combination Status</p>
+                            <div class="grid grid-cols-1 gap-y-2">
+                                <div id="req-length" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                    <i class="ph ph-circle text-[10px] icon"></i>
+                                    <span class="text-xs font-semibold">At least 8 characters</span>
+                                </div>
+                                <div id="req-upper" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                    <i class="ph ph-circle text-[10px] icon"></i>
+                                    <span class="text-xs font-semibold">Uppercase letter</span>
+                                </div>
+                                <div id="req-lower" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                    <i class="ph ph-circle text-[10px] icon"></i>
+                                    <span class="text-xs font-semibold">Lowercase letter</span>
+                                </div>
+                                <div id="req-number" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                    <i class="ph ph-circle text-[10px] icon"></i>
+                                    <span class="text-xs font-semibold">Number</span>
+                                </div>
+                                <div id="req-special" class="flex items-center gap-2 text-slate-400 transition-colors duration-300">
+                                    <i class="ph ph-circle text-[10px] icon"></i>
+                                    <span class="text-xs font-semibold">Special character</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <button type="submit"
@@ -148,6 +183,60 @@ include '../includes/header.php';
             input.type = 'password';
             icon.classList.replace('ph-eye', 'ph-eye-slash');
         }
+    }
+
+    // --- Password Strength Real-time Validation ---
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        const reqElements = {
+            length:  { regex: /.{8,}/,          el: document.getElementById('req-length') },
+            upper:   { regex: /[A-Z]/,          el: document.getElementById('req-upper') },
+            lower:   { regex: /[a-z]/,          el: document.getElementById('req-lower') },
+            number:  { regex: /[0-9]/,          el: document.getElementById('req-number') },
+            special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
+        };
+
+        passwordInput.addEventListener('input', () => {
+            const val = passwordInput.value;
+            Object.keys(reqElements).forEach(key => {
+                const req = reqElements[key];
+                const isMet = req.regex.test(val);
+                const icon = req.el.querySelector('.icon');
+                
+                if (isMet) {
+                    req.el.classList.remove('text-slate-400');
+                    req.el.classList.add('text-emerald-500');
+                    icon.classList.replace('ph-circle', 'ph-check-circle-fill');
+                } else {
+                    req.el.classList.remove('text-emerald-500');
+                    req.el.classList.add('text-slate-400');
+                    icon.classList.replace('ph-check-circle-fill', 'ph-circle');
+                }
+            });
+        });
+
+        // Form Submit check
+        document.getElementById('reset-form')?.addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const requirementsMet = 
+                /.{8,}/.test(password) &&
+                /[A-Z]/.test(password) &&
+                /[a-z]/.test(password) &&
+                /[0-9]/.test(password) &&
+                /[^A-Za-z0-9]/.test(password);
+
+            if (!requirementsMet) {
+                e.preventDefault();
+                alert('Your password does not meet all security requirements.');
+                return;
+            }
+
+            const cp = document.getElementById('confirm_password').value;
+            if (password !== cp) {
+                e.preventDefault();
+                alert('Passwords do not match.');
+            }
+        });
     }
 </script>
 </body></html>

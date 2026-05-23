@@ -14,6 +14,9 @@ $pageTitle = $pageTitle ?? 'PARE System';
     <meta name="description" content="PARE – Web-Based Passenger Monitoring and Fare System with Real-Time Bus Tracking">
     <title><?= htmlspecialchars($pageTitle) ?> | PARE System</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/PARE/assets/img/logo.png">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -31,13 +34,44 @@ $pageTitle = $pageTitle ?? 'PARE System';
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
+                        slate: {
+                            50:  'rgba(255, 255, 255, 0.02)',
+                            100: 'rgba(255, 255, 255, 0.04)',
+                            200: 'rgba(255, 255, 255, 0.08)',
+                            300: 'rgba(255, 255, 255, 0.15)',
+                            400: 'rgba(255, 255, 255, 0.4)',
+                            500: 'rgba(255, 255, 255, 0.6)',
+                            600: 'rgba(255, 255, 255, 0.8)',
+                            700: '#f8fafc',
+                            800: '#ffffff',
+                            900: 'rgba(0, 0, 0, 0.2)',
+                            950: 'rgba(0, 0, 0, 0.4)',
+                        },
                         brand: {
-                            50:  '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#2563eb',
-                            600: '#1d4ed8',
-                            700: '#1e40af',
-                            900: '#1e3a8a',
+                            50:  'rgba(14, 165, 233, 0.1)',
+                            100: 'rgba(14, 165, 233, 0.2)',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        accent: {
+                            50:  'rgba(6, 182, 212, 0.1)',
+                            100: 'rgba(6, 182, 212, 0.2)',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                            950: '#083344',
                         }
                     }
                 }
@@ -73,11 +107,166 @@ $pageTitle = $pageTitle ?? 'PARE System';
             }
         }
 
+        /* Hide browser-native show password/clear buttons (Edge/IE) */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+
         /* Hide Scrollbar helper */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
+        }
+
+        /* ========================================================
+           PREMIUM LIGHT GLASSMORPHISM (Sky Edition)
+           ======================================================== */
+        
+        /* 1. Dynamic Light Sky Blue Gradient Body */
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #bae6fd 100%) !important;
+            background-attachment: fixed !important;
+            color: #0f172a !important;
+        }
+
+        /* 2. Light Frosted Glass Cards */
+        main { background-color: transparent !important; }
+        .bg-white {
+            background-color: rgba(255, 255, 255, 0.45) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+            color: #0f172a !important;
+        }
+
+        /* 3. Text Color Fixes for Light Theme
+           Overrides the inverted Tailwind config to force text to be dark and readable
+           Applies to glass cards AND the main content area */
+        .bg-white [class*="text-slate-"], 
+        .bg-white [class*="text-white"], 
+        .bg-white .text-white,
+        main [class*="text-slate-"], 
+        main [class*="text-white"], 
+        main .text-white {
+            color: #0f172a !important;
+        }
+        .bg-white .text-slate-400, 
+        .bg-white .text-slate-500,
+        main .text-slate-400, 
+        main .text-slate-500 {
+            color: #475569 !important; /* Muted subtitle text */
+        }
+
+        /* Protect colored buttons so they keep white text */
+        .bg-white [class*="bg-blue-500"], .bg-white [class*="bg-blue-600"],
+        .bg-white [class*="bg-emerald-500"], .bg-white [class*="bg-emerald-600"],
+        .bg-white [class*="bg-orange-500"], .bg-white [class*="bg-orange-600"],
+        .bg-white [class*="bg-amber-500"], .bg-white [class*="bg-amber-600"],
+        .bg-white [class*="bg-red-500"], .bg-white [class*="bg-red-600"],
+        main [class*="bg-blue-500"], main [class*="bg-blue-600"],
+        main [class*="bg-emerald-500"], main [class*="bg-emerald-600"],
+        main [class*="bg-orange-500"], main [class*="bg-orange-600"],
+        main [class*="bg-amber-500"], main [class*="bg-amber-600"],
+        main [class*="bg-red-500"], main [class*="bg-red-600"],
+        main [class*="bg-slate-800"] {
+            color: #ffffff !important;
+        }
+        .bg-white [class*="bg-blue-500"] [class*="text-"], .bg-white [class*="bg-blue-600"] [class*="text-"],
+        .bg-white [class*="bg-emerald-500"] [class*="text-"], .bg-white [class*="bg-emerald-600"] [class*="text-"],
+        .bg-white [class*="bg-orange-500"] [class*="text-"], .bg-white [class*="bg-orange-600"] [class*="text-"],
+        .bg-white [class*="bg-amber-500"] [class*="text-"], .bg-white [class*="bg-amber-600"] [class*="text-"],
+        .bg-white [class*="bg-red-500"] [class*="text-"], .bg-white [class*="bg-red-600"] [class*="text-"],
+        main [class*="bg-blue-500"] [class*="text-"], main [class*="bg-blue-600"] [class*="text-"],
+        main [class*="bg-emerald-500"] [class*="text-"], main [class*="bg-emerald-600"] [class*="text-"],
+        main [class*="bg-orange-500"] [class*="text-"], main [class*="bg-orange-600"] [class*="text-"],
+        main [class*="bg-amber-500"] [class*="text-"], main [class*="bg-amber-600"] [class*="text-"],
+        main [class*="bg-red-500"] [class*="text-"], main [class*="bg-red-600"] [class*="text-"] {
+            color: #ffffff !important;
+        }
+
+        /* Prevent modals from becoming totally transparent */
+        #confirm-modal .bg-white {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid #ffffff !important;
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.15) !important;
+        }
+
+        /* 4. Soft Sky Blue Shadows */
+        .shadow-2xl, .shadow-xl, .shadow-lg, .shadow-md, .shadow {
+            box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.2) !important;
+        }
+
+        /* 5. Interactive Tactile Details */
+        button:active, a:active {
+            transform: scale(0.97) !important;
+            transition: transform 0.1s ease !important;
+        }
+        
+        /* 6. Clean Focus Rings & Inputs */
+        input, select, textarea {
+            background-color: rgba(255, 255, 255, 0.6) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(14, 165, 233, 0.2) !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border-color: #0ea5e9 !important;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2) !important;
+            outline: none !important;
+        }
+
+        /* 6.1 Fix Placeholder Colors */
+        ::placeholder {
+            color: #64748b !important;
+            opacity: 1 !important;
+        }
+        ::-ms-input-placeholder { color: #64748b !important; }
+        
+        /* Fix for Browser Autofill */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #f0f9ff inset !important;
+            -webkit-text-fill-color: #0f172a !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        option { background-color: #ffffff !important; color: #0f172a !important; }
+
+        /* 7. Leaflet Map Popups Light Theme */
+        .leaflet-popup-content-wrapper {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.15) !important;
+        }
+        .leaflet-popup-content-wrapper [class*="text-"] {
+            color: #0f172a !important;
+        }
+        .leaflet-popup-tip {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-top: none !important;
+            border-left: none !important;
+        }
+        .leaflet-popup-close-button {
+            color: rgba(15, 23, 42, 0.6) !important;
+        }
+        .leaflet-popup-close-button:hover {
+            color: #0f172a !important;
+        }
+
+        /* 8. Emphasize nested fields/boxes on light cards
+           (Overrides transparent slate backgrounds to give them visible boundaries) */
+        .bg-white .bg-slate-50, .bg-white .bg-slate-100 {
+            background-color: rgba(14, 165, 233, 0.06) !important; /* Subtle blue tint */
+            border-color: rgba(14, 165, 233, 0.15) !important;
         }
     </style>
 </head>

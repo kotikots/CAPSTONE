@@ -15,10 +15,10 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
     $_SESSION['bus_body'] = $_sidebarBus ?? '—';
 }
 ?>
-<aside class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
+<aside class="w-64 bg-gradient-to-b from-brand-900 to-brand-700 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
     <!-- Logo -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-white/10">
-        <i class="ph ph-bus-fill text-2xl text-blue-400"></i>
+        <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-10 h-10 object-contain drop-shadow-md">
         <div>
             <h1 class="text-xl font-black tracking-tight">PARE</h1>
             <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Driver Portal</p>
@@ -42,16 +42,17 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => '/PARE/driver/dashboard_v2.php',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
-            ['href' => '/PARE/driver/passengers.php', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
-            ['href' => '/PARE/driver/earnings.php',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
+            ['href' => '/PARE/driver/dashboard_v2',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
+            ['href' => '/PARE/driver/passengers', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
+            ['href' => '/PARE/driver/earnings',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
+            ['href' => '/PARE/driver/profile',    'icon' => 'ph-user-gear',       'label' => 'My Profile'],
         ];
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));
         ?>
         <a href="<?= $item['href'] ?>"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-xs
-                  <?= $active ? 'bg-blue-600/20 text-blue-300 shadow-inner' : 'text-slate-400 hover:bg-white/10 hover:text-white' ?>">
+                  <?= $active ? 'bg-white/20 text-white shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' ?>">
             <i class="ph <?= $item['icon'] ?> text-base w-5 text-center"></i>
             <?= $item['label'] ?>
         </a>

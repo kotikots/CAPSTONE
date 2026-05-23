@@ -95,21 +95,21 @@ include '../includes/header.php';
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                 <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2 shrink-0">
-                    <i class="ph ph-list-numbers text-blue-500"></i> Live Audit Feed
+                    <i class="ph ph-list-numbers text-amber-500"></i> Live Audit Feed
                 </h3>
                 
                 <form method="GET" class="flex w-full md:w-max gap-2">
                     <div class="relative w-full md:w-64">
                         <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search user, IP, or reason..." 
-                               class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm">
+                               class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm">
                         <?php if (!empty($search)): ?>
                         <a href="security.php" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors" title="Clear search">
                             <i class="ph ph-x text-[10px] font-black"></i>
                         </a>
                         <?php endif; ?>
                     </div>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95 whitespace-nowrap shrink-0">
+                    <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-amber-600/20 transition-all active:scale-95 whitespace-nowrap shrink-0">
                         Search
                     </button>
                 </form>
@@ -176,7 +176,7 @@ include '../includes/header.php';
                 
                 <div class="flex items-center gap-2">
                     <?php if ($page > 1): ?>
-                    <a href="?page=<?= $page - 1 ?>&search=<?= urlencode($search) ?>" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm cursor-pointer">Prev</a>
+                    <a href="?page=<?= $page - 1 ?>&search=<?= urlencode($search) ?>" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-amber-600 transition-colors shadow-sm cursor-pointer">Prev</a>
                     <?php else: ?>
                     <button disabled class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-400 opacity-50 cursor-not-allowed hidden md:block">Prev</button>
                     <?php endif; ?>
@@ -190,14 +190,14 @@ include '../includes/header.php';
                         ?>
                         <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>" 
                            class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition-all shadow-sm shrink-0 cursor-pointer
-                           <?= $i === $page ? 'bg-blue-600 text-white shadow-blue-600/30 ring-2 ring-blue-600/20' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-300' ?>">
+                           <?= $i === $page ? 'bg-amber-600 text-white shadow-amber-600/30 ring-2 ring-blue-600/20' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-300' ?>">
                             <?= $i ?>
                         </a>
                         <?php endfor; ?>
                     </div>
 
                     <?php if ($page < $totalPages): ?>
-                    <a href="?page=<?= $page + 1 ?>&search=<?= urlencode($search) ?>" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm cursor-pointer">Next</a>
+                    <a href="?page=<?= $page + 1 ?>&search=<?= urlencode($search) ?>" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-amber-600 transition-colors shadow-sm cursor-pointer">Next</a>
                     <?php else: ?>
                     <button disabled class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-400 opacity-50 cursor-not-allowed hidden md:block">Next</button>
                     <?php endif; ?>

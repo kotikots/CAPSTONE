@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif (!preg_match("/^[a-zA-Z\s]*$/", $fullName)) $errors[] = 'Full name can only contain letters and spaces.';
     if (empty($licenseNumber)) $errors[] = 'License number is required.';
     if (empty($contactNumber)) $errors[] = 'Contact number is required.';
+    if (empty($email))         $errors[] = 'Email address is required.';
     elseif (!preg_match('/^[0-9]{11}$/', $contactNumber)) $errors[] = 'Contact number must be exactly 11 digits.';
     if (strlen($password) < 8) $errors[] = 'Password must be at least 8 characters.';
     if (!preg_match('/[A-Z]/', $password)) $errors[] = 'Password must contain at least one uppercase letter.';
@@ -58,14 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Handle Image Upload
     $profilePic = null;
     if (empty($errors) && !empty($_FILES['profile_picture']['name'])) {
-        $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
-        $maxSize   = 5 * 1024 * 1024; // 5MB
+        $allowed   = ['jpg', 'jpeg', 'png'];
+        $maxSize   = 2 * 1024 * 1024; // 2MB
         $ext       = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
         
         if (!in_array($ext, $allowed)) {
-            $errors[] = 'Profile picture must be a JPG, PNG, or WebP.';
+            $errors[] = 'Profile picture must be a JPG or PNG image.';
         } elseif ($_FILES['profile_picture']['size'] > $maxSize) {
-            $errors[] = 'Profile picture must be smaller than 5MB.';
+            $errors[] = 'Profile picture must be smaller than 2MB.';
         } else {
             $uploadDir = __DIR__ . '/../assets/uploads/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -181,8 +182,8 @@ include '../includes/header.php';
 
                         <!-- Email -->
                         <div class="md:col-span-2">
-                            <label class="block text-slate-700 text-sm font-bold mb-2">Email Address (Optional)</label>
-                            <input type="email" name="email" placeholder="driver@email.com"
+                            <label class="block text-slate-700 text-sm font-bold mb-2">Email Address</label>
+                            <input type="email" name="email" required placeholder="driver@email.com"
                                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400">
                         </div>
@@ -191,63 +192,84 @@ include '../includes/header.php';
                         <div class="md:col-span-2">
                             <label class="block text-slate-700 text-sm font-bold mb-2 uppercase tracking-wider">Profile Picture</label>
                             <div class="flex items-center gap-5">
-                                <div id="preview-container" class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-200 overflow-hidden">
+                                <div id="preview-container" class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-200 overflow-hidden shrink-0">
                                      <i class="ph ph-user text-2xl text-slate-300"></i>
                                      <img id="preview-img" class="hidden w-full h-full object-cover">
                                 </div>
-                                <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 transition">
-                                    Choose Photo
-                                    <input type="file" name="profile_picture" id="profile_picture" accept="image/*" class="hidden" onchange="previewImage(this)">
-                                </label>
+                                <div class="flex flex-col gap-2">
+                                    <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 transition inline-block text-center w-max">
+                                        Choose Photo
+                                        <input type="file" name="profile_picture" id="profile_picture" accept="image/jpeg, image/png" class="hidden" onchange="previewImage(this)">
+                                    </label>
+                                    <div class="bg-orange-100 border border-orange-300 text-orange-800 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm animate-[pulse_2s_ease-in-out_infinite] w-max">
+                                        <i class="ph-shield-check inline-block mr-1 text-orange-600"></i> JPG or PNG only, maximum 2MB
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Divider -->
                         <div class="md:col-span-2 border-t border-slate-100 my-2"></div>
 
-                        <!-- Password -->
-                        <div class="md:col-span-2">
-                            <label class="block text-slate-700 text-sm font-bold mb-2 text-orange-600">Initial Password</label>
-                            <div class="relative">
-                                <input type="password" name="password" id="password" required minlength="8" placeholder="••••••••"
-                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-400">
-                                <button type="button" onclick="togglePasswordVisibility('password', 'eye-icon-1')" 
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1">
-                                    <i id="eye-icon-1" class="ph ph-eye-slash text-xl"></i>
-                                </button>
-                            </div>
-                            <!-- Strength Bar -->
-                            <div class="mt-2">
-                                <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                                    <div id="strength-bar" class="h-full rounded-full transition-all duration-300 ease-out" style="width: 0%; background-color: #ef4444;"></div>
+                        <!-- Password Section Group -->
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
+                            <div class="space-y-4">
+                                <!-- Password -->
+                                <div>
+                                    <label class="block text-slate-700 text-sm font-bold mb-2 text-orange-600">Initial Password</label>
+                                    <div class="relative">
+                                        <input type="password" name="password" id="password" required minlength="8" placeholder="••••••••"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-400">
+                                        <button type="button" onclick="togglePasswordVisibility('password', 'eye-icon-1')" 
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1">
+                                            <i id="eye-icon-1" class="ph ph-eye-slash text-xl"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between mt-1.5">
-                                    <p id="strength-text" class="text-xs font-bold text-slate-400">Enter a password</p>
-                                    <span id="strength-icon" class="text-sm"></span>
-                                </div>
-                            </div>
-                            <!-- Requirements Checklist -->
-                            <div class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
-                                <p id="req-length" class="text-xs text-slate-400 flex items-center gap-1.5"><i class="ph ph-circle text-[10px]"></i> At least 8 characters</p>
-                                <p id="req-upper" class="text-xs text-slate-400 flex items-center gap-1.5"><i class="ph ph-circle text-[10px]"></i> Uppercase letter</p>
-                                <p id="req-lower" class="text-xs text-slate-400 flex items-center gap-1.5"><i class="ph ph-circle text-[10px]"></i> Lowercase letter</p>
-                                <p id="req-number" class="text-xs text-slate-400 flex items-center gap-1.5"><i class="ph ph-circle text-[10px]"></i> Number</p>
-                                <p id="req-special" class="text-xs text-slate-400 flex items-center gap-1.5"><i class="ph ph-circle text-[10px]"></i> Special character</p>
-                            </div>
-                        </div>
 
-                        <!-- Confirm -->
-                        <div class="md:col-span-2">
-                            <label class="block text-slate-700 text-sm font-bold mb-2">Confirm Password</label>
-                            <div class="relative">
-                                <input type="password" name="confirm_password" id="confirm_password" required placeholder="••••••••"
-                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-400">
-                                <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-icon-2')" 
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1">
-                                    <i id="eye-icon-2" class="ph ph-eye-slash text-xl"></i>
-                                </button>
+                                <!-- Confirm -->
+                                <div>
+                                    <label class="block text-slate-700 text-sm font-bold mb-2">Confirm Password</label>
+                                    <div class="relative">
+                                        <input type="password" name="confirm_password" id="confirm_password" required placeholder="••••••••"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-400">
+                                        <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-icon-2')" 
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1">
+                                            <i id="eye-icon-2" class="ph ph-eye-slash text-xl"></i>
+                                        </button>
+                                    </div>
+                                    <p id="match-hint" class="text-xs mt-1.5 font-bold hidden"></p>
+                                </div>
                             </div>
-                            <p id="match-hint" class="text-xs mt-1.5 font-bold hidden"></p>
+
+                            <!-- Right Side: Checklist -->
+                            <div class="md:pt-[32px]">
+                                <div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Password Combination Status</p>
+                                    <div class="grid grid-cols-1 gap-y-2">
+                                        <div id="req-length" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                            <i class="ph ph-circle text-[10px] icon"></i>
+                                            <span class="text-xs font-semibold">At least 8 characters</span>
+                                        </div>
+                                        <div id="req-upper" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                            <i class="ph ph-circle text-[10px] icon"></i>
+                                            <span class="text-xs font-semibold">Uppercase letter</span>
+                                        </div>
+                                        <div id="req-lower" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                            <i class="ph ph-circle text-[10px] icon"></i>
+                                            <span class="text-xs font-semibold">Lowercase letter</span>
+                                        </div>
+                                        <div id="req-number" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                            <i class="ph ph-circle text-[10px] icon"></i>
+                                            <span class="text-xs font-semibold">Number</span>
+                                        </div>
+                                        <div id="req-special" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                            <i class="ph ph-circle text-[10px] icon"></i>
+                                            <span class="text-xs font-semibold">Special character</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -315,55 +337,35 @@ function togglePasswordVisibility(inputId, iconId) {
     }
 }
 
-// ─── Password Strength Meter ───
+// ─── Password Strength Checklist ───
 const passwordInput = document.getElementById('password');
 const confirmInput = document.getElementById('confirm_password');
-const strengthBar = document.getElementById('strength-bar');
-const strengthText = document.getElementById('strength-text');
-const strengthIcon = document.getElementById('strength-icon');
 
-const requirements = {
-    length:  { el: document.getElementById('req-length'),  test: pw => pw.length >= 8 },
-    upper:   { el: document.getElementById('req-upper'),   test: pw => /[A-Z]/.test(pw) },
-    lower:   { el: document.getElementById('req-lower'),   test: pw => /[a-z]/.test(pw) },
-    number:  { el: document.getElementById('req-number'),  test: pw => /[0-9]/.test(pw) },
-    special: { el: document.getElementById('req-special'), test: pw => /[^A-Za-z0-9]/.test(pw) },
+const reqElements = {
+    length:  { regex: /.{8,}/,          el: document.getElementById('req-length') },
+    upper:   { regex: /[A-Z]/,          el: document.getElementById('req-upper') },
+    lower:   { regex: /[a-z]/,          el: document.getElementById('req-lower') },
+    number:  { regex: /[0-9]/,          el: document.getElementById('req-number') },
+    special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
 };
 
-passwordInput.addEventListener('input', function() {
-    const pw = this.value;
-    let score = 0;
-
-    // Check each requirement
-    Object.values(requirements).forEach(req => {
-        const passed = req.test(pw);
-        if (passed) score++;
-        req.el.className = passed
-            ? 'text-xs text-green-600 flex items-center gap-1.5 font-bold'
-            : 'text-xs text-slate-400 flex items-center gap-1.5';
-        req.el.querySelector('i').className = passed
-            ? 'ph ph-check-circle text-[10px] text-green-500'
-            : 'ph ph-circle text-[10px]';
+passwordInput.addEventListener('input', () => {
+    const val = passwordInput.value;
+    Object.keys(reqElements).forEach(key => {
+        const req = reqElements[key];
+        const isMet = req.regex.test(val);
+        const icon = req.el.querySelector('.icon');
+        
+        if (isMet) {
+            req.el.classList.remove('text-slate-300');
+            req.el.classList.add('text-emerald-500');
+            icon.classList.replace('ph-circle', 'ph-check-circle-fill');
+        } else {
+            req.el.classList.remove('text-emerald-500');
+            req.el.classList.add('text-slate-300');
+            icon.classList.replace('ph-check-circle-fill', 'ph-circle');
+        }
     });
-
-    // Strength levels
-    const levels = [
-        { max: 0, width: '0%',   color: '#e2e8f0', text: 'Enter a password', icon: '' },
-        { max: 1, width: '20%',  color: '#ef4444', text: 'Very weak',        icon: '❌' },
-        { max: 2, width: '40%',  color: '#f97316', text: 'Weak',             icon: '❌' },
-        { max: 3, width: '60%',  color: '#eab308', text: 'Fair',             icon: '⚠️' },
-        { max: 4, width: '80%',  color: '#22c55e', text: 'Strong',           icon: '✅' },
-        { max: 5, width: '100%', color: '#16a34a', text: 'Very strong',      icon: '✅' },
-    ];
-
-    const level = pw.length === 0 ? levels[0] : levels[Math.min(score, 5)];
-    strengthBar.style.width = level.width;
-    strengthBar.style.backgroundColor = level.color;
-    strengthText.textContent = level.text;
-    strengthText.style.color = level.color;
-    strengthIcon.textContent = level.icon;
-
-    // Check confirm match
     checkMatch();
 });
 
@@ -383,6 +385,28 @@ function checkMatch() {
         hint.className = 'text-xs mt-1.5 font-bold text-red-500';
     }
 }
+
+// Form Submit check
+document.querySelector('#driver-form')?.addEventListener('submit', function(e) {
+    const password = passwordInput.value;
+    const requirementsMet = 
+        /.{8,}/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password);
+
+    if (!requirementsMet) {
+        e.preventDefault();
+        alert('Password does not meet all security requirements.');
+        return;
+    }
+
+    if (password !== confirmInput.value) {
+        e.preventDefault();
+        alert('Passwords do not match.');
+    }
+});
 </script>
 
 <script src="../assets/js/ph-address-selector.js"></script>

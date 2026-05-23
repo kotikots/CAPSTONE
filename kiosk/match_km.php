@@ -10,4 +10,4 @@ $sql = "SELECT station_name, km_marker,
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$lat, $lng, $lat]);
 echo json_encode($stmt->fetch());
-?>
+exit;

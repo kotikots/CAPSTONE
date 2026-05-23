@@ -47,7 +47,7 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= count($buses) ?> bus(es) in fleet</p>
             </div>
             <a href="add_bus.php" 
-               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95">
                 <i class="ph ph-plus-circle text-xl"></i> Add New Bus
             </a>
         </div>
@@ -68,8 +68,8 @@ include '../includes/header.php';
                     <tr class="hover:bg-slate-50 transition <?= $isInactive ? 'opacity-50' : '' ?>">
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl <?= $isInactive ? 'bg-red-100' : 'bg-blue-100' ?> flex items-center justify-center">
-                                    <i class="ph ph-bus <?= $isInactive ? 'text-red-400' : 'text-blue-600' ?>"></i>
+                                <div class="w-10 h-10 rounded-xl <?= $isInactive ? 'bg-red-100' : 'bg-amber-100' ?> flex items-center justify-center">
+                                    <i class="ph ph-bus <?= $isInactive ? 'text-red-400' : 'text-amber-600' ?>"></i>
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2">
@@ -120,8 +120,8 @@ include '../includes/header.php';
                                         <i class="ph <?= $isInactive ? 'ph-power' : 'ph-power' ?> font-bold"></i>
                                     </button>
                                 </form>
-                                <a href="edit_bus.php?id=<?= $b['id'] ?>" 
-                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition shadow-sm"
+                                <a href="edit_bus.php?id=<?= encryptId($b['id']) ?>" 
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-600 transition shadow-sm"
                                    title="Edit Bus">
                                     <i class="ph ph-pencil-simple font-bold"></i>
                                 </a>
