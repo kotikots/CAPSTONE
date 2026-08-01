@@ -197,7 +197,7 @@ include '../includes/header.php';
                             <option value="">Use Actual Device GPS (ISP/Hardware)</option>
                             <option value="16.1558,119.9806">Mock GPS: Alaminos, Pangasinan</option>
                             <option value="15.4859,120.9665">Mock GPS: Cabanatuan City</option>
-                            <option value="15.5771,121.0560">Mock GPS: Rizal, Nueva Ecija</option>
+                            <option value="15.70535405456752,121.0990126880924">Mock GPS: Rizal, Nueva Ecija</option>
                         </select>
                         <button onclick="setMockGps()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">Apply</button>
                     </div>

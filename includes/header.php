@@ -269,6 +269,44 @@ $pageTitle = $pageTitle ?? 'PARE System';
             border-color: rgba(14, 165, 233, 0.15) !important;
         }
     </style>
+
+    <script>
+        /**
+         * Back-Forward Cache (bfcache) Session Guard
+         * ─────────────────────────────────────────────────────────────────────
+         * Modern browsers cache a full snapshot of the page in memory and
+         * restore it instantly when the user presses the back/forward button
+         * (event.persisted = true). This bypasses the server entirely, so PHP
+         * session checks never run — meaning a logged-out user can press Back
+         * and see the previous authenticated page.
+         *
+         * This listener fires on every pageshow. When the page is restored
+         * from bfcache, it does a lightweight fetch to /PARE/auth/session_check.php.
+         * If the session is gone (logged out), the page is immediately
+         * replaced with the login page before the user can interact with it.
+         */
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                // Page was restored from bfcache — verify session is still alive
+                fetch('/PARE/auth/session_check.php', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data.loggedIn) {
+                        // Session is gone — replace history entry so back won't loop
+                        window.location.replace('/PARE/auth/login.php');
+                    }
+                })
+                .catch(function () {
+                    // On any network error, fall back to login for safety
+                    window.location.replace('/PARE/auth/login.php');
+                });
+            }
+        });
+    </script>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
 

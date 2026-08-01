@@ -9,8 +9,8 @@ try {
     // We target the terminal at KM 40 (the end of the linear route)
     $stmt = $pdo->prepare("
         UPDATE stations 
-        SET latitude = 15.7126, 
-            longitude = 121.1071
+        SET latitude = 15.70535405456752, 
+            longitude = 121.0990126880924
         WHERE is_terminal = 1 AND km_marker >= 39.0
     ");
     $stmt->execute();
