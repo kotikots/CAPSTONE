@@ -11,7 +11,7 @@ require_once '../config/db.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: /PARE/passenger/dashboard.php');
+    header('Location: ' . BASE_PATH . '/passenger/dashboard.php');
     exit;
 }
 
@@ -111,12 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- Insert if no errors ---
     if (empty($errors)) {
         $hashed = password_hash($password, PASSWORD_BCRYPT);
+        $isActive = ($discountType !== 'none') ? 0 : 1;
+        
         $stmt = $pdo->prepare("
             INSERT INTO users
                 (full_name, id_number, id_picture, address, region, province, city, barangay,
                  contact_number, emergency_contact_name, emergency_contact_number, emergency_contact_address,
-                 ec_region, ec_province, ec_city, ec_barangay, email, password, role, discount_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'passenger', ?)
+                 ec_region, ec_province, ec_city, ec_barangay, email, password, role, discount_type, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'passenger', ?, ?)
         ");
         $stmt->execute([
             $fullName, $idNumber, $picturePath, $address, $region, $province, $city, $barangay,
@@ -124,46 +126,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ecRegion, $ecProvince, $ecCity, $ecBarangay,
             ($email !== '' ? $email : null),
             $hashed,
-            $discountType
+            $discountType,
+            $isActive
         ]);
+        
+        // Indicate success, pass along isActive status
         $success = true;
+        $isPending = ($isActive === 0);
     }
 }
 ?>
 <?php $pageTitle = 'Create Account'; include '../includes/header.php'; ?>
 
 <style>
-/* ── Dark Neon Blue Theme ── */
+/* ── Clean Theme Overrides (Adopting Passenger Dashboard Colors) ── */
 body {
-    background: linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e3a8a 100%) !important;
-    color: #ffffff !important;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%) !important;
+    color: #0F172A !important;
 }
+
+/* Card Styling */
+.register-card {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 24px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+/* Base inputs */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
 select, textarea {
-    background-color: rgba(255,255,255,0.08) !important;
-    color: #ffffff !important;
-    border-color: rgba(255,255,255,0.15) !important;
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+    border: 1px solid #E2E8F0 !important;
 }
-input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3) !important; }
+input::placeholder, textarea::placeholder { color: #94A3B8 !important; }
 input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
-    background-color: rgba(255,255,255,0.12) !important;
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 3px rgba(56,189,248,0.2) !important;
+    background-color: #FFFFFF !important;
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
     outline: none !important;
 }
 input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
-    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 30px #F8FAFC inset !important;
+    -webkit-text-fill-color: #0F172A !important;
 }
-select option { background-color: #0f172a; color: #ffffff; }
-.text-slate-700, .text-slate-800 { color: rgba(255,255,255,0.85) !important; }
-.text-slate-500, .text-slate-400 { color: rgba(255,255,255,0.45) !important; }
-.border-slate-200, .border-slate-300 { border-color: rgba(255,255,255,0.12) !important; }
+select option { background-color: #FFFFFF; color: #0F172A; }
+
+/* Remap dark theme text classes to light theme text classes */
+.text-white, .text-slate-50, .text-slate-700, .text-slate-800 { color: #0F172A !important; }
+.text-white\/35, .text-white\/40, .text-white\/50, .text-white\/55, .text-slate-400, .text-slate-500 { color: #64748B !important; }
+.text-blue-200, .text-blue-300 { color: #64748B !important; }
+.text-blue-400 { color: #2563EB !important; }
+
+/* Special text colors for alerts/badges */
+.text-emerald-300, .text-emerald-400 { color: #059669 !important; }
+.text-amber-300, .text-amber-400 { color: #D97706 !important; }
+.text-red-300, .text-red-400 { color: #DC2626 !important; }
+
+/* Exception for Buttons and Badges */
+#step-circle-1, .bg-blue-500, .bg-blue-500:hover, #ocr-btn, #continue-btn {
+    color: #FFFFFF !important;
+}
+#ocr-btn, #continue-btn, .bg-blue-500 {
+    background: #2563EB !important;
+    background-image: none !important;
+    border: none !important;
+}
+#ocr-btn:hover, #continue-btn:hover, .bg-blue-500:hover {
+    background: #1D4ED8 !important;
+}
+
+/* Upload Dropzone Specifics */
+.border-dashed.border-white\/20 {
+    border-color: #CBD5E1 !important;
+    background: #F8FAFC !important;
+}
+.border-dashed.border-white\/20:hover {
+    border-color: #2563EB !important;
+    background: #EFF6FF !important;
+}
+.bg-blue-500\/15 { background: #EFF6FF !important; border-color: #BFDBFE !important; }
+.bg-blue-500\/20 { background: #F1F5F9 !important; border-color: #E2E8F0 !important; color: #64748B !important; }
+.bg-blue-500\/10 { background: #EFF6FF !important; border-color: #BFDBFE !important; }
+
+/* General Layout Elements */
+.bg-white\/5, .bg-white\/10 { background-color: #F8FAFC !important; }
+.bg-white\/3 { background-color: #FFFFFF !important; }
+.border-white\/10, .border-white\/20, .border-white\/15, .border-white\/30 { border-color: #E2E8F0 !important; border-width: 1px !important; }
+.bg-white\/15 { background-color: #E2E8F0 !important; }
+
+/* Validation error banners & Warnings */
+.bg-red-500\/15, .bg-red-500\/10 { background: #FEF2F2 !important; border-color: #FECACA !important; }
+.bg-amber-500\/10 { background: #FFE8D9 !important; border-color: #FFE8D9 !important; }
+.text-amber-400, .text-amber-200\/90 { color: #FE6B17 !important; font-weight: 600; }
 
 /* ── Locked field ── */
 .locked-field-box {
-    background: rgba(255,255,255,0.04);
-    border: 1.5px solid rgba(255,255,255,0.10);
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
     border-radius: 12px;
     padding: 12px 16px;
     display: flex;
@@ -172,12 +233,12 @@ select option { background-color: #0f172a; color: #ffffff; }
     cursor: not-allowed;
     user-select: none;
 }
-.locked-field-box .lock-icon { color: rgba(255,255,255,0.22); font-size: 13px; flex-shrink: 0; }
-.locked-field-box .field-value { color: #e2e8f0; font-weight: 700; font-size: 15px; flex: 1; }
+.locked-field-box .lock-icon { color: #94A3B8; font-size: 13px; flex-shrink: 0; }
+.locked-field-box .field-value { color: #0F172A; font-weight: 700; font-size: 15px; flex: 1; }
 .locked-field-box .locked-badge {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.10);
-    color: rgba(255,255,255,0.28);
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
     font-size: 9px; font-weight: 800;
     letter-spacing: 0.08em; text-transform: uppercase;
     padding: 2px 7px; border-radius: 999px; flex-shrink: 0;
@@ -188,18 +249,15 @@ select option { background-color: #0f172a; color: #ffffff; }
 
 <div class="min-h-screen flex items-center justify-center p-4 sm:p-6">
 
-    <!-- Bg blobs -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl"></div>
-    </div>
+    <!-- Bg blobs removed for clean theme -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none hidden"></div>
 
     <div class="relative w-full max-w-2xl">
 
         <!-- Logo -->
-        <div class="text-center mb-5">
-            <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-24 h-24 object-contain drop-shadow-2xl mx-auto mb-2">
-            <p class="text-blue-200 text-base">Create your passenger account</p>
+        <div class="text-center mb-5 mt-4">
+            <img src="<?= BASE_PATH ?>/assets/img/logo.png?v=2" alt="PARE Logo" class="w-24 h-24 object-contain drop-shadow-md mx-auto mb-2">
+            <h2 class="text-2xl font-black text-[#0F172A] tracking-tight">Create your passenger account</h2>
         </div>
 
         <?php if (!$success): ?>
@@ -222,7 +280,7 @@ select option { background-color: #0f172a; color: #ffffff; }
         <?php endif; ?>
 
         <!-- Card -->
-        <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6 sm:p-8">
+        <div class="register-card p-6 sm:p-8">
 
             <?php if ($success): ?>
             <!-- ── Success ── -->
@@ -231,7 +289,16 @@ select option { background-color: #0f172a; color: #ffffff; }
                     <i class="ph ph-check-circle text-5xl text-emerald-400"></i>
                 </div>
                 <h2 class="text-2xl font-black text-white mb-2">Account Created!</h2>
+                
+                <?php if (!empty($isPending) && $isPending): ?>
+                <div class="bg-amber-500/20 border border-amber-400/30 rounded-xl p-4 mb-6 inline-block">
+                    <p class="text-amber-900 text-sm font-bold">Your discount application is pending verification by the admin.</p>
+                    <p class="text-amber-800 text-xs mt-1">You will receive an email once your account is approved and ready to use.</p>
+                </div>
+                <?php else: ?>
                 <p class="text-blue-200 mb-8">You can now log in to book your rides.</p>
+                <?php endif; ?>
+                
                 <a href="login.php" class="inline-block bg-blue-500 hover:bg-blue-400 text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all">
                     Go to Login →
                 </a>
@@ -269,7 +336,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <!-- Dropzone -->
                     <label for="id_picture"
-                           class="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-white/20 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-500/10 transition-all group">
+                           class="relative flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-white/20 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-500/10 transition-all group">
                         <div id="upload-placeholder" class="flex flex-col items-center gap-2">
                             <div class="w-16 h-16 rounded-2xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center group-hover:bg-blue-500/25 transition-colors">
                                 <i class="ph ph-camera text-3xl text-blue-400 group-hover:text-blue-300 transition-colors"></i>
@@ -280,20 +347,24 @@ select option { background-color: #0f172a; color: #ffffff; }
                             </div>
                         </div>
                         <img id="upload-preview" src="" alt="Preview" class="hidden h-36 object-contain rounded-xl">
+                        <div id="upload-overlay" class="hidden absolute inset-0 bg-white/50 rounded-2xl flex-col items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <i class="ph ph-arrows-clockwise text-4xl text-[#1e3a5f] mb-2"></i>
+                            <span class="text-[#1e3a5f] font-black text-sm tracking-wide bg-white/80 px-3 py-1 rounded-full shadow-sm">Tap to Change Photo</span>
+                        </div>
                     </label>
                     <input type="file" name="id_picture" id="id_picture" accept="image/jpeg,image/png,image/webp" class="sr-only">
 
                     <!-- AI consent -->
-                    <div id="ai-consent-notice" class="hidden bg-indigo-500/10 border border-indigo-400/30 rounded-xl p-3 flex gap-2.5 items-start">
-                        <i class="ph ph-robot text-lg shrink-0 mt-0.5 text-indigo-400"></i>
-                        <p class="text-indigo-200 text-[11px] leading-relaxed">
-                            <span class="font-bold text-indigo-300">AI-Powered ID Scan</span> — Your photo will be sent securely to Mistral Pixtral AI to extract your details. It is not stored by Mistral.
+                    <div id="ai-consent-notice" class="hidden bg-blue-500/10 border border-blue-400/30 rounded-xl p-3 flex gap-2.5 items-start">
+                        <i class="ph ph-robot text-lg shrink-0 mt-0.5 text-blue-500"></i>
+                        <p class="text-blue-300 text-[11px] leading-relaxed">
+                            <span class="font-bold text-blue-400">AI-Powered ID Scan</span> — Your photo will be sent securely to Mistral Pixtral AI to extract your details. It is not stored by Mistral.
                         </p>
                     </div>
 
                     <!-- Scan button -->
                     <button type="button" id="ocr-btn" onclick="startMistralScan()"
-                            class="hidden w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2">
+                            class="hidden w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2">
                         <i class="ph ph-sparkle"></i> Scan ID with Mistral AI
                     </button>
 
@@ -308,7 +379,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <p class="text-center text-white/35 text-sm pt-1">
                         Already have an account?
-                        <a href="login.php" class="text-blue-300 font-semibold hover:text-white">Sign in here</a>
+                        <a href="login.php" class="underline font-black hover:opacity-80 transition-opacity" style="color: #2563EB !important;">Sign in here</a>
                     </p>
 
                 </div><!-- /step-panel-1 -->
@@ -378,7 +449,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <!-- ── Personal Info ── -->
                     <div class="border-t border-white/10 pt-4">
-                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4">
+                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4 ml-2">
                             <i class="ph ph-user"></i> Personal Information
                         </p>
                     </div>
@@ -413,7 +484,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <!-- ── Emergency Contact ── -->
                     <div class="border-t border-white/10 pt-4">
-                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4">
+                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4 ml-2">
                             <i class="ph ph-warning-circle"></i> Emergency Contact
                         </p>
                     </div>
@@ -457,7 +528,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <!-- ── Account Credentials ── -->
                     <div class="border-t border-white/10 pt-4">
-                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4">
+                        <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4 ml-2">
                             <i class="ph ph-envelope"></i> Account Credentials
                         </p>
                     </div>
@@ -480,7 +551,7 @@ select option { background-color: #0f172a; color: #ffffff; }
                                     <div class="relative">
                                         <input type="password" name="password" id="password"
                                                placeholder="Min. 8 characters" required minlength="8"
-                                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white text-sm">
+                                               class="w-full bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white">
                                         <button type="button" onclick="togglePw('password','eye-pw')"
                                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-blue-400 transition p-1">
                                             <i id="eye-pw" class="ph ph-eye-slash text-xl"></i>
@@ -500,10 +571,10 @@ select option { background-color: #0f172a; color: #ffffff; }
                                     </div>
                                 </div>
                             </div>
-                            <div class="md:h-full flex flex-col justify-end">
-                                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 mt-[26px]">
-                                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-3">Password Requirements</p>
-                                    <div class="grid gap-y-2">
+                            <div class="md:h-full flex flex-col justify-start">
+                                <div id="pw-req-box" class="p-3 bg-white/5 rounded-2xl border border-white/10 transition-all duration-300">
+                                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-2">Password Requirements</p>
+                                    <div class="grid gap-y-1">
                                         <div id="req-length"  class="flex items-center gap-2 text-slate-400 transition-colors duration-200"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">At least 8 characters</span></div>
                                         <div id="req-upper"   class="flex items-center gap-2 text-slate-400 transition-colors duration-200"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">Uppercase letter</span></div>
                                         <div id="req-lower"   class="flex items-center gap-2 text-slate-400 transition-colors duration-200"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">Lowercase letter</span></div>
@@ -516,13 +587,19 @@ select option { background-color: #0f172a; color: #ffffff; }
                     </div>
 
                     <!-- Privacy notice -->
-                    <div class="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-4 flex gap-3 text-blue-100">
-                        <i class="ph ph-shield-check text-2xl shrink-0 text-blue-400"></i>
-                        <div class="text-xs">
-                            <p class="font-bold">Data Privacy Notice</p>
-                            <p class="opacity-80 leading-relaxed mt-0.5">Your personal information is handled with care and used strictly for transportation services within the PARE system.</p>
+                    <label class="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-4 flex gap-3 text-slate-700 cursor-pointer hover:bg-blue-500/15 transition group">
+                        <div class="pt-0.5 shrink-0">
+                            <input type="checkbox" id="privacy_consent" name="privacy_consent" required
+                                   class="w-5 h-5 rounded border-blue-400/30 text-blue-500 focus:ring-blue-500 bg-white cursor-pointer mt-0.5">
                         </div>
-                    </div>
+                        <div class="text-xs">
+                            <p class="font-bold flex items-center gap-1.5">
+                                <i class="ph ph-shield-check text-base text-blue-400"></i>
+                                Data Privacy Notice (RA 10173)
+                            </p>
+                            <p class="opacity-80 leading-relaxed mt-0.5">I agree that my personal information will be handled with care and used strictly for transportation services within the PARE system in compliance with the Data Privacy Act of 2012.</p>
+                        </div>
+                    </label>
 
                     <!-- Back + Submit -->
                     <div class="flex gap-3 pt-1">
@@ -538,7 +615,7 @@ select option { background-color: #0f172a; color: #ffffff; }
 
                     <p class="text-center text-white/35 text-sm">
                         Already have an account?
-                        <a href="login.php" class="text-blue-300 font-semibold hover:text-white">Sign in here</a>
+                        <a href="login.php" class="underline font-black hover:opacity-80 transition-opacity" style="color: #2563EB !important;">Sign in here</a>
                     </p>
 
                 </div><!-- /step-panel-2 -->
@@ -618,8 +695,15 @@ document.getElementById('id_picture').addEventListener('change', function () {
         const prev = document.getElementById('upload-preview');
         prev.src = e.target.result;
         prev.classList.remove('hidden');
+        document.getElementById('upload-overlay').classList.remove('hidden'); // Reveal hover overlay
+        document.getElementById('upload-overlay').classList.add('flex');      // Use flex for overlay
+        
         document.getElementById('ai-consent-notice').classList.remove('hidden');
-        document.getElementById('ocr-btn').classList.remove('hidden');
+        const scanBtn = document.getElementById('ocr-btn');
+        scanBtn.classList.remove('hidden');
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = '<i class="ph ph-sparkle"></i> Scan ID with Mistral AI';
+        
         document.getElementById('ocr-status').classList.add('hidden');
         document.getElementById('ocr-status').innerHTML = '';
         document.getElementById('continue-btn').classList.add('hidden');
@@ -643,12 +727,12 @@ async function startMistralScan() {
     scanBtn.disabled = true;
     scanBtn.innerHTML = `<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>Mistral AI is reading your ID...</span>`;
     statusEl.classList.remove('hidden');
-    statusEl.innerHTML = `<div class="flex items-center gap-3 bg-indigo-500/10 border border-indigo-400/20 rounded-xl px-4 py-3 text-indigo-300 text-xs font-semibold animate-pulse"><i class="ph ph-robot text-base"></i>Analyzing your ID with Mistral Pixtral AI... please wait</div>`;
+    statusEl.innerHTML = `<div class="flex items-center gap-3 bg-blue-500/10 border border-blue-400/20 rounded-xl px-4 py-3 text-blue-400 text-xs font-semibold animate-pulse"><i class="ph ph-robot text-base"></i>Analyzing your ID with Mistral Pixtral AI... please wait</div>`;
 
     try {
         const base64   = await fileToBase64(file);
         const mimeType = file.type || 'image/jpeg';
-        const resp     = await fetch('/PARE/auth/api_mistral_ocr.php', {
+        const resp     = await fetch('<?= BASE_PATH ?>/auth/api_mistral_ocr.php', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_base64: base64, mime_type: mimeType })
         });
@@ -661,10 +745,10 @@ async function startMistralScan() {
         const cc = { high:'emerald', medium:'amber', low:'red' }[data.confidence]||'slate';
         const ci = { high:'✅', medium:'⚠️', low:'❌' }[data.confidence]||'❓';
         const cl = { high:'High Confidence', medium:'Medium Confidence', low:'Low Confidence' }[data.confidence]||'';
-        const itb = data.id_type ? `<span class="bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">${data.id_type}</span>` : '';
+        const itb = data.id_type ? `<span class="bg-blue-500/20 border border-blue-400/30 text-blue-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">${data.id_type}</span>` : '';
 
         statusEl.innerHTML = `
-            <div class="rounded-2xl overflow-hidden border border-emerald-400/30 shadow-lg">
+            <div class="rounded-2xl overflow-hidden border border-emerald-400/30 shadow-lg mb-3">
                 <div class="bg-emerald-500/15 px-4 py-3 flex items-center justify-between">
                     <div class="flex items-center gap-2"><i class="ph ph-sparkle text-emerald-400 text-lg"></i><span class="text-emerald-300 font-black text-sm">ID Scanned Successfully!</span></div>
                     <div class="flex items-center gap-1.5">${itb}<span class="bg-${cc}-500/20 border border-${cc}-400/30 text-${cc}-300 text-[10px] font-black px-2 py-0.5 rounded-full">${ci} ${cl}</span></div>
@@ -678,13 +762,20 @@ async function startMistralScan() {
                     <i class="ph ph-lock text-white/30 text-sm"></i>
                     <p class="text-white/40 text-[11px]">These details will be <strong>locked</strong> on the next step and cannot be changed.</p>
                 </div>
+            </div>
+            
+            <div class="bg-amber-500/10 px-4 py-3 flex items-start gap-2 rounded-xl border border-amber-500/20">
+                <i class="ph ph-warning-circle text-amber-400 text-base mt-0.5 shrink-0"></i>
+                <p class="text-amber-200/90 text-[11px] leading-tight">
+                    <strong>Is something wrong?</strong> If the AI misread your name or ID number, or if it failed to detect them properly, <strong>tap your ID photo above</strong> to upload a clearer or better-lit photo before continuing.
+                </p>
             </div>`;
 
         scanBtn.classList.add('hidden');
         document.getElementById('ai-consent-notice').classList.add('hidden');
         const cb = document.getElementById('continue-btn');
         cb.classList.remove('hidden');
-        cb.innerHTML = 'Continue <i class="ph ph-arrow-right"></i>';
+        cb.innerHTML = 'Looks Good, Continue <i class="ph ph-arrow-right"></i>';
 
     } catch (err) {
         console.error('Mistral scan error:', err);
@@ -708,10 +799,36 @@ async function startMistralScan() {
 
 function fileToBase64(file) {
     return new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload  = e => res(e.target.result.split(',')[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max = 1000;
+                
+                if (width > height && width > max) {
+                    height = Math.round(height * max / width);
+                    width = max;
+                } else if (height > max) {
+                    width = Math.round(width * max / height);
+                    height = max;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                res(dataUrl.split(',')[1]);
+            };
+            img.onerror = rej;
+            img.src = e.target.result;
+        };
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
     });
 }
 
@@ -744,13 +861,33 @@ const reqs = {
 };
 pwInput.addEventListener('input', () => {
     const v = pwInput.value;
+    let allMet = true;
     Object.values(reqs).forEach(({ re, el }) => {
         const met  = re.test(v);
-        const icon = el.querySelector('.icon');
-        el.classList.toggle('text-emerald-500', met);
-        el.classList.toggle('text-slate-400', !met);
-        icon.className = `ph ${met ? 'ph-check-circle-fill' : 'ph-circle'} text-[10px] icon`;
+        if (!met) allMet = false;
+        
+        // Hide the individual requirement if it's met
+        if (met) {
+            el.classList.add('hidden');
+        } else {
+            el.classList.remove('hidden');
+            // Reset styles for when it might become visible again before being met (though hidden makes these invisible anyway, good to keep in sync)
+            const icon = el.querySelector('.icon');
+            el.classList.remove('text-emerald-500');
+            el.classList.add('text-slate-400');
+            icon.className = 'ph ph-circle text-[10px] icon';
+        }
     });
+
+    // Hide the entire box if all requirements are met
+    const box = document.getElementById('pw-req-box');
+    if (box) {
+        if (allMet) {
+            box.classList.add('hidden');
+        } else {
+            box.classList.remove('hidden');
+        }
+    }
 });
 
 // ── Toggle password visibility ────────────────────────────────

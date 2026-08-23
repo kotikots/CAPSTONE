@@ -7,10 +7,13 @@ $currentPage = $currentPage ?? '';
 
 // Get discount type for badge display
 $_sidebarDiscount = null;
+$_sidebarAvatar = null;
 if (isset($pdo) && isset($_SESSION['user_id'])) {
-    $_sdStmt = $pdo->prepare("SELECT discount_type FROM users WHERE id = ? LIMIT 1");
+    $_sdStmt = $pdo->prepare("SELECT discount_type, id_picture FROM users WHERE id = ? LIMIT 1");
     $_sdStmt->execute([$_SESSION['user_id']]);
-    $_sidebarDiscount = $_sdStmt->fetchColumn() ?: 'none';
+    $_u = $_sdStmt->fetch();
+    $_sidebarDiscount = $_u['discount_type'] ?? 'none';
+    $_sidebarAvatar = $_u['id_picture'] ?? null;
 }
 $_discountIcons = [
     'student' => '🎓', 'senior' => '❤️', 'pwd' => '♿', 
@@ -18,21 +21,25 @@ $_discountIcons = [
 ];
 $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
 ?>
-<aside class="w-64 bg-gradient-to-b from-brand-900 to-brand-700 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
+<aside class="w-64 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0" style="background-color: #061A53;">
     <!-- Logo -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-white/10">
-        <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-10 h-10 object-contain drop-shadow-md">
+        <img src="<?= BASE_PATH ?>/assets/img/logo_white.png?v=1" alt="PARE Logo" class="w-auto h-8 object-contain drop-shadow-md">
         <div>
-            <h1 class="text-xl font-black tracking-tight">PARE</h1>
-            <p class="text-[10px] text-blue-200 font-medium uppercase tracking-wider">Passenger Portal</p>
+
+            <p class="text-[10px] text-blue-200 font-medium uppercase tracking-wider">Passenger's Portal</p>
         </div>
     </div>
 
     <!-- User Info -->
     <div class="px-6 py-3 border-b border-white/10 bg-white/5">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-blue-400/30 flex items-center justify-center">
-                <i class="ph ph-user-fill text-blue-200 text-lg"></i>
+            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center overflow-hidden shrink-0">
+                <?php if ($_sidebarAvatar): ?>
+                    <img src="<?= BASE_PATH ?>/<?= htmlspecialchars($_sidebarAvatar) ?>" alt="Avatar" class="w-full h-full object-cover">
+                <?php else: ?>
+                    <i class="ph-fill ph-user text-blue-200 text-lg"></i>
+                <?php endif; ?>
             </div>
             <div>
                 <p class="font-bold text-xs truncate w-32 leading-tight"><?= htmlspecialchars($_SESSION['full_name'] ?? 'Passenger') ?></p>
@@ -48,10 +55,10 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => '/PARE/passenger/dashboard', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
-            ['href' => '/PARE/passenger/map',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
-            ['href' => '/PARE/passenger/rides',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
-            ['href' => '/PARE/passenger/profile',   'icon' => 'ph-user-circle',            'label' => 'My Profile'],
+            ['href' => BASE_PATH . '/passenger/dashboard', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
+            ['href' => BASE_PATH . '/passenger/map',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
+            ['href' => BASE_PATH . '/passenger/rides',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
+            ['href' => BASE_PATH . '/passenger/profile',   'icon' => 'ph-user-circle',            'label' => 'My Profile'],
         ];
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));
@@ -67,7 +74,7 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
 
     <!-- Logout -->
     <div class="p-3 border-t border-white/10">
-        <a href="/PARE/auth/logout.php"
+        <a href="<?= BASE_PATH ?>/auth/logout.php"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-200 hover:bg-red-500/20 hover:text-red-300 text-xs font-bold transition-all">
             <i class="ph ph-sign-out text-base"></i>
             Logout

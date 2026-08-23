@@ -62,30 +62,30 @@ $recentRides = $ridesStmt->fetchAll();
 $discountType = $profile['discount_type'] ?? 'none';
 $discountLabels = [
     'none' => ['Regular', 'bg-slate-100 text-slate-600', 'ph-user'],
-    'student' => ['Student', 'bg-amber-100 text-blue-700', 'ph-graduation-cap'],
-    'senior' => ['Senior Citizen', 'bg-amber-100 text-amber-700', 'ph-heart'],
-    'pwd' => ['PWD', 'bg-purple-100 text-purple-700', 'ph-wheelchair'],
-    'teacher' => ['Teacher', 'bg-emerald-100 text-emerald-700', 'ph-chalkboard-teacher'],
-    'nurse' => ['Nurse', 'bg-pink-100 text-pink-700', 'ph-first-aid'],
+    'student' => ['Student', 'bg-blue-100 text-blue-600', 'ph-graduation-cap'],
+    'senior' => ['Senior Citizen', 'bg-orange-100 text-orange-600', 'ph-heart'],
+    'pwd' => ['PWD', 'bg-purple-100 text-purple-600', 'ph-wheelchair'],
+    'teacher' => ['Teacher', 'bg-emerald-100 text-emerald-600', 'ph-chalkboard-teacher'],
+    'nurse' => ['Nurse', 'bg-pink-100 text-pink-600', 'ph-first-aid'],
 ];
 $dl = $discountLabels[$discountType] ?? $discountLabels['none'];
 
 include '../includes/header.php';
 ?>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-screen" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%);">
     <?php include '../includes/sidebar_passenger.php'; ?>
 
-    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
 
         <!-- Welcome + Stats Row -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Welcome back, <br class="md:hidden"><?= htmlspecialchars(explode(' ', $_SESSION['full_name'])[0]) ?>! 👋</h2>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Welcome back, <br class="md:hidden"><?= htmlspecialchars(explode(' ', $_SESSION['full_name'])[0]) ?>!</h2>
                 <p class="text-slate-500 text-sm mt-1"><?= date('l, F j, Y') ?></p>
             </div>
             <div class="flex items-center gap-2">
-                <span class="inline-flex items-center gap-1.5 <?= $dl[1] ?> text-xs font-bold px-4 py-2 rounded-full">
+                <span class="inline-flex items-center gap-1.5 bg-white text-blue-600 shadow-sm border border-blue-100 text-xs font-bold px-4 py-2 rounded-full">
                     <i class="ph <?= $dl[2] ?>"></i> <?= $dl[0] ?>
                 </span>
             </div>
@@ -94,13 +94,13 @@ include '../includes/header.php';
         <!-- Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <!-- Passenger ID -->
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center">
-                    <i class="ph ph-identification-card text-2xl text-indigo-600"></i>
+            <div class="bg-[#FFFFFF] rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-[#E0E7FF] flex items-center justify-center">
+                    <i class="ph ph-identification-card text-2xl text-[#4F46E5]"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Passenger ID</p>
-                    <p class="text-xl font-black text-slate-800 truncate"><?= htmlspecialchars($profile['id_number'] ?? 'N/A') ?></p>
+                    <p class="text-[#64748B] text-xs font-bold uppercase tracking-wider">Passenger ID</p>
+                    <p class="text-xl font-black text-[#0F172A] truncate"><?= htmlspecialchars($profile['id_number'] ?? 'N/A') ?></p>
                 </div>
             </div>
 
@@ -110,25 +110,25 @@ include '../includes/header.php';
             $dest = $lastTrip ? htmlspecialchars($lastTrip['dest_name']) : 'No rides yet';
             $date = $lastTrip ? date('M d', strtotime($lastTrip['issued_at'])) : 'New Account';
             ?>
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center">
-                    <i class="ph ph-map-pin text-2xl text-orange-600"></i>
+            <div class="bg-[#FFFFFF] rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-[#FFEDD5] flex items-center justify-center">
+                    <i class="ph ph-map-pin text-2xl text-[#EA580C]"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Last Trip</p>
-                    <p class="text-xl font-black text-slate-800 truncate"><?= $dest ?></p>
-                    <p class="text-[10px] text-slate-400 font-medium"><?= $date ?></p>
+                    <p class="text-[#64748B] text-xs font-bold uppercase tracking-wider">Last Trip</p>
+                    <p class="text-xl font-black text-[#0F172A] leading-tight"><?= $dest ?></p>
+                    <p class="text-[10px] text-[#64748B] font-medium"><?= $date ?></p>
                 </div>
             </div>
 
             <!-- Discount Type -->
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl <?= str_replace('text-', 'bg-', explode(' ', $dl[1])[0]) ?> flex items-center justify-center">
+            <div class="bg-[#FFFFFF] rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl <?= explode(' ', $dl[1])[0] ?> flex items-center justify-center">
                     <i class="ph <?= $dl[2] ?> text-2xl <?= explode(' ', $dl[1])[1] ?>"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Discount Type</p>
-                    <p class="text-xl font-black text-slate-800"><?= $dl[0] ?></p>
+                    <p class="text-[#64748B] text-xs font-bold uppercase tracking-wider">Discount Type</p>
+                    <p class="text-xl font-black text-[#0F172A]"><?= $dl[0] ?></p>
                 </div>
             </div>
         </div>
@@ -137,12 +137,12 @@ include '../includes/header.php';
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
 
             <!-- Live Fleet Status (3 col) -->
-            <div class="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+            <div class="lg:col-span-3 bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                        <i class="ph ph-bus text-amber-600"></i> Live Fleet Status
+                    <h3 class="font-bold text-[#0F172A] flex items-center gap-2">
+                        <i class="ph ph-bus text-[#2563EB]"></i> Live Fleet Status
                     </h3>
-                    <a href="map.php" class="text-amber-600 text-xs font-bold hover:text-amber-800 flex items-center gap-1">
+                    <a href="map.php" class="text-[#2563EB] text-xs font-bold hover:text-blue-800 flex items-center gap-1">
                         <i class="ph ph-map-trifold"></i> View Map
                     </a>
                 </div>
@@ -155,7 +155,7 @@ include '../includes/header.php';
                     </div>
                     <?php else: ?>
                     <?php foreach ($fleet as $b): ?>
-                    <div class="flex items-center gap-4 p-4 rounded-2xl border <?= $b['trip_id'] ? 'border-green-200 bg-green-50/50' : 'border-slate-100 bg-slate-50/50' ?> transition hover:shadow-sm">
+                    <div class="flex items-center gap-4 p-4 rounded-2xl border <?= $b['trip_id'] ? 'border-green-200 bg-green-50/50 shadow-sm' : 'border-slate-200 bg-slate-100 shadow-sm' ?> transition hover:shadow-md">
                         <div class="w-12 h-12 rounded-xl <?= $b['trip_id'] ? 'bg-green-100' : 'bg-slate-200' ?> flex items-center justify-center shrink-0">
                             <i class="ph ph-bus text-xl <?= $b['trip_id'] ? 'text-green-600' : 'text-slate-400' ?>"></i>
                         </div>
@@ -192,15 +192,15 @@ include '../includes/header.php';
             </div>
 
             <!-- Fare Calculator (2 col) -->
-            <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                    <i class="ph ph-calculator text-emerald-600"></i> Fare Calculator
+            <div class="lg:col-span-2 bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                <h3 class="font-bold text-[#0F172A] mb-5 flex items-center gap-2">
+                    <i class="ph ph-calculator text-[#2563EB]"></i> Fare Calculator
                 </h3>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">From</label>
-                        <select id="fare-from" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium">
+                        <label class="block text-[#64748B] text-xs font-bold mb-1.5 uppercase tracking-wider">From</label>
+                        <select id="fare-from" class="w-full bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-sm font-medium">
                             <option value="">Select origin...</option>
                             <?php foreach ($stations as $s): ?>
                             <option value="<?= $s['km_marker'] ?>"><?= htmlspecialchars($s['station_name']) ?></option>
@@ -208,8 +208,8 @@ include '../includes/header.php';
                         </select>
                     </div>
                     <div>
-                        <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">To</label>
-                        <select id="fare-to" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium">
+                        <label class="block text-[#64748B] text-xs font-bold mb-1.5 uppercase tracking-wider">To</label>
+                        <select id="fare-to" class="w-full bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-sm font-medium">
                             <option value="">Select destination...</option>
                             <?php foreach ($stations as $s): ?>
                             <option value="<?= $s['km_marker'] ?>"><?= htmlspecialchars($s['station_name']) ?></option>
@@ -219,38 +219,40 @@ include '../includes/header.php';
 
                     <!-- Result -->
                     <div id="fare-result" class="hidden">
-                        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white">
+                        <div class="rounded-2xl p-5 text-white shadow-lg" style="background-color: #061A53;">
                             <p class="text-xs font-bold uppercase tracking-wider text-blue-200 mb-3">Estimated Fare</p>
                             <div class="space-y-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-blue-100 flex items-center gap-1.5"><i class="ph ph-user"></i> Regular</span>
-                                    <span id="fare-regular" class="text-xl font-black">—</span>
+                                    <span id="fare-regular" class="text-xl font-black" style="color: #ffffff !important;">—</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-blue-100 flex items-center gap-1.5"><i class="ph ph-graduation-cap"></i> Student</span>
-                                    <span id="fare-student" class="text-xl font-black">—</span>
+                                    <span id="fare-student" class="text-xl font-black" style="color: #ffffff !important;">—</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-blue-100 flex items-center gap-1.5"><i class="ph ph-heart"></i> Special</span>
-                                    <span id="fare-special" class="text-xl font-black">—</span>
+                                    <span id="fare-special" class="text-xl font-black" style="color: #ffffff !important;">—</span>
                                 </div>
                             </div>
                             <div class="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-blue-200">
-                                <span><i class="ph ph-path"></i> Distance: <span id="fare-distance" class="font-bold text-white">—</span></span>
+                                <span><i class="ph ph-path"></i> Distance: <span id="fare-distance" class="font-bold" style="color: #ffffff !important;">—</span></span>
                             </div>
                         </div>
                     </div>
 
-                    <div id="fare-empty" class="text-center py-6 text-slate-400">
-                        <i class="ph ph-calculator text-4xl mb-2 block"></i>
-                        <p class="text-xs">Select stations to calculate fare</p>
+                    <div id="fare-empty" class="text-center py-6 text-[#64748B] flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-xl bg-[#DBEAFE] flex items-center justify-center mb-3">
+                            <i class="ph ph-calculator text-2xl text-[#2563EB]"></i>
+                        </div>
+                        <p class="text-[11px] font-medium">Select stations to calculate fare</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Recent Rides -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+        <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
             <div class="flex items-center justify-between mb-5">
                 <h3 class="font-bold text-slate-700 flex items-center gap-2">
                     <i class="ph ph-clock-counter-clockwise text-orange-500"></i> Recent Rides

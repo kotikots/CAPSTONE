@@ -15,7 +15,7 @@ $pageTitle = $pageTitle ?? 'PARE System';
     <title><?= htmlspecialchars($pageTitle) ?> | PARE System</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/PARE/assets/img/logo.png">
+    <link rel="icon" type="image/png" href="/assets/img/logo.png?v=2">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -126,7 +126,7 @@ $pageTitle = $pageTitle ?? 'PARE System';
         
         /* 1. Dynamic Light Sky Blue Gradient Body */
         body {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #bae6fd 100%) !important;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%) !important;
             background-attachment: fixed !important;
             color: #0f172a !important;
         }
@@ -210,6 +210,8 @@ $pageTitle = $pageTitle ?? 'PARE System';
             background-color: rgba(255, 255, 255, 0.6) !important;
             color: #0f172a !important;
             border: 1px solid rgba(14, 165, 233, 0.2) !important;
+            user-select: auto !important;
+            cursor: auto !important;
         }
         input:focus, select:focus, textarea:focus {
             background-color: rgba(255, 255, 255, 0.9) !important;
@@ -281,14 +283,14 @@ $pageTitle = $pageTitle ?? 'PARE System';
          * and see the previous authenticated page.
          *
          * This listener fires on every pageshow. When the page is restored
-         * from bfcache, it does a lightweight fetch to /PARE/auth/session_check.php.
+         * from bfcache, it does a lightweight fetch to /auth/session_check.php.
          * If the session is gone (logged out), the page is immediately
          * replaced with the login page before the user can interact with it.
          */
         window.addEventListener('pageshow', function (event) {
             if (event.persisted) {
                 // Page was restored from bfcache — verify session is still alive
-                fetch('/PARE/auth/session_check.php', {
+                fetch('/auth/session_check.php', {
                     method: 'GET',
                     credentials: 'same-origin',
                     cache: 'no-store'
@@ -297,18 +299,18 @@ $pageTitle = $pageTitle ?? 'PARE System';
                 .then(function (data) {
                     if (!data.loggedIn) {
                         // Session is gone — replace history entry so back won't loop
-                        window.location.replace('/PARE/auth/login.php');
+                        window.location.replace('/auth/login.php');
                     }
                 })
                 .catch(function () {
                     // On any network error, fall back to login for safety
-                    window.location.replace('/PARE/auth/login.php');
+                    window.location.replace('/auth/login.php');
                 });
             }
         });
     </script>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen select-none cursor-default">
 
     <!-- Global Toast Container -->
     <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>

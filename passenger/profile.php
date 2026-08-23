@@ -73,7 +73,7 @@ $stats = $statsStmt->fetch();
 
 $discountLabels = [
     'none' => ['Regular Passenger', 'bg-slate-100 text-slate-600', 'ph-user'],
-    'student' => ['Student Discount', 'bg-amber-100 text-blue-700', 'ph-graduation-cap'],
+    'student' => ['Student Discount', 'bg-[#DBEAFE] text-[#0F172A]', 'ph-graduation-cap'],
     'senior' => ['Senior Citizen', 'bg-amber-100 text-amber-700', 'ph-heart'],
     'pwd' => ['PWD Discount', 'bg-purple-100 text-purple-700', 'ph-wheelchair'],
     'teacher' => ['Teacher Discount', 'bg-emerald-100 text-emerald-700', 'ph-chalkboard-teacher'],
@@ -93,11 +93,11 @@ include '../includes/header.php';
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_passenger.php'; ?>
 
-    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
 
         <div class="mb-8">
-            <h2 class="text-2xl font-black text-slate-800 tracking-tight">My Profile</h2>
-            <p class="text-slate-500 text-sm mt-1">Manage your account information</p>
+            <h2 class="text-2xl font-black text-[#0F172A] tracking-tight">My Profile</h2>
+            <p class="text-[#64748B] text-sm mt-1">Manage your account information</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -105,32 +105,32 @@ include '../includes/header.php';
             <!-- LEFT: Profile Card -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- Avatar + Name -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 text-center">
-                    <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-amber-100 flex items-center justify-center border-4 border-blue-200">
+                <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6 text-center">
+                    <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-amber-100 flex items-center justify-center border-4 border-[#BFDBFE]">
                         <?php if ($p['id_picture']): ?>
-                        <img src="/PARE/<?= htmlspecialchars($p['id_picture']) ?>" class="w-full h-full object-cover">
+                        <img src="<?= BASE_PATH ?>/<?= htmlspecialchars($p['id_picture']) ?>" class="w-full h-full object-cover">
                         <?php else: ?>
                         <i class="ph ph-user text-4xl text-amber-400"></i>
                         <?php endif; ?>
                     </div>
-                    <h3 class="text-xl font-black text-slate-800"><?= htmlspecialchars($p['full_name']) ?></h3>
-                    <p class="text-slate-400 text-sm mt-1">ID: <?= htmlspecialchars($p['id_number']) ?></p>
+                    <h3 class="text-xl font-black text-[#0F172A]"><?= htmlspecialchars($p['full_name']) ?></h3>
+                    <p class="text-[#64748B] text-sm mt-1">ID: <?= htmlspecialchars($p['id_number']) ?></p>
                     <div class="mt-3">
                         <span class="inline-flex items-center gap-1.5 <?= $dl[1] ?> text-xs font-bold px-4 py-2 rounded-full">
                             <i class="ph <?= $dl[2] ?>"></i> <?= $dl[0] ?>
                         </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-100">
+                    <div class="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-[#E2E8F0]">
                         <div>
-                            <p class="text-2xl font-black text-slate-800"><?= number_format((int)$stats['rides']) ?></p>
-                            <p class="text-xs text-slate-400">Total Rides</p>
+                            <p class="text-2xl font-black text-[#0F172A]"><?= number_format((int)$stats['rides']) ?></p>
+                            <p class="text-xs text-[#64748B]">Total Rides</p>
                         </div>
                         <div>
-                            <p class="text-2xl font-black text-emerald-700"><?= peso((float)$stats['spent']) ?></p>
-                            <p class="text-xs text-slate-400">Total Spent</p>
+                            <p class="text-2xl font-black text-[#16A34A]"><?= peso((float)$stats['spent']) ?></p>
+                            <p class="text-xs text-[#64748B]">Total Spent</p>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-300 mt-4">Member since <?= date('M d, Y', strtotime($p['created_at'])) ?></p>
+                    <p class="text-xs text-[#94A3B8] mt-4">Member since <?= date('M d, Y', strtotime($p['created_at'])) ?></p>
                 </div>
             </div>
 
@@ -138,13 +138,13 @@ include '../includes/header.php';
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- Personal Info -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
                     <div class="flex items-center justify-between mb-5">
-                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <h3 class="font-bold text-[#0F172A] flex items-center gap-2">
                             <i class="ph ph-user-circle text-amber-600"></i> Personal Information
                         </h3>
                         <div id="toolbar-view">
-                            <button onclick="toggleEdit(true)" class="flex items-center gap-2 bg-amber-50 text-amber-600 hover:bg-amber-100 font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95">
+                            <button onclick="toggleEdit(true)" class="flex items-center gap-2 bg-[#DBEAFE] text-[#0F172A] hover:opacity-80 font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95">
                                 <i class="ph ph-pencil-simple"></i> Edit Profile
                             </button>
                         </div>
@@ -224,8 +224,8 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Emergency Contact -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                    <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
+                <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                    <h3 class="font-bold text-[#0F172A] mb-5 flex items-center gap-2">
                         <i class="ph ph-warning-circle text-orange-500"></i> Emergency Contact
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -293,8 +293,8 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Change Password -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                    <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
+                <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                    <h3 class="font-bold text-[#0F172A] mb-5 flex items-center gap-2">
                         <i class="ph ph-lock text-red-500"></i> Change Password
                     </h3>
 
@@ -325,7 +325,7 @@ include '../includes/header.php';
                                 </button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">New Password</label>
@@ -353,9 +353,9 @@ include '../includes/header.php';
                             
                             <!-- Password Requirements Checklist -->
                             <div class="md:pt-[24px]">
-                                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Password Combination Status</p>
-                                    <div class="grid grid-cols-1 gap-y-2">
+                                <div id="pw-req-box" class="p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-all duration-300">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Password Combination Status</p>
+                                    <div class="grid grid-cols-1 gap-y-1">
                                         <div id="req-length" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
                                             <i class="ph ph-circle text-[10px] icon"></i>
                                             <span class="text-xs font-semibold">At least 8 characters</span>
@@ -565,21 +565,31 @@ function togglePasswordVisibility(inputId, iconId) {
 
             newPwInput.addEventListener('input', () => {
                 const val = newPwInput.value;
+                let allMet = true;
                 Object.keys(reqElements).forEach(key => {
                     const req = reqElements[key];
                     const isMet = req.regex.test(val);
+                    if (!isMet) allMet = false;
                     const icon = req.el.querySelector('.icon');
                     
                     if (isMet) {
-                        req.el.classList.remove('text-slate-300');
-                        req.el.classList.add('text-emerald-500');
-                        icon.classList.replace('ph-circle', 'ph-check-circle-fill');
+                        req.el.classList.add('hidden');
                     } else {
+                        req.el.classList.remove('hidden');
                         req.el.classList.remove('text-emerald-500');
                         req.el.classList.add('text-slate-300');
                         icon.classList.replace('ph-check-circle-fill', 'ph-circle');
                     }
                 });
+                
+                const box = document.getElementById('pw-req-box');
+                if (box) {
+                    if (allMet) {
+                        box.classList.add('hidden');
+                    } else {
+                        box.classList.remove('hidden');
+                    }
+                }
             });
 
             // Form submission check

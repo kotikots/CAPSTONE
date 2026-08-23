@@ -154,6 +154,9 @@ include '../includes/header.php';
             
         </div>
     </main>
+</div>
+
+<?php include '../includes/mobile_nav_admin.php'; ?>
 
 </body>
 </html>

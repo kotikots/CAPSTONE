@@ -58,7 +58,7 @@ include '../includes/header.php';
                 <thead class="bg-slate-50 border-b border-slate-100">
                     <tr>
                         <?php foreach (['Bus','Model','Capacity','Driver','Total Trips','Tickets','Revenue','Status','Actions'] as $h): ?>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider"><?= $h ?></th>
+                        <th class="px-3 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider"><?= $h ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
@@ -66,7 +66,7 @@ include '../includes/header.php';
                     <?php foreach ($buses as $b): ?>
                     <?php $isInactive = !$b['is_active']; ?>
                     <tr class="hover:bg-slate-50 transition <?= $isInactive ? 'opacity-50' : '' ?>">
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl <?= $isInactive ? 'bg-red-100' : 'bg-amber-100' ?> flex items-center justify-center">
                                     <i class="ph ph-bus <?= $isInactive ? 'text-red-400' : 'text-amber-600' ?>"></i>
@@ -82,11 +82,11 @@ include '../includes/header.php';
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars($b['model'] ?? '—') ?></td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-3 py-4 text-slate-600"><?= htmlspecialchars($b['model'] ?? '—') ?></td>
+                        <td class="px-3 py-4 text-center">
                             <span class="bg-slate-100 text-slate-700 font-bold text-xs px-3 py-1 rounded-full"><?= $b['capacity'] ?> seats</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4">
                             <?php if ($b['driver_name']): ?>
                                 <p class="font-semibold text-slate-800"><?= htmlspecialchars($b['driver_name']) ?></p>
                                 <p class="text-slate-400 text-xs"><?= htmlspecialchars($b['contact_number']) ?></p>
@@ -94,10 +94,10 @@ include '../includes/header.php';
                                 <p class="text-slate-400 italic">Unassigned</p>
                             <?php endif; ?>
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-700"><?= number_format((int)$b['total_trips']) ?></td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-700"><?= number_format((int)$b['total_tickets']) ?></td>
-                        <td class="px-6 py-4 font-black text-emerald-700"><?= peso((float)$b['total_revenue']) ?></td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4 text-center font-semibold text-slate-700"><?= number_format((int)$b['total_trips']) ?></td>
+                        <td class="px-3 py-4 text-center font-semibold text-slate-700"><?= number_format((int)$b['total_tickets']) ?></td>
+                        <td class="px-3 py-4 font-black text-emerald-700"><?= peso((float)$b['total_revenue']) ?></td>
+                        <td class="px-3 py-4">
                             <?php if ($isInactive): ?>
                                 <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-600">🔴 Inactive</span>
                             <?php else: ?>
@@ -108,7 +108,7 @@ include '../includes/header.php';
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4">
                             <div class="flex items-center justify-end gap-2">
                                 <form method="POST" class="inline" onsubmit="return confirm('<?= $isInactive ? 'Reactivate' : 'Deactivate' ?> this bus?')">
                                     <input type="hidden" name="toggle_bus_id" value="<?= $b['id'] ?>">

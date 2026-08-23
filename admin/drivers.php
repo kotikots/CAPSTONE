@@ -20,7 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_driver_id'])) 
     exit;
 }
 
-$drivers = $pdo->query(
+$search = trim($_GET['q'] ?? '');
+$params = [];
+$where = "";
+if ($search) {
+    $where = "WHERE d.full_name LIKE ? OR d.license_number LIKE ?";
+    $params = ["%$search%", "%$search%"];
+}
+
+$stmt = $pdo->prepare(
     "SELECT d.*,
             b.body_number, b.plate_number, b.model,
             COUNT(DISTINCT tr.id)   AS total_trips,
@@ -30,12 +38,24 @@ $drivers = $pdo->query(
      LEFT JOIN buses   b  ON b.driver_id = d.id AND b.is_active = 1
      LEFT JOIN trips   tr ON tr.driver_id = d.id
      LEFT JOIN tickets t  ON t.trip_id   = tr.id
+     $where
      GROUP  BY d.id
      ORDER  BY total_revenue DESC"
-)->fetchAll();
+);
+$stmt->execute($params);
+$drivers = $stmt->fetchAll();
 
-// Fetch available buses for the selection modal
-$availableBuses = $pdo->query("SELECT id, body_number, plate_number, model FROM buses WHERE driver_id IS NULL AND is_active = 1 ORDER BY body_number ASC")->fetchAll();
+$allDriverNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM drivers ORDER BY full_name ASC");
+$allDriverNames = $allDriverNamesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Fetch all buses to allow reassignment from other drivers
+$allBuses = $pdo->query("
+    SELECT b.id, b.body_number, b.plate_number, b.model, b.driver_id, d.full_name as driver_name 
+    FROM buses b 
+    LEFT JOIN drivers d ON b.driver_id = d.id 
+    WHERE b.is_active = 1 
+    ORDER BY b.body_number ASC
+")->fetchAll();
 
 // Check for active trips to display warnings
 $activeTripDrivers = $pdo->query("SELECT DISTINCT driver_id FROM trips WHERE status = 'active'")->fetchAll(PDO::FETCH_COLUMN);
@@ -52,9 +72,30 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= count($drivers) ?> active driver(s)</p>
             </div>
             <a href="add_driver.php" 
-               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-600/30 transition active:scale-95">
+               class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95">
                 <i class="ph ph-plus-circle text-xl"></i> Add New Driver
             </a>
+        </div>
+
+        <!-- Search -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3 focus-within:ring-2 focus-within:ring-amber-100 transition-all">
+            <i class="ph ph-magnifying-glass text-slate-400 text-xl shrink-0"></i>
+            <form method="GET" class="flex-1 flex gap-3">
+                <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" list="driver-names" autocomplete="off"
+                       placeholder="Search by driver name or license..."
+                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2">
+                
+                <datalist id="driver-names">
+                    <?php foreach ($allDriverNames as $name): ?>
+                        <option value="<?= htmlspecialchars($name) ?>">
+                    <?php endforeach; ?>
+                </datalist>
+
+                <button type="submit" class="bg-amber-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-amber-500 transition">Search</button>
+                <?php if ($search): ?>
+                <a href="drivers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition flex items-center justify-center">Clear</a>
+                <?php endif; ?>
+            </form>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -64,7 +105,7 @@ include '../includes/header.php';
                 <div class="flex items-center gap-4 mb-5">
                     <div class="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
                         <?php if ($d['profile_picture']): ?>
-                        <img src="/PARE/<?= htmlspecialchars($d['profile_picture']) ?>" class="w-full h-full object-cover rounded-2xl">
+                        <img src="<?= BASE_PATH ?>/<?= htmlspecialchars($d['profile_picture']) ?>" class="w-full h-full object-cover rounded-2xl">
                         <?php else: ?>
                         <i class="ph ph-steering-wheel text-2xl text-orange-500"></i>
                         <?php endif; ?>
@@ -248,19 +289,19 @@ async function toggleDriverStatus(driverId, newState, name) {
 </div>
 
 <!-- Assign Bus Modal -->
-<div id="assignModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-orange-50/50">
+<div id="assignModal" class="fixed inset-0 bg-[#061A53]/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b border-[#E2E8F0] flex items-center justify-between bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9]">
             <div>
-                <h3 class="font-black text-slate-800 tracking-tight">Assign Vehicle</h3>
+                <h3 class="font-black text-slate-800 tracking-tight text-xl">Assign Vehicle</h3>
                 <p id="modalDriverName" class="text-orange-600 text-xs font-bold uppercase tracking-wider mt-0.5"></p>
             </div>
-            <button onclick="closeAssignModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
-                <i class="ph ph-x font-bold"></i>
+            <button onclick="closeAssignModal()" class="w-10 h-10 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#4C5C79] hover:text-[#0F172A] hover:bg-[#E8EEF8] transition">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
         
-        <form action="assign_bus_handler.php" method="POST" class="p-6 space-y-6">
+        <form action="assign_bus_handler.php" method="POST" class="p-6 space-y-6 bg-white">
             <input type="hidden" name="driver_id" id="modalDriverId">
             
             <div id="routeWarning" class="hidden bg-red-50 border border-red-100 p-4 rounded-2xl flex gap-3 text-red-800 mb-2">
@@ -270,9 +311,8 @@ async function toggleDriverStatus(driverId, newState, name) {
                     <p class="opacity-80">Reassigning during an active trip may cause data confusion. Proceed with caution.</p>
                 </div>
             </div>
-
             <div>
-                <label class="block text-slate-700 text-sm font-bold mb-3">Available Vehicles</label>
+                <label class="block text-slate-700 text-sm font-bold mb-3">Select Vehicle</label>
                 <div class="grid grid-cols-1 gap-3">
                     <!-- Unassign Option (if applicable) -->
                     <label id="unassignOption" class="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-orange-200 transition">
@@ -283,7 +323,7 @@ async function toggleDriverStatus(driverId, newState, name) {
                         </div>
                     </label>
 
-                    <?php foreach ($availableBuses as $bus): ?>
+                    <?php foreach ($allBuses as $bus): ?>
                     <label class="flex items-center gap-3 p-4 border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-orange-200 transition has-[:checked]:border-orange-600 has-[:checked]:bg-orange-50">
                         <input type="radio" name="bus_id" value="<?= $bus['id'] ?>" class="w-5 h-5 text-orange-600 focus:ring-orange-500 border-slate-300">
                         <div class="flex-1">
@@ -291,16 +331,22 @@ async function toggleDriverStatus(driverId, newState, name) {
                                 <p class="font-black text-slate-800 text-sm"><?= htmlspecialchars($bus['body_number']) ?></p>
                                 <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] text-slate-500 font-mono"><?= htmlspecialchars($bus['plate_number']) ?></span>
                             </div>
-                            <p class="text-slate-500 text-[10px] font-bold mt-0.5"><?= htmlspecialchars($bus['model'] ?? 'Standard Bus') ?></p>
+                            <div class="flex items-center justify-between mt-0.5">
+                                <p class="text-slate-500 text-[10px] font-bold"><?= htmlspecialchars($bus['model'] ?? 'Standard Bus') ?></p>
+                                <?php if ($bus['driver_id']): ?>
+                                    <span class="text-orange-600 text-[9px] font-black uppercase tracking-wider bg-orange-100 px-2 py-0.5 rounded-full">Occupied: <?= htmlspecialchars($bus['driver_name']) ?></span>
+                                <?php else: ?>
+                                    <span class="text-emerald-600 text-[9px] font-black uppercase tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full">Available</span>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </label>
                     <?php endforeach; ?>
 
-                    <?php if (empty($availableBuses)): ?>
+                    <?php if (empty($allBuses)): ?>
                         <div class="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <i class="ph ph-bus-slash text-3xl text-slate-300 mb-2"></i>
-                            <p class="text-slate-400 text-xs font-bold">No available buses in fleet.</p>
-                            <a href="add_bus.php" class="text-orange-600 text-[10px] font-black uppercase mt-2 inline-block">Register New Bus</a>
+                            <p class="text-slate-500 text-sm font-bold mb-1">No buses in fleet.</p>
+                            <a href="buses.php" class="text-orange-500 hover:text-orange-600 text-[10px] font-black uppercase tracking-widest">Register New Bus</a>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -317,6 +363,8 @@ async function toggleDriverStatus(driverId, newState, name) {
         </form>
     </div>
 </div>
+
+<?php include '../includes/mobile_nav_admin.php'; ?>
 
 <script>
 function openAssignModal(driverId, driverName, currentBus, isOnRoute) {
@@ -357,6 +405,22 @@ function closeAssignModal() {
 document.getElementById('assignModal').addEventListener('click', function(e) {
     if (e.target === this) closeAssignModal();
 });
+
+<?php if (isset($_GET['success']) && $_GET['success'] === 'assignment_updated'): ?>
+    window.showToast('Assignment Updated', 'The driver has been assigned to the selected vehicle successfully.', 'success');
+<?php endif; ?>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'already_assigned'): ?>
+    window.showToast('Assignment Failed', 'This vehicle is already assigned to another driver.', 'error');
+<?php endif; ?>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'unassign_active_trip'): ?>
+    window.showToast('Action Denied', 'Cannot unassign bus while the driver is on an active trip.', 'error');
+<?php endif; ?>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'unassign_unremitted'): ?>
+    window.showToast('Action Denied', 'Cannot unassign bus until the driver remits all collected cash.', 'error');
+<?php endif; ?>
 </script>
 
 </body></html>

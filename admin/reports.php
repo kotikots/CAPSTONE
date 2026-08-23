@@ -61,10 +61,10 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm">Revenue breakdown and driver performance</p>
             </div>
             <!-- Export button -->
-            <a href="export_csv.php?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>"
+            <button type="button" onclick="document.getElementById('export-modal').classList.remove('hidden')"
                class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow hover:shadow-amber-600/30 transition active:scale-95">
-                <i class="ph ph-download-simple text-xl"></i> Export CSV
-            </a>
+                <i class="ph ph-download-simple text-xl"></i> Export
+            </button>
         </div>
 
         <!-- Date Range Filter -->
@@ -164,6 +164,54 @@ include '../includes/header.php';
         </div>
     </main>
 </div>
+
+<!-- Export Modal -->
+<div id="export-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-slide-in">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                <i class="ph ph-export text-amber-500 text-xl"></i> Export Options
+            </h3>
+            <button onclick="document.getElementById('export-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <i class="ph ph-x font-bold"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <form method="GET" target="_blank" id="export-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">From</label>
+                    <input type="date" name="from" value="<?= htmlspecialchars($from) ?>" max="<?= date('Y-m-d') ?>" required
+                           class="w-full bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all font-medium text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">To</label>
+                    <input type="date" name="to" value="<?= htmlspecialchars($to) ?>" max="<?= date('Y-m-d') ?>" required
+                           class="w-full bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all font-medium text-slate-700">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button type="button" onclick="submitExport('export_csv.php')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
+                        <i class="ph ph-file-csv text-3xl mb-2 text-emerald-500"></i>
+                        <span class="font-bold text-sm text-center">Export<br>CSV</span>
+                    </button>
+                    <button type="button" onclick="submitExport('print_report.php')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
+                        <i class="ph ph-file-pdf text-3xl mb-2 text-rose-500"></i>
+                        <span class="font-bold text-sm text-center">Printable<br>PDF</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitExport(actionUrl) {
+    const form = document.getElementById('export-form');
+    form.action = actionUrl;
+    form.submit();
+    document.getElementById('export-modal').classList.add('hidden');
+}
+</script>
 
 <script>
 new Chart(document.getElementById('dailyChart'), {

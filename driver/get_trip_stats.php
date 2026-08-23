@@ -43,7 +43,7 @@ function getDistance($lat1, $lon1, $lat2, $lon2) {
 
 // 2. Get recent passengers with proximity and payment status
 $paxStmt = $pdo->prepare("
-    SELECT t.id, t.passenger_name, t.passenger_type, t.origin_name, t.dest_name, t.fare_amount, t.issued_at, t.status,
+    SELECT t.id, t.ticket_code, t.passenger_name, t.passenger_type, t.origin_name, t.dest_name, t.fare_amount, t.issued_at, t.status,
            s.latitude AS dest_lat, s.longitude AS dest_lng,
            (SELECT id FROM payments WHERE ticket_id = t.id LIMIT 1) as payment_id
     FROM   tickets t

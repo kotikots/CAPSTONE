@@ -10,15 +10,21 @@ require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
 require_once '../includes/functions.php';
 
-$filterDate = $_GET['date'] ?? '';
+$fromDate = $_GET['from'] ?? '';
+$toDate   = $_GET['to'] ?? '';
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 15;
 $offset  = ($page - 1) * $perPage;
 
-$where = '';
-if ($filterDate) {
-    $where = "WHERE DATE(tr.started_at) = " . $pdo->quote($filterDate);
+$whereClauses = [];
+if ($fromDate) {
+    $whereClauses[] = "DATE(tr.started_at) >= " . $pdo->quote($fromDate);
 }
+if ($toDate) {
+    $whereClauses[] = "DATE(tr.started_at) <= " . $pdo->quote($toDate);
+}
+$where = !empty($whereClauses) ? "WHERE " . implode(' AND ', $whereClauses) : "";
+
 $countStmt = $pdo->prepare("SELECT COUNT(*) FROM trips tr $where");
 $countStmt->execute();
 $total = (int)$countStmt->fetchColumn();
@@ -50,10 +56,12 @@ include '../includes/header.php';
                 <h2 class="text-2xl font-black text-slate-800 tracking-tight">Trip Logs</h2>
                 <p class="text-slate-500 text-sm"><?= number_format($total) ?> trips recorded</p>
             </div>
-            <form method="GET" class="flex items-center gap-2">
-                <input type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" max="<?= date('Y-m-d') ?>" class="border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <form method="GET" class="flex flex-wrap items-center gap-2">
+                <input type="<?= $fromDate ? 'date' : 'text' ?>" onfocus="(this.type='date')" onblur="(this.type=this.value?'date':'text')" placeholder="From Date" name="from" value="<?= htmlspecialchars($fromDate) ?>" max="<?= date('Y-m-d') ?>" class="border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white w-[140px] shrink-0">
+                <span class="text-slate-400 font-bold">-</span>
+                <input type="<?= $toDate ? 'date' : 'text' ?>" onfocus="(this.type='date')" onblur="(this.type=this.value?'date':'text')" placeholder="To Date" name="to" value="<?= htmlspecialchars($toDate) ?>" max="<?= date('Y-m-d') ?>" class="border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white w-[140px] shrink-0">
                 <button type="submit" class="bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-amber-500 transition">Filter</button>
-                <?php if ($filterDate): ?>
+                <?php if ($fromDate || $toDate): ?>
                 <a href="trips.php" class="text-slate-400 font-semibold px-3 py-2 rounded-xl text-sm hover:bg-slate-100">Clear</a>
                 <?php endif; ?>
             </form>
@@ -81,17 +89,13 @@ include '../includes/header.php';
                         <td class="px-5 py-4 text-center font-semibold text-slate-800 whitespace-nowrap"><?= $tr['passenger_count'] ?></td>
                         <td class="px-5 py-4 font-black text-emerald-700 whitespace-nowrap"><?= peso((float)$tr['total_revenue']) ?></td>
                         <td class="px-5 py-4 whitespace-nowrap">
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold
-                                <?= match($tr['status']) { 'active' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-emerald-100 text-emerald-700', default => 'bg-red-100 text-red-600' } ?>">
-                                <?= ucfirst($tr['status']) ?>
-                            </span>
-                            <?php if ($tr['status'] === 'active'): ?>
-                            <button onclick="event.stopPropagation(); forceEndTrip(<?= $tr['id'] ?>)" 
-                                    class="ml-2 text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-tighter"
-                                    title="Force End Trip">
-                                [Force End]
-                            </button>
-                            <?php endif; ?>
+                            <div class="flex flex-col items-start gap-2">
+                                <span class="w-[85px] inline-flex justify-center items-center py-1 rounded-md text-xs font-bold
+                                    <?= match($tr['status']) { 'active' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-emerald-100 text-emerald-700', default => 'bg-red-100 text-red-600' } ?>">
+                                    <?= ucfirst($tr['status']) ?>
+                                </span>
+
+                            </div>
                         </td>
                     </tr>
                     <!-- Expandable passenger detail row -->
@@ -107,15 +111,52 @@ include '../includes/header.php';
         </div>
 
         <!-- Pagination -->
-        <?php if ($pages > 1): ?>
-        <div class="flex items-center justify-between">
-            <p class="text-sm text-slate-400">Page <?= $page ?> of <?= $pages ?></p>
-            <div class="flex gap-2">
+        <?php if ($pages > 1): 
+            $queryParams = [];
+            if ($fromDate) $queryParams['from'] = $fromDate;
+            if ($toDate) $queryParams['to'] = $toDate;
+            $queryString = http_build_query($queryParams);
+            $queryString = $queryString ? '&' . $queryString : '';
+        ?>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
+            <p class="text-sm text-slate-400 font-medium">Showing page <span class="font-bold text-slate-700"><?= $page ?></span> of <span class="font-bold text-slate-700"><?= $pages ?></span></p>
+            
+            <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                 <?php if ($page > 1): ?>
-                <a href="?page=<?= $page-1 ?>&date=<?= urlencode($filterDate) ?>" class="px-4 py-2 rounded-xl bg-white border text-slate-700 font-semibold text-sm hover:bg-slate-100">← Prev</a>
+                <a href="?page=<?= $page-1 ?><?= $queryString ?>" class="px-3 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 font-bold text-sm transition" title="Previous Page">&larr;</a>
+                <?php else: ?>
+                <span class="px-3 py-1.5 rounded-lg text-slate-300 font-bold text-sm">&larr;</span>
                 <?php endif; ?>
+                
+                <div class="flex gap-1 border-x border-slate-100 px-1">
+                    <?php 
+                    $startPage = max(1, $page - 2);
+                    $endPage = min($pages, $page + 2);
+                    
+                    if ($startPage > 1) {
+                        echo '<a href="?page=1' . $queryString . '" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 font-bold text-sm transition">1</a>';
+                        if ($startPage > 2) echo '<span class="w-8 h-8 flex items-center justify-center text-slate-400 text-sm">...</span>';
+                    }
+                    
+                    for ($i = $startPage; $i <= $endPage; $i++) {
+                        if ($i === $page) {
+                            echo '<span class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-500 text-white font-black text-sm shadow-md">' . $i . '</span>';
+                        } else {
+                            echo '<a href="?page=' . $i . $queryString . '" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 font-bold text-sm transition">' . $i . '</a>';
+                        }
+                    }
+                    
+                    if ($endPage < $pages) {
+                        if ($endPage < $pages - 1) echo '<span class="w-8 h-8 flex items-center justify-center text-slate-400 text-sm">...</span>';
+                        echo '<a href="?page=' . $pages . $queryString . '" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 font-bold text-sm transition">' . $pages . '</a>';
+                    }
+                    ?>
+                </div>
+
                 <?php if ($page < $pages): ?>
-                <a href="?page=<?= $page+1 ?>&date=<?= urlencode($filterDate) ?>" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-sm hover:bg-amber-500">Next →</a>
+                <a href="?page=<?= $page+1 ?><?= $queryString ?>" class="px-3 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 font-bold text-sm transition" title="Next Page">&rarr;</a>
+                <?php else: ?>
+                <span class="px-3 py-1.5 rounded-lg text-slate-300 font-bold text-sm">&rarr;</span>
                 <?php endif; ?>
             </div>
         </div>
@@ -189,21 +230,28 @@ function toggleDetails(tripId) {
 }
 
 function forceEndTrip(tripId) {
-    if (!confirm('Are you sure you want to FORCE END this trip?')) return;
-    
-    fetch('api_force_end_trip.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip_id: tripId })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Success: Trip has been ended.');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
+    window.showConfirm({
+        title: 'Force End Trip',
+        message: 'Are you sure you want to FORCE END this trip? This will manually stop live tracking for this bus.',
+        type: 'danger',
+        confirmText: 'Yes, Force End'
+    }).then(confirmed => {
+        if (!confirmed) return;
+        
+        fetch('api_force_end_trip.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trip_id: tripId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.showToast('Success', 'Trip has been ended.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                window.showToast('Error', data.message || 'Unknown error', 'error');
+            }
+        });
     });
 }
 </script>

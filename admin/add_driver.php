@@ -191,7 +191,7 @@ include '../includes/header.php';
                         <!-- Profile Pic -->
                         <div class="md:col-span-2">
                             <label class="block text-slate-700 text-sm font-bold mb-2 uppercase tracking-wider">Profile Picture</label>
-                            <div class="flex items-center gap-5">
+                            <div class="flex items-center gap-4 sm:gap-5">
                                 <div id="preview-container" class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-200 overflow-hidden shrink-0">
                                      <i class="ph ph-user text-2xl text-slate-300"></i>
                                      <img id="preview-img" class="hidden w-full h-full object-cover">
@@ -201,7 +201,7 @@ include '../includes/header.php';
                                         Choose Photo
                                         <input type="file" name="profile_picture" id="profile_picture" accept="image/jpeg, image/png" class="hidden" onchange="previewImage(this)">
                                     </label>
-                                    <div class="bg-orange-100 border border-orange-300 text-orange-800 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm animate-[pulse_2s_ease-in-out_infinite] w-max">
+                                    <div class="bg-orange-100 border border-orange-300 text-orange-800 text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm animate-[pulse_2s_ease-in-out_infinite] w-fit sm:w-max">
                                         <i class="ph-shield-check inline-block mr-1 text-orange-600"></i> JPG or PNG only, maximum 2MB
                                     </div>
                                 </div>
@@ -243,14 +243,14 @@ include '../includes/header.php';
                             </div>
 
                             <!-- Right Side: Checklist -->
-                            <div class="md:pt-[32px]">
-                                <div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Password Combination Status</p>
-                                    <div class="grid grid-cols-1 gap-y-2">
-                                        <div id="req-length" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
-                                            <i class="ph ph-circle text-[10px] icon"></i>
-                                            <span class="text-xs font-semibold">At least 8 characters</span>
-                                        </div>
+                            <div class="pt-4 md:pt-[32px]">
+                                  <div id="pw-req-box" class="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all duration-300">
+                                      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Password Combination Status</p>
+                                      <div class="grid grid-cols-1 gap-y-1">
+                                          <div id="req-length" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
+                                              <i class="ph ph-circle text-[10px] icon"></i>
+                                              <span class="text-xs font-semibold">At least 8 characters</span>
+                                          </div>
                                         <div id="req-upper" class="flex items-center gap-2 text-slate-300 transition-colors duration-300">
                                             <i class="ph ph-circle text-[10px] icon"></i>
                                             <span class="text-xs font-semibold">Uppercase letter</span>
@@ -349,25 +349,36 @@ const reqElements = {
     special: { regex: /[^A-Za-z0-9]/,   el: document.getElementById('req-special') }
 };
 
-passwordInput.addEventListener('input', () => {
-    const val = passwordInput.value;
-    Object.keys(reqElements).forEach(key => {
-        const req = reqElements[key];
-        const isMet = req.regex.test(val);
-        const icon = req.el.querySelector('.icon');
-        
-        if (isMet) {
-            req.el.classList.remove('text-slate-300');
-            req.el.classList.add('text-emerald-500');
-            icon.classList.replace('ph-circle', 'ph-check-circle-fill');
-        } else {
-            req.el.classList.remove('text-emerald-500');
-            req.el.classList.add('text-slate-300');
-            icon.classList.replace('ph-check-circle-fill', 'ph-circle');
-        }
-    });
-    checkMatch();
-});
+  passwordInput.addEventListener('input', () => {
+      const val = passwordInput.value;
+      let allMet = true;
+      Object.keys(reqElements).forEach(key => {
+          const req = reqElements[key];
+          const isMet = req.regex.test(val);
+          if (!isMet) allMet = false;
+          const icon = req.el.querySelector('.icon');
+          
+          if (isMet) {
+              req.el.classList.add('hidden');
+          } else {
+              req.el.classList.remove('hidden');
+              req.el.classList.remove('text-emerald-500');
+              req.el.classList.add('text-slate-300');
+              icon.classList.replace('ph-check-circle-fill', 'ph-circle');
+          }
+      });
+      
+      const box = document.getElementById('pw-req-box');
+      if (box) {
+          if (allMet) {
+              box.classList.add('hidden');
+          } else {
+              box.classList.remove('hidden');
+          }
+      }
+      
+      checkMatch();
+  });
 
 confirmInput.addEventListener('input', checkMatch);
 

@@ -9,12 +9,54 @@ $currentPage  = 'passengers.php';
 require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
 require_once '../includes/functions.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as MailException;
 
 // Handle activate/deactivate toggle
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
     $toggleId = (int)$_POST['toggle_user_id'];
     $newState = (int)$_POST['new_state'];
+    
+    // Check user info before update to see if we should email
+    $stmt = $pdo->prepare("SELECT email, full_name, is_active FROM users WHERE id = ?");
+    $stmt->execute([$toggleId]);
+    $user = $stmt->fetch();
+
     $pdo->prepare("UPDATE users SET is_active = ? WHERE id = ?")->execute([$newState, $toggleId]);
+    
+    // Send email if account was activated and they have an email
+    if ($user && $user['is_active'] == 0 && $newState == 1 && !empty($user['email'])) {
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'khianvivar@gmail.com';
+            $mail->Password   = 'zqip kriq dnir obzp'; // Use the standard project password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom($mail->Username, 'PARE System');
+            $mail->addAddress($user['email'], $user['full_name']);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Your PARE Account is Verified!';
+            $mail->Body    = "
+                <h3>Hello {$user['full_name']},</h3>
+                <p>Great news! Your PARE account and discount application have been successfully verified by the admin.</p>
+                <p>You can now log in and book your rides using your discount.</p>
+                <br>
+                <p>Thank you for using PARE System!</p>
+            ";
+
+            $mail->send();
+        } catch (MailException $e) {
+            error_log("PHPMailer Error (account verification): {$mail->ErrorInfo}");
+        }
+    }
+
     header('Location: passengers.php' . ($search ? '?q='.urlencode($search) : ''));
     exit;
 }
@@ -43,6 +85,10 @@ $stmt = $pdo->prepare("SELECT * FROM users $where ORDER BY created_at DESC LIMIT
 $stmt->execute($params);
 $passengers = $stmt->fetchAll();
 
+// Fetch all passenger names for search suggestions
+$allNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM users WHERE role = 'passenger' ORDER BY full_name ASC");
+$allPassengerNames = $allNamesStmt->fetchAll(PDO::FETCH_COLUMN);
+
 include '../includes/header.php';
 ?>
 
@@ -59,15 +105,22 @@ include '../includes/header.php';
         </div>
 
         <!-- Search -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
             <i class="ph ph-magnifying-glass text-slate-400 text-xl shrink-0"></i>
             <form method="GET" class="flex-1 flex gap-3">
-                <input type="text" name="q" value="<?= htmlspecialchars($search) ?>"
+                <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" list="passenger-names" autocomplete="off"
                        placeholder="Search by name, ID number, or contact..."
-                       class="flex-1 outline-none text-slate-700 placeholder-slate-300 text-sm">
+                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2">
+                
+                <datalist id="passenger-names">
+                    <?php foreach ($allPassengerNames as $name): ?>
+                        <option value="<?= htmlspecialchars($name) ?>">
+                    <?php endforeach; ?>
+                </datalist>
+
                 <button type="submit" class="bg-amber-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-amber-500 transition">Search</button>
                 <?php if ($search): ?>
-                <a href="passengers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition">Clear</a>
+                <a href="passengers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition flex items-center justify-center">Clear</a>
                 <?php endif; ?>
             </form>
         </div>
@@ -77,11 +130,11 @@ include '../includes/header.php';
             <?php foreach ($passengers as $p): ?>
             <div id="card-<?= $p['id'] ?>" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 flex items-start gap-4 transition-opacity <?= $p['is_active'] ? '' : 'opacity-60 grayscale-[0.5]' ?>">
                 <!-- Clickable Area -->
-                <div class="flex-1 flex items-start gap-4 cursor-pointer hover:opacity-80 transition" onclick="showPassengerModal(<?= $p['id'] ?>)">
+                <div class="flex-1 flex items-start gap-4 cursor-pointer hover:opacity-80 transition min-w-0" onclick="showPassengerModal(<?= $p['id'] ?>)">
                     <!-- ID Photo -->
                     <div class="w-16 h-16 rounded-2xl bg-amber-100 overflow-hidden shrink-0 shadow-inner">
                         <?php if ($p['id_picture']): ?>
-                        <img src="/PARE/<?= htmlspecialchars($p['id_picture']) ?>" alt="ID" class="w-full h-full object-cover">
+                        <img src="<?= BASE_PATH ?>/<?= htmlspecialchars($p['id_picture']) ?>" alt="ID" class="w-full h-full object-cover">
                         <?php else: ?>
                         <div class="w-full h-full flex items-center justify-center"><i class="ph ph-user text-amber-400 text-3xl"></i></div>
                         <?php endif; ?>
@@ -202,7 +255,7 @@ include '../includes/header.php';
             const noPhotoEl = document.getElementById('modal-no-photo');
             
             if (data.photo) {
-                photoEl.src = "/PARE/" + data.photo;
+                photoEl.src = "<?= BASE_PATH ?>/" + data.photo;
                 photoEl.classList.remove('hidden');
                 noPhotoEl.classList.add('hidden');
             } else {
@@ -307,14 +360,14 @@ include '../includes/header.php';
 <!-- Passenger Details Modal with Blurred Background -->
 <div id="passenger-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-200 opacity-0" onclick="closePassengerModal()">
     <!-- Stop propagation so clicking inside the modal doesn't close it -->
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
+    <div class="rounded-3xl shadow-[0_25px_50px_-12px_rgba(59,111,212,0.3)] w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] border border-white/60" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%);" onclick="event.stopPropagation()">
         
         <!-- Header -->
-        <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50 shrink-0">
-            <h3 class="font-black text-slate-800 text-[17px] flex items-center gap-2">
-                <i class="ph ph-identification-card text-amber-600 text-xl"></i> Passenger Details
+        <div class="px-6 py-4 flex items-center justify-between border-b border-white/50 bg-white/40 backdrop-blur-md shrink-0">
+            <h3 class="font-black text-blue-900 text-[17px] flex items-center gap-2">
+                <i class="ph ph-identification-card text-blue-600 text-xl"></i> Passenger Details
             </h3>
-            <button onclick="closePassengerModal()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-100 border border-transparent hover:border-rose-200 flex items-center justify-center text-slate-500 hover:text-rose-600 transition">
+            <button onclick="closePassengerModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-rose-500 border border-transparent flex items-center justify-center text-blue-800 hover:text-white transition">
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
@@ -322,9 +375,9 @@ include '../includes/header.php';
         <!-- Scrollable Content -->
         <div class="p-6 overflow-y-auto no-scrollbar">
             <!-- ID Photo Enlarge -->
-            <div class="w-full h-48 bg-slate-100 rounded-2xl mb-6 flex items-center justify-center p-2 border border-slate-200 shadow-inner">
-                <img id="modal-id-photo" src="" class="max-w-full max-h-full object-contain rounded drop-shadow-sm" alt="ID Photo">
-                <div id="modal-no-photo" class="hidden text-slate-400 flex flex-col items-center">
+            <div class="w-full h-48 bg-white/50 rounded-2xl mb-6 flex items-center justify-center p-2 border border-white/70 shadow-inner">
+                <img id="modal-id-photo" src="" class="max-w-full max-h-full object-contain rounded drop-shadow-sm cursor-pointer hover:scale-105 transition-transform" alt="ID Photo" onclick="openLightbox(this.src)">
+                <div id="modal-no-photo" class="hidden text-blue-800/50 flex flex-col items-center">
                     <i class="ph ph-user text-4xl mb-2"></i> No ID Photo
                 </div>
             </div>
@@ -333,47 +386,47 @@ include '../includes/header.php';
             <div class="grid grid-cols-2 gap-4 gap-y-6">
                 <!-- Data cells -->
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Full Name</p>
-                    <p id="modal-name" class="font-black text-slate-800 tracking-tight"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Full Name</p>
+                    <p id="modal-name" class="font-black text-blue-900 tracking-tight"></p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">ID Number</p>
-                    <p id="modal-idnum" class="font-bold font-mono text-slate-800"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">ID Number</p>
+                    <p id="modal-idnum" class="font-bold font-mono text-blue-900"></p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Discount Type</p>
-                    <p id="modal-discount" class="font-bold text-blue-700 bg-amber-50 inline-block px-2.5 py-0.5 rounded-md border border-blue-100 text-sm"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Discount Type</p>
+                    <p id="modal-discount" class="font-bold text-blue-700 bg-white/50 inline-block px-2.5 py-0.5 rounded-md border border-blue-200/50 text-sm shadow-sm"></p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Contact</p>
-                    <p id="modal-contact" class="font-medium text-slate-600 font-mono"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Contact</p>
+                    <p id="modal-contact" class="font-bold text-blue-900 font-mono"></p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Email</p>
-                    <p id="modal-email" class="font-medium text-slate-600 truncate bg-slate-50 border-slate-100 px-2 py-0.5 rounded-md inline-block max-w-full"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Email</p>
+                    <p id="modal-email" class="font-bold text-blue-900 break-all bg-white/60 border border-white/80 px-2 py-0.5 rounded-md inline-block max-w-full shadow-sm"></p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Joined Date</p>
-                    <p id="modal-date" class="font-medium text-slate-600 text-sm"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Joined Date</p>
+                    <p id="modal-date" class="font-bold text-blue-900 text-sm"></p>
                 </div>
                 <div class="col-span-2 mt-1">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Complete Address</p>
-                    <p id="modal-address" class="font-medium text-slate-800 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 leading-snug"></p>
+                    <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-widest mb-1">Complete Address</p>
+                    <p id="modal-address" class="font-bold text-blue-900 bg-white/60 p-3.5 rounded-xl border border-white/80 leading-snug shadow-sm"></p>
                 </div>
-                <div class="col-span-2 mt-4 pt-5 border-t border-slate-100">
-                    <p class="text-[10px] text-rose-500 font-black uppercase tracking-widest mb-3 flex items-center gap-1.5"><i class="ph ph-first-aid text-sm"></i> Emergency Contact</p>
-                    <div class="grid grid-cols-2 gap-4 bg-rose-50 border border-rose-100 p-4 rounded-xl">
+                <div class="col-span-2 mt-4 pt-5 border-t border-white/50">
+                    <p class="text-[10px] text-rose-600 font-black uppercase tracking-widest mb-3 flex items-center gap-1.5"><i class="ph ph-first-aid text-sm"></i> Emergency Contact</p>
+                    <div class="grid grid-cols-2 gap-4 bg-white/60 border border-white/80 p-4 rounded-xl shadow-sm">
                         <div>
-                            <p class="text-[10px] text-rose-600/70 font-bold uppercase tracking-wide mb-1">Contact Person</p>
-                            <p id="modal-ec-name" class="font-bold text-rose-900"></p>
+                            <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-wide mb-1">Contact Person</p>
+                            <p id="modal-ec-name" class="font-bold text-blue-900"></p>
                         </div>
                         <div>
-                            <p class="text-[10px] text-rose-600/70 font-bold uppercase tracking-wide mb-1">Contact Number</p>
-                            <p id="modal-ec-contact" class="font-bold text-rose-900 font-mono"></p>
+                            <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-wide mb-1">Contact Number</p>
+                            <p id="modal-ec-contact" class="font-bold text-blue-900 font-mono"></p>
                         </div>
                         <div class="col-span-2">
-                            <p class="text-[10px] text-rose-600/70 font-bold uppercase tracking-wide mb-1">Address</p>
-                            <p id="modal-ec-addr" class="font-medium text-rose-800 text-sm"></p>
+                            <p class="text-[10px] text-blue-800/70 font-bold uppercase tracking-wide mb-1">Address</p>
+                            <p id="modal-ec-addr" class="font-bold text-blue-900 text-sm"></p>
                         </div>
                     </div>
                 </div>
@@ -381,7 +434,48 @@ include '../includes/header.php';
         </div>
         
     </div>
+    </div>
 </div>
+
+<!-- Lightbox Modal -->
+<div id="image-lightbox" class="fixed inset-0 z-[200] bg-black/90 hidden flex items-center justify-center p-4 transition-opacity duration-200 opacity-0" onclick="closeLightbox()">
+    <button class="absolute top-6 right-6 text-white/60 hover:text-white transition w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-rose-500 rounded-full" onclick="closeLightbox(event)">
+        <i class="ph ph-x text-xl font-bold"></i>
+    </button>
+    <img id="lightbox-img" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-transform duration-300 scale-95" alt="Enlarged ID" onclick="event.stopPropagation()">
+</div>
+
+<script>
+    function openLightbox(src) {
+        if (!src) return;
+        const lightbox = document.getElementById('image-lightbox');
+        const img = document.getElementById('lightbox-img');
+        img.src = src;
+        
+        lightbox.classList.remove('hidden');
+        // trigger animation
+        setTimeout(() => {
+            lightbox.classList.remove('opacity-0');
+            img.classList.remove('scale-95');
+            img.classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeLightbox(e) {
+        if (e) e.stopPropagation();
+        const lightbox = document.getElementById('image-lightbox');
+        const img = document.getElementById('lightbox-img');
+        
+        lightbox.classList.add('opacity-0');
+        img.classList.remove('scale-100');
+        img.classList.add('scale-95');
+        
+        setTimeout(() => {
+            lightbox.classList.add('hidden');
+            img.src = '';
+        }, 200);
+    }
+</script>
 
 </body>
 </html>

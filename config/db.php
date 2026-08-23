@@ -49,6 +49,7 @@ set_exception_handler(function($exception) {
 });
 
 date_default_timezone_set('Asia/Manila');
+define('BASE_PATH', '/PARE');
 $host = 'localhost';
 $db   = 'pare'; // Assuming pare_db from the other project
 $user = 'root';

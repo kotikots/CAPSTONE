@@ -52,49 +52,49 @@ include '../includes/header.php';
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_passenger.php'; ?>
 
-    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
 
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-slate-800 tracking-tight">My Rides</h2>
-                <p class="text-slate-500 text-sm mt-1"><?= number_format($totalRides) ?> total ride(s)</p>
+                <h2 class="text-2xl font-black text-[#0F172A] tracking-tight">My Rides</h2>
+                <p class="text-[#64748B] text-sm mt-1"><?= number_format($totalRides) ?> total ride(s)</p>
             </div>
         </div>
 
         <!-- Stats Bar -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <i class="ph ph-ticket text-xl text-amber-600"></i>
+            <div class="bg-[#FFFFFF] rounded-2xl p-5 shadow-sm border border-[#E2E8F0] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                    <i class="ph ph-ticket text-xl text-[#EA580C]"></i>
                 </div>
                 <div>
-                    <p class="text-slate-400 text-xs font-medium">Total Rides</p>
-                    <p class="text-2xl font-black text-slate-800"><?= number_format((int)$stats['rides']) ?></p>
+                    <p class="text-[#64748B] text-xs font-medium">Total Rides</p>
+                    <p class="text-2xl font-black text-[#0F172A]"><?= number_format((int)$stats['rides']) ?></p>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <i class="ph ph-coins text-xl text-emerald-600"></i>
+            <div class="bg-[#FFFFFF] rounded-2xl p-5 shadow-sm border border-[#E2E8F0] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-[#DCFCE7] flex items-center justify-center">
+                    <i class="ph ph-coins text-xl text-[#16A34A]"></i>
                 </div>
                 <div>
-                    <p class="text-slate-400 text-xs font-medium">Total Spent</p>
-                    <p class="text-2xl font-black text-emerald-700"><?= peso((float)$stats['spent']) ?></p>
+                    <p class="text-[#64748B] text-xs font-medium">Total Spent</p>
+                    <p class="text-2xl font-black text-[#16A34A]"><?= peso((float)$stats['spent']) ?></p>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center">
-                    <i class="ph ph-path text-xl text-orange-600"></i>
+            <div class="bg-[#FFFFFF] rounded-2xl p-5 shadow-sm border border-[#E2E8F0] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-[#DBEAFE] flex items-center justify-center">
+                    <i class="ph ph-path text-xl text-[#2563EB]"></i>
                 </div>
                 <div>
-                    <p class="text-slate-400 text-xs font-medium">Total Distance</p>
-                    <p class="text-2xl font-black text-slate-800"><?= number_format((float)$stats['km'], 1) ?> km</p>
+                    <p class="text-[#64748B] text-xs font-medium">Total Distance</p>
+                    <p class="text-2xl font-black text-[#0F172A]"><?= number_format((float)$stats['km'], 1) ?> km</p>
                 </div>
             </div>
         </div>
 
         <!-- Rides Table -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+        <div class="bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
             <?php if (empty($rides)): ?>
             <div class="text-center py-16 text-slate-400">
                 <i class="ph ph-ticket text-6xl mb-3 block"></i>

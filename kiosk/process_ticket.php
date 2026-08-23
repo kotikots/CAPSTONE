@@ -47,40 +47,17 @@ try {
     $stmt->execute([$busId]);
     $trip = $stmt->fetch();
 
-    // 3. AUTO-TRIP LOGIC: If no trip is active, the system starts one automatically!
-    // This is a safety feature so that passengers can still buy tickets even if the driver forgot to click "Start Trip."
+    // 3. NO ACTIVE TRIP LOGIC
+    // The kiosk should NOT process tickets unless the driver has explicitly started a trip.
     if (!$trip) {
-        // We try to figure out if the bus is going forward or backward based on its current GPS.
-        $gpsStmt = $pdo->prepare("SELECT latitude, longitude FROM buses WHERE id = ? LIMIT 1");
-        $gpsStmt->execute([$busId]);
-        $busGps = $gpsStmt->fetch();
-
-        $firstStation = $pdo->query("SELECT id, km_marker, latitude, longitude FROM stations WHERE is_active=1 ORDER BY sort_order ASC LIMIT 1")->fetch();
-        $lastStation  = $pdo->query("SELECT id, km_marker, latitude, longitude FROM stations WHERE is_active=1 ORDER BY sort_order DESC LIMIT 1")->fetch();
-
-        $startId = $firstStation['id'];
-        $endId   = $lastStation['id'];
-
-        // Determine if we're closer to the start or the end of the line
-        if ($busGps && $busGps['latitude'] && $lastStation['latitude']) {
-            $distToFirst = abs($busGps['latitude'] - $firstStation['latitude']) + abs($busGps['longitude'] - $firstStation['longitude']);
-            $distToLast  = abs($busGps['latitude'] - $lastStation['latitude'])  + abs($busGps['longitude'] - $lastStation['longitude']);
-            
-            if ($distToLast < $distToFirst) {
-                $startId = $lastStation['id'];
-                $endId   = $firstStation['id'];
-            }
-        }
-
-        // Create the new trip record
-        $ins = $pdo->prepare("INSERT INTO trips (bus_id, driver_id, start_station_id, end_station_id, status)
-                               SELECT ?, b.driver_id, ?, ?, 'active'
-                               FROM buses b WHERE b.id = ?");
-        $ins->execute([$busId, $startId, $endId, $busId]);
-        $tripId = $pdo->lastInsertId();
-    } else {
-        $tripId = $trip['id'];
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'Cannot issue ticket: The driver has not started a trip yet.'
+        ]);
+        exit;
     }
+    
+    $tripId = $trip['id'];
 
     // 4. STATION LOOKUP: Get the numeric IDs for the Origin and Destination names
     $originStmt = $pdo->prepare("SELECT id FROM stations WHERE station_name = ? LIMIT 1");

@@ -35,6 +35,12 @@ $stmt = $pdo->prepare("SELECT * FROM security_logs $searchCondition ORDER BY cre
 $stmt->execute($params);
 $logs = $stmt->fetchAll();
 
+// Fetch suggestions for datalist
+$suggestionsStmt = $pdo->query("SELECT DISTINCT identifier FROM security_logs WHERE identifier != '' 
+                                UNION 
+                                SELECT DISTINCT ip_address FROM security_logs WHERE ip_address != ''");
+$searchSuggestions = $suggestionsStmt->fetchAll(PDO::FETCH_COLUMN);
+
 // Identify suspicious IPs (more than 5 failures in 24 hours)
 $suspiciousStmt = $pdo->query("
     SELECT ip_address, COUNT(*) as fail_count, MAX(created_at) as last_attempt
@@ -101,8 +107,15 @@ include '../includes/header.php';
                 <form method="GET" class="flex w-full md:w-max gap-2">
                     <div class="relative w-full md:w-64">
                         <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search user, IP, or reason..." 
+                        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search user, IP, or reason..." list="search-suggestions" autocomplete="off"
                                class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm">
+                        
+                        <datalist id="search-suggestions">
+                            <?php foreach ($searchSuggestions as $suggestion): ?>
+                                <option value="<?= htmlspecialchars($suggestion) ?>">
+                            <?php endforeach; ?>
+                        </datalist>
+
                         <?php if (!empty($search)): ?>
                         <a href="security.php" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors" title="Clear search">
                             <i class="ph ph-x text-[10px] font-black"></i>
@@ -117,12 +130,12 @@ include '../includes/header.php';
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/30">
-                            <th class="px-6 py-4">Status</th>
-                            <th class="px-6 py-4">User / Identifier</th>
-                            <th class="px-6 py-4">IP Address</th>
-                            <th class="px-6 py-4">Date & Time</th>
-                            <th class="px-6 py-4">Reason / Device</th>
+                        <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/30">
+                            <th class="px-4 py-2.5">Status</th>
+                            <th class="px-4 py-2.5">User / Identifier</th>
+                            <th class="px-4 py-2.5">IP Address</th>
+                            <th class="px-4 py-2.5">Date & Time</th>
+                            <th class="px-4 py-2.5">Reason / Device</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -132,25 +145,25 @@ include '../includes/header.php';
                             $statusIcon = $isSuccess ? 'ph-check-circle' : 'ph-x-circle';
                         ?>
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center gap-1.5 <?= $statusClass ?> text-[10px] font-black px-2.5 py-1 rounded-lg uppercase">
-                                    <i class="ph <?= $statusIcon ?> text-sm"></i> <?= $log['status'] ?>
+                            <td class="px-4 py-2.5">
+                                <span class="inline-flex items-center gap-1 <?= $statusClass ?> text-[9px] font-black px-2 py-0.5 rounded-md uppercase">
+                                    <i class="ph <?= $statusIcon ?> text-[10px]"></i> <?= $log['status'] ?>
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-800"><?= htmlspecialchars($log['identifier']) ?></p>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight"><?= $log['role_attempted'] ?></p>
+                            <td class="px-4 py-2.5">
+                                <p class="text-xs font-bold text-slate-800"><?= htmlspecialchars($log['identifier']) ?></p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tight"><?= $log['role_attempted'] ?></p>
                             </td>
-                            <td class="px-6 py-4">
-                                <p class="font-mono text-xs text-slate-500"><?= $log['ip_address'] ?></p>
+                            <td class="px-4 py-2.5">
+                                <p class="font-mono text-[10px] text-slate-500"><?= $log['ip_address'] ?></p>
                             </td>
-                            <td class="px-6 py-4 text-xs text-slate-500">
+                            <td class="px-4 py-2.5 text-[10px] text-slate-500 leading-tight">
                                 <?= date('M d, Y', strtotime($log['created_at'])) ?><br>
                                 <span class="font-bold opacity-60"><?= date('h:i A', strtotime($log['created_at'])) ?></span>
                             </td>
-                            <td class="px-6 py-4">
-                                <p class="text-xs font-medium text-slate-600 mb-1"><?= htmlspecialchars($log['reason']) ?></p>
-                                <p class="text-[10px] text-slate-400 truncate w-48 italic" title="<?= htmlspecialchars($log['user_agent']) ?>"><?= htmlspecialchars($log['user_agent']) ?></p>
+                            <td class="px-4 py-2.5">
+                                <p class="text-[10px] font-medium text-slate-600 mb-0.5"><?= htmlspecialchars($log['reason']) ?></p>
+                                <p class="text-[9px] text-slate-400 truncate w-40 italic" title="<?= htmlspecialchars($log['user_agent']) ?>"><?= htmlspecialchars($log['user_agent']) ?></p>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -208,5 +221,7 @@ include '../includes/header.php';
 
     </main>
 </div>
+
+<?php include '../includes/mobile_nav_admin.php'; ?>
 
 </body></html>

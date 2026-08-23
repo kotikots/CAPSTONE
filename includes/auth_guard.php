@@ -32,7 +32,7 @@ if ($requiredRole === 'driver') {
     if ($_SESSION['role'] !== $requiredRole) {
         $redirect = match($_SESSION['role']) {
             'admin'  => '/PARE/admin/dashboard.php',
-            'driver' => '/PARE/driver/dashboard.php',
+            'driver' => '/PARE/driver/dashboard_v2.php',
             default  => '/PARE/passenger/dashboard.php',
         };
         header('Location: ' . $redirect);

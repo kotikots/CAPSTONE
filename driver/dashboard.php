@@ -61,23 +61,23 @@ if ($activeTrip) {
 include '../includes/header.php';
 ?>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-screen" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%);">
     <?php include '../includes/sidebar_driver.php'; ?>
 
-    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
 
         <!-- Top bar -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-slate-800">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>! 🚍</h2>
-                <p class="text-slate-500 text-sm mt-1"><?= date('l, F j, Y') ?></p>
+                <h2 class="text-2xl font-black text-[#0F172A]">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>!</h2>
+                <p class="text-[#4C5C79] text-sm mt-1"><?= date('l, F j, Y') ?></p>
             </div>
             <?php if ($activeTrip): ?>
-            <span class="flex items-center gap-2 bg-orange-100 text-orange-700 font-bold px-5 py-2.5 rounded-full">
-                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> Trip Active
+            <span class="flex items-center gap-2 bg-white/70 backdrop-blur-sm text-[#0F172A] border border-white font-bold px-5 py-2.5 rounded-full shadow-sm">
+                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]"></span> Trip Active
             </span>
             <?php else: ?>
-            <span class="flex items-center gap-2 bg-slate-100 text-slate-500 font-bold px-5 py-2.5 rounded-full">
+            <span class="flex items-center gap-2 bg-white/70 backdrop-blur-sm text-[#64748B] border border-white font-bold px-5 py-2.5 rounded-full shadow-sm">
                 <span class="w-2 h-2 bg-slate-400 rounded-full"></span> No Active Trip
             </span>
             <?php endif; ?>
@@ -85,59 +85,61 @@ include '../includes/header.php';
 
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center">
-                    <i class="ph ph-users text-2xl text-orange-600"></i>
+            <div class="h-full bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-start gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-[#FFE8D9] flex items-center justify-center shrink-0">
+                    <i class="ph ph-users text-2xl text-[#FE6B17]"></i>
                 </div>
-                <div>
-                    <p class="text-slate-400 text-sm">Today's Passengers</p>
-                    <p class="text-3xl font-black text-slate-800"><?= (int)$todayStats['passengers'] ?></p>
+                <div class="text-left">
+                    <p class="text-[#4C5C79] text-sm font-semibold tracking-tight">Today's Passengers</p>
+                    <p class="text-3xl font-black text-[#0F172A] leading-tight"><?= (int)$todayStats['passengers'] ?></p>
                 </div>
             </div>
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
-                        <i class="ph ph-wallet text-2xl text-emerald-600"></i>
+            <div class="h-full bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8F0] relative">
+                <div class="flex items-start gap-4 mb-3">
+                    <div class="w-14 h-14 rounded-2xl bg-[#DBF7E4] flex items-center justify-center shrink-0">
+                        <i class="ph ph-wallet text-2xl text-[#0D8E30]"></i>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-slate-400 text-sm font-semibold tracking-tight">Cash in Hand</p>
-                        <p id="top-cash-in-hand" class="text-3xl font-black text-emerald-700 leading-tight"><?= peso((float)$todayStats['cash_in_hand']) ?></p>
-                        <p class="text-slate-400 text-[10px] uppercase font-black tracking-widest mt-1 opacity-70">Day's Total: <?= peso((float)$todayStats['total_revenue']) ?></p>
+                    <div class="flex-1 text-left">
+                        <p class="text-[#4C5C79] text-sm font-semibold tracking-tight">Cash in Hand</p>
+                        <p id="top-cash-in-hand" class="text-3xl font-black text-[#0D8E30] leading-tight whitespace-nowrap"><?= peso((float)$todayStats['cash_in_hand']) ?></p>
+                        <p class="text-[#4C5C79] text-[10px] uppercase font-black tracking-widest mt-1 opacity-70">Day's Total: <?= peso((float)$todayStats['total_revenue']) ?></p>
                     </div>
                 </div>
                 <?php if ((float)$todayStats['cash_in_hand'] > 0): ?>
+                <div class="mt-1">
                     <?php if (!$activeTrip): ?>
                     <button onclick="remitCash('<?= peso((float)$todayStats['cash_in_hand']) ?>')" id="btn-remit-cash"
-                            class="mt-3 w-full flex justify-center items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-3 rounded-2xl transition-all active:scale-95 shadow-lg shadow-orange-500/20 text-sm uppercase tracking-wider">
-                        <i class="ph ph-hand-coins text-lg"></i> Remit Cash to Admin
+                            class="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black px-4 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-orange-500/20 text-xs uppercase tracking-wider">
+                        <i class="ph ph-hand-coins text-base"></i> Remit Cash
                     </button>
                     <?php else: ?>
                     <button disabled
-                            class="mt-3 w-full flex justify-center items-center gap-2 bg-slate-100 text-slate-400 font-black py-3 rounded-2xl text-sm uppercase tracking-wider cursor-not-allowed border border-slate-200">
-                        <i class="ph ph-lock-key text-lg"></i> End Trip to Remit
+                            class="w-full flex justify-center items-center gap-2 bg-[#E8EEF8] text-[#4C5C79] font-black px-4 py-3 rounded-xl text-xs uppercase tracking-wider cursor-not-allowed border border-slate-200">
+                        <i class="ph ph-lock-key text-base"></i> End Trip to Remit
                     </button>
                     <?php endif; ?>
+                </div>
                 <?php endif; ?>
                 <?php if ((float)$todayStats['pending_remittance'] > 0): ?>
-                <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse shrink-0"></span>
-                    <span class="text-[11px] font-bold text-amber-700">Awaiting Admin Confirmation: <?= peso((float)$todayStats['pending_remittance']) ?></span>
+                <div class="mt-3 bg-[#E4E1FD] border border-[#4B2EFA] rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-[#E4E1FD]0 rounded-full animate-pulse shrink-0"></span>
+                    <span class="text-[11px] font-bold text-[#4B2EFA]">Awaiting Admin Confirmation: <?= peso((float)$todayStats['pending_remittance']) ?></span>
                 </div>
                 <?php elseif ((float)$todayStats['cash_in_hand'] == 0 && (float)$todayStats['total_revenue'] > 0): ?>
-                <div class="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
-                    <i class="ph ph-check-circle text-emerald-500"></i>
-                    <span class="text-[11px] font-bold text-emerald-700">All cash remitted & confirmed</span>
+                <div class="mt-3 bg-[#DBF7E4] border border-[#0D8E30] rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <i class="ph ph-check-circle text-[#0D8E30]"></i>
+                    <span class="text-[11px] font-bold text-[#0D8E30]">All cash remitted & confirmed</span>
                 </div>
                 <?php endif; ?>
             </div>
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center">
-                    <i class="ph ph-bus text-2xl text-amber-600"></i>
+            <div class="h-full bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-start gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-[#FFF7ED] flex items-center justify-center shrink-0 border border-[#EA580C]/20">
+                    <i class="ph ph-bus text-2xl text-[#EA580C]"></i>
                 </div>
-                <div>
-                    <p class="text-slate-400 text-sm">My Bus</p>
-                    <p class="text-2xl font-black text-slate-800"><?= htmlspecialchars($bus['body_number'] ?? '—') ?></p>
-                    <p class="text-slate-400 text-xs"><?= htmlspecialchars($bus['plate_number'] ?? '') ?></p>
+                <div class="text-left">
+                    <p class="text-[#4C5C79] text-sm font-semibold tracking-tight">My Bus</p>
+                    <p class="text-2xl font-black text-[#0F172A] leading-tight"><?= htmlspecialchars($bus['body_number'] ?? '—') ?></p>
+                    <p class="text-[#4C5C79] text-xs font-semibold mt-0.5"><?= htmlspecialchars($bus['plate_number'] ?? '') ?></p>
                 </div>
             </div>
         </div>
@@ -145,28 +147,28 @@ include '../includes/header.php';
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             <!-- Trip Control -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                    <i class="ph ph-steering-wheel text-orange-500"></i> Trip Control
+            <div class="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                <h3 class="font-bold text-[#0F172A] mb-5 flex items-center gap-2">
+                    <i class="ph ph-steering-wheel text-[#FE6B17]"></i> Trip Control
                 </h3>
 
                 <?php if (!$bus): ?>
-                <div class="text-center py-8 text-slate-400">
+                <div class="text-center py-8 text-[#4C5C79]">
                     <i class="ph ph-warning-circle text-4xl mb-2"></i>
                     <p>No bus assigned to your account. Contact admin.</p>
                 </div>
                 <?php elseif ($activeTrip): ?>
                 <!-- Active trip info -->
-                <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5 shadow-inner">
+                <div class="bg-[#FFF7ED] border border-[#EA580C]/30 rounded-2xl p-4 mb-5 shadow-sm text-white">
                     <div class="flex items-center gap-2 mb-3">
-                        <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]"></span>
-                        <span class="font-black text-orange-600 text-sm">Trip in progress</span>
+                        <span class="w-2 h-2 bg-[#EA580C] rounded-full animate-pulse shadow-[0_0_8px_rgba(234,88,12,0.8)]"></span>
+                        <span class="font-black text-sm">Trip in progress</span>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div><p class="text-orange-800/60 text-[10px] uppercase font-bold tracking-wider">From</p><p class="font-black text-orange-900"><?= htmlspecialchars($activeTrip['start_name']) ?></p></div>
-                        <div><p class="text-orange-800/60 text-[10px] uppercase font-bold tracking-wider">To</p><p class="font-black text-orange-900"><?= htmlspecialchars($activeTrip['end_name']) ?></p></div>
-                        <div><p class="text-orange-800/60 text-[10px] uppercase font-bold tracking-wider">Started</p><p class="font-black text-orange-900"><?= date('h:i A', strtotime($activeTrip['started_at'])) ?></p></div>
-                        <div><p class="text-orange-800/60 text-[10px] uppercase font-bold tracking-wider">Passengers</p><p class="font-black text-orange-900" id="live-pax-count"><?= $activeTrip['passenger_count'] ?></p></div>
+                        <div><p class="opacity-80 text-[10px] uppercase font-bold tracking-wider">From</p><p class="font-black"><?= htmlspecialchars($activeTrip['start_name']) ?></p></div>
+                        <div><p class="opacity-80 text-[10px] uppercase font-bold tracking-wider">To</p><p class="font-black"><?= htmlspecialchars($activeTrip['end_name']) ?></p></div>
+                        <div><p class="opacity-80 text-[10px] uppercase font-bold tracking-wider">Started</p><p class="font-black"><?= date('h:i A', strtotime($activeTrip['started_at'])) ?></p></div>
+                        <div><p class="opacity-80 text-[10px] uppercase font-bold tracking-wider">Passengers</p><p class="font-black" id="live-pax-count"><?= $activeTrip['passenger_count'] ?></p></div>
                     </div>
                 </div>
 
@@ -177,17 +179,17 @@ include '../includes/header.php';
 
                 <?php else: ?>
                 <!-- Start trip -->
-                <div class="bg-slate-50 rounded-2xl p-4 mb-5 text-sm text-slate-500 text-center">
+                <div class="bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9] rounded-2xl p-4 mb-5 text-sm text-[#4C5C79] text-center">
                     <i class="ph ph-bus text-4xl text-slate-300 mb-2"></i>
                     <p>You have no active trip.</p>
                     <p>Select your direction to allow passengers to book.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="startTrip('forward')" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-2 rounded-2xl transition active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm text-center">
+                    <button onclick="startTrip('forward')" class="bg-amber-600 hover:bg-[#E4E1FD]0 text-white font-bold py-3 px-2 rounded-2xl transition active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm text-center">
                         <i class="ph ph-arrow-circle-right text-2xl"></i>
                         <span class="text-xs">Cabanatuan &rarr; Rizal</span>
                     </button>
-                    <button onclick="startTrip('backward')" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-2 rounded-2xl transition active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm text-center">
+                    <button onclick="startTrip('backward')" class="bg-orange-600 hover:bg-[#FE6B17] text-white font-bold py-3 px-2 rounded-2xl transition active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm text-center">
                         <i class="ph ph-arrow-circle-left text-2xl"></i>
                         <span class="text-xs">Rizal &rarr; Cabanatuan</span>
                     </button>
@@ -196,46 +198,37 @@ include '../includes/header.php';
 
                 <!-- Location Simulator -->
                 <?php if ($activeTrip): ?>
-                <div class="mt-4 border-t border-slate-100 pt-4">
-                    <h4 class="text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
-                        <i class="ph ph-navigation-arrow text-amber-500"></i> Location Tracking
+                <div class="mt-4 border-t border-[#E2E8F0] pt-4">
+                    <h4 class="text-sm font-bold text-[#4C5C79] mb-2 flex items-center gap-2">
+                        <i class="ph ph-navigation-arrow text-[#4B2EFA]"></i> Location Tracking
                     </h4>
 
                     <!-- Kiosk handles GPS automatically -->
-                    <div class="w-full rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 mb-3">
-                        <span class="w-2 h-2 rounded-full bg-green-500 shrink-0 animate-pulse"></span>
+                    <div class="w-full rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2 bg-[#DBF7E4] border border-[#0D8E30] text-[#0D8E30] mb-3">
+                        <span class="w-2 h-2 rounded-full bg-[#DBF7E4]0 shrink-0 animate-pulse"></span>
                         <span>🖥️ Bus Kiosk GPS is active · Live Tracking enabled</span>
                     </div>
 
-                    <!-- Developer Override for Testing on Desktop -->
-                    <div class="flex items-center gap-2 mt-2">
-                        <select id="mock-gps-select" class="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-600 focus:outline-none">
-                            <option value="">Use Actual Device GPS (ISP/Hardware)</option>
-                            <option value="16.1558,119.9806">Mock GPS: Alaminos, Pangasinan</option>
-                            <option value="15.4859,120.9665">Mock GPS: Cabanatuan City</option>
-                            <option value="15.70535405456752,121.0990126880924">Mock GPS: Rizal, Nueva Ecija</option>
-                        </select>
-                        <button onclick="setMockGps()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">Apply</button>
-                    </div>
+
                 </div>
                 <?php endif; ?>
             </div>
 
             <!-- Recent Passengers -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                        <i class="ph ph-users text-orange-500"></i> Passengers This Trip
+            <div class="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between mb-5 gap-4">
+                    <h3 class="font-bold text-[#0F172A] flex items-center gap-2">
+                        <i class="ph ph-users text-[#FE6B17]"></i> Passengers This Trip
                     </h3>
                     <?php if ($activeTrip): ?>
-                    <div class="flex gap-4">
-                        <div class="bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl text-right">
-                            <p class="text-[9px] uppercase font-bold tracking-wider text-slate-400">Total Pending</p>
-                            <p class="font-bold text-lg text-slate-600 leading-none" id="live-cash-pending">₱ 0.00</p>
+                    <div class="flex flex-wrap gap-2 sm:gap-4 w-full xl:w-auto">
+                        <div class="bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9] border border-[#E2E8F0] px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-left flex-1">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-[#4C5C79] opacity-80 mb-1 whitespace-nowrap">Total Pending</p>
+                            <p class="font-black text-xl sm:text-2xl text-[#4C5C79] leading-none whitespace-nowrap" id="live-cash-pending">₱ 0.00</p>
                         </div>
-                        <div class="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-right shadow-lg shadow-emerald-600/20">
-                            <p class="text-[10px] uppercase font-black tracking-widest opacity-80 mb-1">Cash in Hand</p>
-                            <p class="font-black text-2xl leading-none" id="live-cash-collected">₱ 0.00</p>
+                        <div class="bg-[#DBF7E4] text-[#0D8E30] px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-left flex-1 border border-[#0D8E30]/20">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-black tracking-widest opacity-80 mb-1 whitespace-nowrap">Cash in Hand</p>
+                            <p class="font-black text-xl sm:text-2xl leading-none whitespace-nowrap" id="live-cash-collected">₱ 0.00</p>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -243,12 +236,12 @@ include '../includes/header.php';
 
                 <div id="live-pax-list" class="space-y-2 overflow-auto max-h-[400px]">
                     <?php if (!$activeTrip): ?>
-                    <div class="text-center py-10 text-slate-400">
+                    <div class="text-center py-10 text-[#4C5C79]">
                         <i class="ph ph-bus text-5xl mb-2"></i>
                         <p class="text-sm">Start a trip to see passengers</p>
                     </div>
                     <?php else: ?>
-                    <div class="text-center py-10 text-slate-400">
+                    <div class="text-center py-10 text-[#4C5C79]">
                         <i class="ph ph-spinner-gap animate-spin text-5xl mb-2 inline-block"></i>
                         <p class="text-sm">Syncing with Kiosk...</p>
                     </div>
@@ -293,7 +286,7 @@ function fetchTripStats() {
         const list = document.getElementById('live-pax-list');
         if (data.recent_passengers.length === 0) {
             list.innerHTML = `
-                <div class="text-center py-10 text-slate-400">
+                <div class="text-center py-10 text-[#4C5C79]">
                     <i class="ph ph-ticket text-5xl mb-2"></i>
                     <p class="text-sm">No tickets printed yet</p>
                 </div>`;
@@ -304,38 +297,38 @@ function fetchTripStats() {
         list.innerHTML = data.recent_passengers.map(p => {
             let dateStr = p.issued_at.replace(/-/g, '/');
             const isNear = p.proximity === 'near';
-            const iconBg = isNear ? 'bg-emerald-100 border-emerald-200' : 'bg-amber-100 border-amber-200';
-            const iconColor = isNear ? 'text-emerald-600' : 'text-amber-600';
+            const iconBg = isNear ? 'bg-[#DBF7E4] border-[#0D8E30]' : 'bg-[#E4E1FD] border-[#4B2EFA]';
+            const iconColor = isNear ? 'text-[#0D8E30]' : 'text-[#4B2EFA]';
             const icon = isNear ? 'ph-check-circle' : 'ph-clock';
 
             let paymentAction = '';
             if (p.is_paid) {
-                paymentAction = `<span class="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-3 py-1.5 rounded-full flex items-center gap-1 border border-emerald-100"><i class="ph ph-check-fat-fill"></i> Paid</span>`;
+                paymentAction = `<span class="text-[9px] sm:text-[10px] font-bold text-[#0D8E30] uppercase bg-[#DBF7E4] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 border border-emerald-100"><i class="ph ph-check-fat-fill"></i> Paid</span>`;
             } else {
-                paymentAction = `<button onclick="collectPayment(${p.id}, this)" class="text-[11px] font-black text-white uppercase bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 rounded-xl shadow-md transition active:scale-95 flex items-center gap-2">
-                    <i class="ph ph-hand-coins text-base"></i> Receive Cash
+                paymentAction = `<button onclick="collectPayment(${p.id}, this)" class="text-[9px] sm:text-[11px] font-black text-white uppercase bg-[#0D8E30] hover:bg-[#0D8E30] px-2 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl shadow-md transition active:scale-95 flex items-center gap-1 sm:gap-2" style="color: #ffffff !important;">
+                    <i class="ph ph-hand-coins text-sm sm:text-base"></i> <span class="hidden sm:inline">Receive Cash</span><span class="sm:hidden">Collect</span>
                 </button>`;
             }
 
             return `
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-white border ${isNear ? 'border-emerald-200 shadow-md ring-1 ring-emerald-50' : 'border-slate-200 shadow-sm'} animate-[fadeIn_0.5s_ease-out]">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-white border ${isNear ? 'border-[#0D8E30] shadow-md ring-1 ring-emerald-50' : 'border-slate-200 shadow-sm'} animate-[fadeIn_0.5s_ease-out]">
                 <div class="w-10 h-10 rounded-xl ${iconBg} border flex items-center justify-center shrink-0 ${iconColor} relative">
                     <i class="ph ph-receipt text-xl"></i>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isNear ? 'bg-emerald-500' : 'bg-amber-500'}"></div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isNear ? 'bg-[#0D8E30]' : 'bg-[#E4E1FD]0'}"></div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-2">
-                        <p class="font-black text-slate-800 text-base">₱ ${parseFloat(p.fare_amount).toFixed(2)}</p>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${p.passenger_type}</span>
+                        <p class="font-black text-[#0F172A] text-base">₱ ${parseFloat(p.fare_amount).toFixed(2)}</p>
+                        <span class="text-[9px] font-bold text-[#4C5C79] uppercase tracking-widest">${p.passenger_type}</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 truncate">${p.origin_name} &rarr; <span class="font-bold text-slate-700">${p.dest_name}</span></p>
-                    <p class="text-[9px] ${isNear ? 'text-emerald-600 font-bold' : 'text-slate-400'} mt-0.5">
+                    <p class="text-[11px] text-[#4C5C79] truncate">${p.origin_name} &rarr; <span class="font-bold text-[#0F172A]">${p.dest_name}</span></p>
+                    <p class="text-[9px] ${isNear ? 'text-[#0D8E30] font-bold' : 'text-[#4C5C79]'} mt-0.5">
                         <i class="ph ${isNear ? 'ph-map-pin-line' : 'ph-navigation-arrow'}"></i> ${isNear ? 'Arriving Soon' : p.distance_km.toFixed(1) + ' km away'}
                     </p>
                 </div>
                 <div class="text-right shrink-0">
                     <div class="mb-1">${paymentAction}</div>
-                    <p class="text-[10px] font-medium text-slate-400">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <p class="text-[10px] font-medium text-[#4C5C79]">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                 </div>
             </div>`;
         }).join('');
@@ -525,7 +518,7 @@ function setMockGps() {
     // Show GPS status indicator
     const gpsIndicator = document.createElement('div');
     gpsIndicator.id = 'gps-status';
-    gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-lg text-xs font-bold text-slate-500 transition-colors';
+    gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#4C5C79] transition-colors';
     gpsIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> GPS Connecting...';
     document.body.appendChild(gpsIndicator);
 
@@ -549,11 +542,11 @@ function setMockGps() {
             .then(d => {
                 if (d.success) {
                     if (mockLat !== null) {
-                        gpsIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)] animate-pulse"></span> Mock GPS Active`;
-                        gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2 shadow-lg text-xs font-bold text-amber-700 transition-colors';
+                        gpsIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-[#E4E1FD]0 shadow-[0_0_6px_rgba(245,158,11,0.6)] animate-pulse"></span> Mock GPS Active`;
+                        gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-[#E4E1FD] border border-[#4B2EFA] rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#4B2EFA] transition-colors';
                     } else {
-                        gpsIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]"></span> GPS Active · ${speed.toFixed(0)} km/h`;
-                        gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2 shadow-lg text-xs font-bold text-green-700 transition-colors';
+                        gpsIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-[#DBF7E4]0 shadow-[0_0_6px_rgba(34,197,94,0.6)]"></span> GPS Active`;
+                        gpsIndicator.className = 'fixed bottom-20 md:bottom-4 right-4 z-50 flex items-center gap-2 bg-[#DBF7E4] border border-[#0D8E30] rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#0D8E30] transition-colors';
                     }
                 }
             })
@@ -564,7 +557,7 @@ function setMockGps() {
         function(err) {
             console.warn('GPS Error:', err.message);
             gpsIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> GPS Unavailable';
-            gpsIndicator.className = gpsIndicator.className.replace('text-slate-500', 'text-red-500');
+            gpsIndicator.className = gpsIndicator.className.replace('text-[#4C5C79]', 'text-red-500');
         },
         { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );

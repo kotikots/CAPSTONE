@@ -1,3 +1,4 @@
+<?php require_once '../config/db.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,38 +34,58 @@
             }
             .no-print { display: none !important; }
         }
+
+        /* Prevent text cursor on UI elements but keep inputs typable */
+        input {
+            user-select: auto !important;
+            cursor: auto !important;
+        }
+
+        /* Toast Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
+        .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-out { animation: fadeOut 0.3s ease-in forwards; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans h-screen flex flex-col overflow-hidden">
+<body class="font-sans h-screen flex flex-col overflow-hidden select-none cursor-default text-blue-900" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%) !important;">
 
-    <header class="bg-blue-600 p-6 shadow-xl text-white flex items-center justify-between">
+    <header class="bg-white/40 backdrop-blur-md border-b border-white/50 p-6 shadow-sm flex items-center justify-between">
         <div class="flex items-center gap-4 select-none tracking-tight" onclick="handleLogoClick()">
-            <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-12 h-12 object-contain drop-shadow-lg">
-            <h1 class="text-3xl font-black italic">PARE</h1>
+            <img src="<?= BASE_PATH ?>/assets/img/logo.png?v=2" alt="PARE Logo" class="w-12 h-12 object-contain drop-shadow-sm">
+
         </div>
-        <div class="bg-blue-700 px-6 py-2 rounded-2xl border border-blue-400/30">
-            <span id="loc-text" class="font-bold italic uppercase tracking-widest">Finding Location...</span>
-        </div>
+        <div class="bg-white/60 px-6 py-2 rounded-2xl border border-white/80 shadow-sm">
+            <span id="loc-text" class="font-bold italic uppercase tracking-widest text-blue-800">Finding Location...</span>
         </div>
     </header>
 
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4"></div>
+
     <!-- Admin Unbind Modal -->
-    <div id="unbind-modal" class="hidden flex fixed inset-0 bg-slate-900/60 z-50 items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full border-t-8 border-red-600">
-            <h2 class="text-2xl font-black mb-2 text-slate-800 flex items-center gap-3">
+    <div id="unbind-modal" class="hidden flex fixed inset-0 bg-slate-900/40 z-50 items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-white/50 border-t-8 border-t-red-500">
+            <h2 class="text-2xl font-black mb-2 text-red-900 flex items-center gap-3">
                 <i class="ph ph-warning-circle text-red-600"></i> Disconnect Kiosk
             </h2>
-            <p class="text-slate-500 mb-6 text-sm font-medium">Enter admin password to release this tablet from its currently assigned bus.</p>
+            <p class="text-red-900/70 mb-6 text-sm font-medium">Enter admin password to release this tablet from its currently assigned bus.</p>
 
             <div class="space-y-4">
                 <div>
-                    <input type="password" id="unbind-pin" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-red-500 font-bold focus:ring-2 focus:ring-red-500/20 outline-none transition" placeholder="Admin password">
+                    <input type="password" id="unbind-pin" class="w-full bg-white/70 border-2 border-white focus:border-red-400 rounded-xl px-4 py-3 font-bold focus:ring-4 focus:ring-red-400/20 outline-none transition text-red-900 placeholder-red-900/40 shadow-inner" placeholder="Admin password">
                 </div>
                 <div id="unbind-msg" class="hidden text-sm font-bold p-3 rounded-xl mt-2"></div>
                 
                 <div class="flex gap-3 mt-4 pt-2">
-                    <button onclick="closeUnbindModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-xl transition active:scale-95">Cancel</button>
-                    <button onclick="confirmUnbind()" class="flex-[2] bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl shadow-lg shadow-red-500/20 transition active:scale-95">Unbind Device</button>
+                    <button onclick="closeUnbindModal()" class="flex-1 bg-white/60 hover:bg-white border border-white/80 text-red-800 font-bold py-3.5 rounded-xl transition active:scale-95 shadow-sm">Cancel</button>
+                    <button onclick="confirmUnbind()" class="flex-[2] bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-black py-3.5 rounded-xl shadow-lg shadow-red-500/30 transition active:scale-95">Unbind Device</button>
                 </div>
             </div>
         </div>
@@ -72,28 +93,28 @@
 
     <!-- Setup Mode UI -->
     <main id="setup-ui" class="flex-grow flex items-center justify-center p-6 hidden">
-        <div class="bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-blue-600 max-w-lg w-full">
-            <h2 class="text-3xl font-black mb-2 text-slate-800 flex items-center gap-3">
+        <div class="bg-white/50 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/60 max-w-lg w-full">
+            <h2 class="text-3xl font-black mb-2 text-blue-900 flex items-center gap-3">
                 <i class="ph ph-device-tablet text-blue-600"></i> Setup Device
             </h2>
-            <p class="text-slate-500 mb-6 font-medium">This tablet requires binding to a physical vehicle. Please select the assigned Bus and authenticate.</p>
+            <p class="text-blue-900/70 mb-6 font-medium">This tablet requires binding to a physical vehicle. Please select the assigned Bus and authenticate.</p>
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-bold text-slate-600 mb-2">Select Bus</label>
-                    <select id="bus-select" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:border-blue-500 outline-none">
+                    <label class="block text-sm font-bold text-blue-900/80 mb-2 uppercase tracking-wide">Select Bus</label>
+                    <select id="bus-select" class="w-full bg-white/60 border-2 border-white/80 rounded-xl px-4 py-3 font-bold focus:border-blue-400 outline-none text-blue-900 shadow-inner">
                         <option value="">Loading buses...</option>
                     </select>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-bold text-slate-600 mb-2">Admin Password</label>
-                    <input type="password" id="setup-pin" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 outline-none" placeholder="Enter admin password">
+                    <label class="block text-sm font-bold text-blue-900/80 mb-2 uppercase tracking-wide">Admin Password</label>
+                    <input type="password" id="setup-pin" class="w-full bg-white/60 border-2 border-white/80 rounded-xl px-4 py-3 focus:border-blue-400 outline-none text-blue-900 shadow-inner placeholder-blue-900/40" placeholder="Enter admin password">
                 </div>
 
                 <div id="setup-msg" class="hidden text-sm font-bold p-3 rounded-xl mt-2"></div>
 
-                <button onclick="bindDevice()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl shadow-lg mt-4 transition-colors">
+                <button onclick="bindDevice()" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-500/30 mt-4 transition-all active:scale-95">
                     Lock Device to Bus
                 </button>
             </div>
@@ -101,46 +122,45 @@
     </main>
 
     <!-- Application UI -->
-    <main id="app-ui" class="flex-grow overflow-y-auto hidden">
-        <div class="max-w-6xl mx-auto p-6 md:p-16">
+    <main id="app-ui" class="flex-grow overflow-y-auto flex flex-col justify-start py-8 hidden">
+        <div class="max-w-6xl mx-auto w-full p-6 md:p-10">
             
             <!-- Step 1: Category Selection -->
-            <div id="step-1" class="w-full grid grid-cols-1 md:grid-cols-3 gap-8">
-                <button onclick="toVerify('regular')" class="bg-white p-10 rounded-3xl shadow-xl border-t-8 border-blue-600 flex flex-col items-center justify-center transition hover:scale-[1.02] active:scale-95">
-                    <i class="ph ph-user text-6xl text-blue-600 mb-4"></i>
-                    <h2 class="text-3xl font-bold">Regular</h2>
+            <div id="step-1" class="w-full min-h-[60vh] flex flex-col justify-center">
+                <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-8">
+                <button onclick="toVerify('regular')" class="bg-white/50 backdrop-blur-md p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 border-t-8 border-t-blue-500 flex flex-col items-center justify-center transition hover:scale-[1.02] hover:bg-white/60 active:scale-95 group">
+                    <i class="ph ph-user text-6xl text-blue-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                    <h2 class="text-3xl font-black text-blue-900">Regular</h2>
                 </button>
-                <button onclick="toVerify('student')" class="bg-white p-10 rounded-3xl shadow-xl border-t-8 border-orange-500 flex flex-col items-center justify-center transition hover:scale-[1.02] active:scale-95">
-                    <i class="ph ph-student text-6xl text-orange-600 mb-4"></i>
-                    <h2 class="text-xl font-bold leading-tight">Student / SR / PWD</h2>
+                <button onclick="toVerify('student')" class="bg-white/50 backdrop-blur-md p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 border-t-8 border-t-orange-400 flex flex-col items-center justify-center transition hover:scale-[1.02] hover:bg-white/60 active:scale-95 group">
+                    <i class="ph ph-student text-6xl text-orange-500 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                    <h2 class="text-xl font-black text-blue-900 leading-tight">Student / Senior / PWD</h2>
                 </button>
-                <button onclick="toVerify('special')" class="bg-white p-10 rounded-3xl shadow-xl border-t-8 border-red-500 flex flex-col items-center justify-center transition hover:scale-[1.02] active:scale-95">
-                    <i class="ph ph-heart text-6xl text-red-600 mb-4"></i>
-                    <h2 class="text-xl font-bold leading-tight">Teachers & Nurses</h2>
+                <button onclick="toVerify('special')" class="bg-white/50 backdrop-blur-md p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 border-t-8 border-t-rose-400 flex flex-col items-center justify-center transition hover:scale-[1.02] hover:bg-white/60 active:scale-95 group">
+                    <i class="ph ph-heart text-6xl text-rose-500 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                    <h2 class="text-xl font-black text-blue-900 leading-tight">Teachers & Healthcare Workers</h2>
                 </button>
+                </div>
             </div>
 
             <!-- Step 1.5: ID Verification -->
             <div id="step-verify" class="w-full max-w-lg mx-auto hidden">
-                <div class="bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-orange-500">
-                    <h2 class="text-3xl font-black mb-2 text-slate-800">Enter Your ID Number</h2>
-                    <p class="text-slate-500 mb-6" id="verify-subtitle">Type your ID number to verify your discount.</p>
+                <div class="bg-white/60 backdrop-blur-xl p-10 rounded-3xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.1)] border border-white/80">
+                    <h2 class="text-3xl font-black mb-2 text-blue-900">Enter Your ID Number</h2>
+                    <p class="text-blue-900/70 mb-6 font-medium" id="verify-subtitle">Type your ID number to verify your discount.</p>
                     
                     <input type="text" id="id-input" placeholder="e.g. SUM2023-01996"
-                           class="w-full text-center text-3xl font-mono font-bold border-2 border-slate-200 rounded-2xl px-6 py-5 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 tracking-widest mb-4"
+                           class="w-full text-center text-3xl font-mono font-bold bg-white/70 border-2 border-white rounded-2xl px-6 py-5 focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-400/30 text-blue-900 placeholder-blue-900/30 tracking-widest mb-4 shadow-inner"
                            autocomplete="off" autofocus>
                     
-                    <div id="verify-result" class="hidden mb-4 p-4 rounded-2xl text-left"></div>
+                    <div id="verify-result" class="hidden mb-4 p-4 rounded-2xl text-left border bg-white/50 border-white/60"></div>
                     
                     <div class="flex gap-4">
-                        <button onclick="goHome()" class="flex-1 bg-slate-200 text-slate-600 py-4 rounded-2xl text-lg font-bold transition hover:bg-slate-300">
+                        <button onclick="goHome()" class="flex-1 bg-white/60 border border-white/80 text-blue-800 py-4 rounded-2xl text-lg font-bold transition hover:bg-white/80 shadow-sm">
                             ← Back
                         </button>
-                        <button id="verify-btn" onclick="verifyId()" class="flex-[2] bg-orange-600 text-white py-4 rounded-2xl text-lg font-black shadow-lg hover:bg-orange-500 transition active:scale-95">
+                        <button id="verify-btn" onclick="verifyId()" class="flex-[2] bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 rounded-2xl text-lg font-black shadow-lg shadow-orange-500/30 hover:from-orange-400 hover:to-amber-400 transition active:scale-95">
                             Verify & Continue
-                        </button>
-                        <button id="skip-btn" onclick="skipVerification()" class="hidden flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl text-sm font-bold transition hover:bg-slate-200">
-                            Skip →
                         </button>
                     </div>
                 </div>
@@ -148,33 +168,43 @@
 
             <!-- Step 2: Destination Selection -->
             <div id="step-2" class="w-full hidden">
-                <h2 class="text-4xl font-black mb-4 text-slate-800 text-center">Where are you going?</h2>
+                <div class="relative w-full flex justify-center items-center mb-4 min-h-[50px]">
+                    <button onclick="goHome()" class="absolute left-0 bg-white/50 backdrop-blur-md hover:bg-white/80 border border-white/60 text-blue-900 font-black px-5 py-2.5 rounded-xl shadow-sm transition active:scale-95 flex items-center gap-2">
+                        <i class="ph ph-arrow-left text-xl"></i> Back
+                    </button>
+                    <h2 class="text-4xl font-black text-blue-900 text-center drop-shadow-sm">Where are you going?</h2>
+                </div>
                 <div id="origin-banner" class="flex items-center justify-center gap-2 mb-8">
-                    <span class="text-slate-400 text-sm font-semibold uppercase tracking-widest">Boarding from</span>
-                    <span id="origin-station-label" class="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-full uppercase tracking-wide">Detecting…</span>
+                    <span class="text-blue-900/70 text-sm font-black uppercase tracking-widest drop-shadow-sm">Boarding from</span>
+                    <span id="origin-station-label" class="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-black px-4 py-1.5 rounded-full uppercase tracking-wide shadow-md">Detecting…</span>
                 </div>
                 <div id="dest-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
 
             <!-- Step 3: Confirmation & Print -->
             <div id="step-3" class="w-full max-w-xl mx-auto hidden">
-                <div class="bg-white p-10 rounded-4xl shadow-2xl border-b-8 border-green-600 text-center">
-                    <h2 class="text-3xl font-black mb-6">Confirm Pass</h2>
-                    <div id="passenger-banner" class="hidden bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 text-left">
-                        <p class="text-green-800 font-bold" id="banner-name"></p>
-                        <p class="text-green-600 text-sm" id="banner-status"></p>
+                <div class="bg-white/60 backdrop-blur-xl p-10 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] border border-white/80 border-t-[12px] border-t-emerald-500 text-center">
+                    <h2 class="text-4xl font-black mb-6 text-blue-900">Confirm Pass</h2>
+                    <div id="passenger-banner" class="hidden bg-emerald-50/80 border border-emerald-200/60 rounded-2xl p-4 mb-4 text-left shadow-inner">
+                        <p class="text-emerald-900 font-black text-lg" id="banner-name"></p>
+                        <p class="text-emerald-700 text-sm font-bold" id="banner-status"></p>
                     </div>
-                    <div class="text-left space-y-4 border-y py-6 my-6">
-                        <p class="text-slate-500 font-bold uppercase text-xs tracking-widest">Ticket Details</p>
-                        <p class="text-lg">Type: <b id="sum-type" class="text-slate-800"></b></p>
-                        <p class="text-lg">From: <b id="sum-origin" class="text-slate-800"></b></p>
-                        <p class="text-lg">To: <b id="sum-dest" class="text-slate-800"></b></p>
-                        <p class="text-3xl text-green-600 font-black mt-2">Total: <span id="sum-fare"></span></p>
+                    <div class="text-left space-y-4 border-y border-white/60 py-6 my-6 relative">
+                        <div class="absolute -left-10 w-6 h-6 rounded-full bg-blue-100 top-1/2 -translate-y-1/2 shadow-inner"></div>
+                        <div class="absolute -right-10 w-6 h-6 rounded-full bg-blue-100 top-1/2 -translate-y-1/2 shadow-inner"></div>
+                        
+                        <p class="text-blue-900/50 font-black uppercase text-[10px] tracking-widest">Ticket Details</p>
+                        <p class="text-lg font-medium text-blue-900/80">Type: <b id="sum-type" class="text-blue-900 font-black"></b></p>
+                        <p class="text-lg font-medium text-blue-900/80">From: <b id="sum-origin" class="text-blue-900 font-black"></b></p>
+                        <p class="text-lg font-medium text-blue-900/80">To: <b id="sum-dest" class="text-blue-900 font-black"></b></p>
+                        <p class="text-4xl text-emerald-600 font-black mt-4 drop-shadow-sm">Total: <span id="sum-fare"></span></p>
                     </div>
-                    <button id="print-btn" onclick="printPass()" class="w-full bg-green-600 text-white py-6 rounded-2xl text-2xl font-black uppercase shadow-xl hover:bg-green-500 transition active:scale-95 disabled:bg-slate-300">
+                    <button id="print-btn" onclick="printPass()" class="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-6 rounded-2xl text-2xl font-black uppercase shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:from-emerald-400 hover:to-green-400 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="ph ph-printer mr-2"></i> Print Pass
                     </button>
-                    <button onclick="goHome()" class="mt-4 text-slate-400 font-bold hover:text-slate-600">Cancel Transaction</button>
+                    <button onclick="goHome()" class="w-full mt-4 bg-white border-2 border-slate-200 text-slate-500 py-4 rounded-2xl text-lg font-bold uppercase shadow-sm hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition active:scale-95 flex items-center justify-center gap-2">
+                        <i class="ph ph-x-circle text-xl"></i> Cancel Transaction
+                    </button>
                 </div>
             </div>
 
@@ -218,6 +248,38 @@
         let ticket = { type: "", dest: "", fare: 0, specificType: null };
         let passenger = { id: null, name: null, verified: false, idNumber: null };
         let gpsActive = false;
+
+        // ─── Toast System ───
+        function showToast(title, message, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: { bg: 'bg-emerald-500', icon: 'ph-check-circle', glow: 'shadow-emerald-500/40' },
+                error:   { bg: 'bg-rose-500',    icon: 'ph-warning-circle', glow: 'shadow-rose-500/40' },
+                info:    { bg: 'bg-blue-500',    icon: 'ph-info',           glow: 'shadow-blue-500/40' }
+            }[type] || { bg: 'bg-blue-500', icon: 'ph-info', glow: 'shadow-blue-500/40' };
+
+            toast.className = `min-w-[320px] max-w-md pointer-events-auto bg-white rounded-2xl shadow-xl overflow-hidden flex items-stretch border border-slate-100 animate-slide-in`;
+            toast.innerHTML = `
+                <div class="${colors.bg} w-2 flex-shrink-0"></div>
+                <div class="p-4 flex gap-4 items-center w-full">
+                    <div class="w-10 h-10 rounded-xl ${colors.bg}/10 flex items-center justify-center text-2xl ${colors.bg.replace('bg-','text-')} shrink-0">
+                        <i class="ph ${colors.icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-black text-slate-800 text-sm">${title}</p>
+                        <p class="text-slate-500 text-xs font-medium">${message}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.replace('animate-slide-in', 'animate-fade-out');
+                setTimeout(() => toast.remove(), 350);
+            }, 5000);
+        }
 
         // ─── Hidden Admin Unbind Logic ───
         let logoClicks = 0;
@@ -281,7 +343,89 @@
             });
         }
 
-        // ─── GPS: dual purpose ────────────────────────────────────────────
+        // ─── GPS: watchPosition + movement threshold ──────────────────────
+        // Strategy:
+        //  1. watchPosition fires the moment the device detects movement — no
+        //     fixed polling delay. On real GPS hardware this is ~1-2s.
+        //  2. We only push to the server if the bus moved >5m OR >2s passed
+        //     since the last push — avoids flooding the server when stationary.
+        //  3. A safety-net setInterval re-triggers getCurrentPosition every 8s
+        //     in case watchPosition stalls (common on Android Chrome when the
+        //     screen dims or the browser throttles background tabs).
+
+        let watchId       = null;   // ID returned by watchPosition
+        let gpsLoopTimer  = null;   // Fallback polling timer
+        let lastPushTime  = 0;
+        let lastPushLat   = null;
+        let lastPushLng   = null;
+        let cachedTripId  = null;   // Cache trip_id so server skips a SELECT
+        const MIN_PUSH_INTERVAL_MS = 2000;  // Never push faster than 2s
+        const MIN_MOVE_METRES      = 5;     // Don't push if moved less than 5m
+
+        // Haversine in JS (metres) — fast, no server round-trip needed
+        function haversineM(lat1, lng1, lat2, lng2) {
+            const R  = 6371000;
+            const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
+            const df = (lat2 - lat1) * Math.PI / 180;
+            const dl = (lng2 - lng1) * Math.PI / 180;
+            const a  = Math.sin(df/2)**2 + Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function pushLocation(lat, lng, acc) {
+            const now    = Date.now();
+            const movedM = (lastPushLat !== null)
+                ? haversineM(lastPushLat, lastPushLng, lat, lng) : Infinity;
+
+            // Skip push: too soon AND hasn't moved enough
+            if (now - lastPushTime < MIN_PUSH_INTERVAL_MS && movedM < MIN_MOVE_METRES) return;
+
+            lastPushTime = now;
+            lastPushLat  = lat;
+            lastPushLng  = lng;
+
+            fetch('push_location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat, lng,
+                    accuracy : acc,
+                    trip_id  : cachedTripId,   // let server skip SELECT trips
+                    bus_id   : localStorage.getItem('kiosk_bus_id')
+                })
+            })
+            .then(r => r.json())
+            .then(d => { if (d.trip_id) cachedTripId = d.trip_id; })
+            .catch(() => {});
+        }
+
+        function onGPSFix(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const acc = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
+
+            // Reject IP-based garbage locations
+            if (acc !== null && acc > 1000) {
+                console.warn('Rejected inaccurate GPS fix: ±' + acc + 'm');
+                return;
+            }
+
+            gpsActive = true;
+
+            fetch(`match_km.php?lat=${lat}&lng=${lng}`)
+                .then(r => r.json())
+                .then(data => {
+                    currentLoc = { name: data.station_name, km: data.km_marker };
+                    document.getElementById('loc-text').innerText =
+                        '📍 ' + data.station_name + (acc ? ' ±' + acc + 'm' : '');
+                })
+                .catch(() => {
+                    document.getElementById('loc-text').innerText = '📍 GPS Active';
+                });
+
+            pushLocation(lat, lng, acc);
+        }
+
         function initGPS() {
             if (!navigator.geolocation) {
                 document.getElementById('loc-text').innerText = 'GPS not available';
@@ -289,42 +433,41 @@
             }
             document.getElementById('loc-text').innerText = '⏳ Acquiring GPS…';
 
-            navigator.geolocation.watchPosition(
-                pos => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    const spd = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : 0;
-                    const acc = pos.coords.accuracy ? pos.coords.accuracy.toFixed(0) : null;
-                    gpsActive = true;
+            // Clear any previous watchers / timers
+            if (watchId !== null)    navigator.geolocation.clearWatch(watchId);
+            if (gpsLoopTimer)        clearInterval(gpsLoopTimer);
 
-                    fetch(`match_km.php?lat=${lat}&lng=${lng}`)
-                        .then(r => r.json())
-                        .then(data => {
-                            currentLoc = { name: data.station_name, km: data.km_marker };
-                            document.getElementById('loc-text').innerText =
-                                '📍 ' + data.station_name + (acc ? ' ±' + acc + 'm' : '');
-                        })
-                        .catch(() => {
-                            document.getElementById('loc-text').innerText = '📍 GPS Active';
-                        });
+            const gpsOpts = {
+                enableHighAccuracy: true,
+                maximumAge        : 5000,   // accept cached fix up to 5s old
+                timeout           : 15000
+            };
 
-                    fetch('push_location.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            lat, lng, speed: spd, accuracy: acc,
-                            bus_id: localStorage.getItem('kiosk_bus_id')
-                        })
-                    }).catch(() => {});
-                },
-                err => {
+            // ── Primary: watchPosition fires on every device movement ──────
+            watchId = navigator.geolocation.watchPosition(
+                pos  => onGPSFix(pos),
+                err  => {
                     const msgs = { 1: 'Location denied', 2: 'GPS unavailable', 3: 'GPS timeout' };
-                    document.getElementById('loc-text').innerText =
-                        '⚠️ ' + (msgs[err.code] || 'GPS error');
+                    if (Date.now() - lastPushTime > 20000) {
+                        document.getElementById('loc-text').innerText = '⚠️ ' + (msgs[err.code] || 'GPS error');
+                    }
                 },
-                { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
+                gpsOpts
             );
+
+            // ── Fallback: every 8s force a fresh fix in case watchPosition stalls ─
+            // (Android Chrome throttles watchPosition in background tabs)
+            gpsLoopTimer = setInterval(() => {
+                if (Date.now() - lastPushTime > 8000) {
+                    navigator.geolocation.getCurrentPosition(
+                        pos => onGPSFix(pos),
+                        ()  => {},   // silent — watchPosition may still be alive
+                        { ...gpsOpts, maximumAge: 0 }  // force fresh fix
+                    );
+                }
+            }, 8000);
         }
+
 
         // ─── Setup Logic ───
         function initDevice() {
@@ -406,20 +549,17 @@
             // Reset passenger state
             passenger = { id: null, name: null, verified: false, idNumber: null };
 
-            // For regular passengers, show optional ID entry
+            if (type === 'regular') {
+                toStep2('regular');
+                return;
+            }
+
+            // For discounted passengers, show ID entry
             const subtitle = document.getElementById('verify-subtitle');
-            const skipBtn = document.getElementById('skip-btn');
             const verifyBtn = document.getElementById('verify-btn');
 
-            if (type === 'regular') {
-                subtitle.textContent = 'Optional: Enter your ID to link this ride to your account.';
-                skipBtn.classList.remove('hidden');
-                verifyBtn.textContent = 'Continue';
-            } else {
-                subtitle.textContent = 'Enter your ID number to verify your discount.';
-                skipBtn.classList.add('hidden');
-                verifyBtn.textContent = 'Verify & Continue';
-            }
+            subtitle.textContent = 'Required: Enter your ID number to claim your discount.';
+            verifyBtn.textContent = 'Verify & Continue';
 
             // Reset UI
             document.getElementById('id-input').value = '';
@@ -428,11 +568,6 @@
             hideAllSteps();
             document.getElementById('step-verify').classList.remove('hidden');
             document.getElementById('id-input').focus();
-        }
-
-        // ─── Skip verification (regular passengers only) ───
-        function skipVerification() {
-            toStep2(ticket.type);
         }
 
         // ─── Verify ID number ───
@@ -490,8 +625,8 @@
                             
                             let warningHtml = "";
                             if (ticket.type !== actualCategory && ticket.type !== 'regular') {
-                                let clickedText = ticket.type === 'special' ? 'Teacher/Nurse' : 'Student/SR/PWD';
-                                let actualText = actualCategory === 'special' ? 'Teacher/Nurse' : 'Student/SR/PWD';
+                                let clickedText = ticket.type === 'special' ? 'Teacher/Healthcare Worker' : 'Student/SR/PWD';
+                                let actualText = actualCategory === 'special' ? 'Teacher/Healthcare Worker' : 'Student/SR/PWD';
                                 warningHtml = `
                                     <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 leading-snug">
                                         <b class="text-red-800">⚠️ Category Auto-Corrected:</b><br/> 
@@ -532,15 +667,18 @@
                         passenger.id = null;
 
                         if (ticket.type !== 'regular') {
-                            // Discounted but unregistered — STILL give the discount
-                            resultDiv.className = 'mb-4 p-4 rounded-2xl text-left bg-orange-50 border border-orange-200';
+                            // Discounted but unregistered — BLOCK discount
+                            resultDiv.className = 'mb-4 p-4 rounded-2xl text-left bg-red-50 border border-red-200';
                             resultDiv.innerHTML = `
-                                <p class="text-orange-800 font-bold">⚠️ ID Not Registered</p>
-                                <p class="text-orange-700 text-sm">Discount will still be applied. Your ID number will be logged for records.</p>
-                                <p class="text-orange-600 text-xs mt-1">Register at PARE website for faster boarding next time!</p>
+                                <p class="text-red-800 font-bold">⚠️ ID Not Registered</p>
+                                <p class="text-red-700 text-sm">You must have a registered PARE account to claim this discount.</p>
+                                <p class="text-red-600 text-xs mt-1">Please register online or proceed as a regular passenger.</p>
                             `;
-                            verifyBtn.textContent = 'Continue with Discount →';
-                            verifyBtn.onclick = function() { toStep2(ticket.type); };
+                            verifyBtn.textContent = 'Proceed as Regular →';
+                            verifyBtn.onclick = function() { 
+                                ticket.type = 'regular';
+                                toStep2('regular'); 
+                            };
                         } else {
                             resultDiv.className = 'mb-4 p-4 rounded-2xl text-left bg-slate-50 border border-slate-200';
                             resultDiv.innerHTML = `
@@ -592,7 +730,7 @@
             hideAllSteps();
             document.getElementById('step-2').classList.remove('hidden');
             
-            fetch(`get_destinations.php?current_km=${currentLoc.km}&bus_id=${localStorage.getItem('kiosk_bus_id')}`)
+            fetch(`get_destinations.php?current_km=${currentLoc.km}&bus_id=${localStorage.getItem('kiosk_bus_id')}&_t=${Date.now()}`)
                 .then(r => r.json())
                 .then(response => {
                     // Use the direction-aware origin from the backend
@@ -611,12 +749,12 @@
                         let fare = s.regular_fare;
                         let typeLabel = "Regular";
                         if (ticket.type === 'student') { fare = s.student_fare; typeLabel = ticket.specificType || "Student/SR/PWD"; }
-                        else if (ticket.type === 'special') { fare = s.special_fare; typeLabel = ticket.specificType || "Teacher/Nurse"; }
+                        else if (ticket.type === 'special') { fare = s.special_fare; typeLabel = ticket.specificType || "Teacher/Healthcare Worker"; }
 
                         return `
-                        <button onclick="toStep3('${s.station_name}', ${fare}, '${typeLabel}')" class="bg-white p-8 rounded-2xl shadow-md border-2 border-transparent hover:border-blue-600 text-center flex flex-col items-center">
-                            <span class="block text-lg font-black mb-2">${s.station_name}</span>
-                            <span class="text-blue-600 font-black text-xl bg-blue-50 px-4 py-1 rounded-full">₱ ${parseFloat(fare).toFixed(2)}</span>
+                        <button onclick="toStep3('${s.station_name}', ${fare}, '${typeLabel}')" class="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 hover:bg-white/80 transition text-center flex flex-col items-center">
+                            <span class="block text-lg font-black mb-2 text-blue-900 drop-shadow-sm">${s.station_name}</span>
+                            <span class="text-blue-900 font-black text-xl bg-white/70 shadow-inner border border-white/50 px-4 py-1 rounded-full">₱ ${parseFloat(fare).toFixed(2)}</span>
                         </button>
                         `;
                     }).join('');
@@ -729,13 +867,13 @@
                     window.print();
                     setTimeout(() => { location.reload(); }, 3000);
                 } else {
-                    alert("Error saving transaction: " + data.message);
+                    showToast("Error", data.message, 'error');
                     btn.disabled = false;
                     btn.innerText = originalText;
                 }
             })
             .catch(err => {
-                alert("Network error: " + err.message);
+                showToast("Network Error", "Could not connect to the server.", 'error');
                 btn.disabled = false;
                 btn.innerText = originalText;
             });

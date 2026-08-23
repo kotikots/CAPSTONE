@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 /**
  * admin/export_csv.php — Download all tickets as CSV for a given date range.
  */
 session_start();
 require_once '../config/db.php';
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: /PARE/auth/login.php'); exit;
+    header('Location: ' . BASE_PATH . '/auth/login.php'); exit;
 }
 
 $from = $_GET['from'] ?? date('Y-m-01');

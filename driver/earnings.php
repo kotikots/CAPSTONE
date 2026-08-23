@@ -59,13 +59,13 @@ include '../includes/header.php';
 ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-screen" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%);">
     <?php include '../includes/sidebar_driver.php'; ?>
-    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
 
         <div class="mb-8 mt-2 md:mt-0">
-            <h2 class="text-2xl font-black text-slate-800">My Earnings</h2>
-            <p class="text-slate-500 text-sm mt-1">Revenue collected during your trips</p>
+            <h2 class="text-2xl font-black text-[#0F172A]">My Earnings</h2>
+            <p class="text-[#4C5C79] text-sm mt-1">Revenue collected during your trips</p>
         </div>
 
         <!-- Revenue Cards -->
@@ -76,50 +76,50 @@ include '../includes/header.php';
                 ['This Month', $month,   'ph-chart-line', 'violet',  'month'],
                 ['All Time',   $allTime, 'ph-trophy',     'emerald', 'all'],
             ] as [$label, $data, $icon, $color, $periodId]): ?>
-            <div onclick="showRecordsModal('<?= $periodId ?>', '<?= addslashes($label) ?>')" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:border-<?= $color ?>-300 transition-all active:scale-95 group">
+            <div onclick="showRecordsModal('<?= $periodId ?>', '<?= addslashes($label) ?>')" class="bg-white rounded-3xl p-5 shadow-sm border border-[#E2E8F0] cursor-pointer hover:shadow-md hover:border-<?= $color ?>-300 transition-all active:scale-95 group">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-<?= $color ?>-100 flex items-center justify-center group-hover:bg-<?= $color ?>-500 group-hover:text-white transition-colors duration-300 text-<?= $color ?>-600">
+                    <div class="w-10 h-10 rounded-xl bg-<?= $color ?>-200 flex items-center justify-center transition-colors duration-300 text-<?= $color ?>-700">
                         <i class="ph <?= $icon ?> text-xl"></i>
                     </div>
-                    <i class="ph ph-caret-right text-slate-300 group-hover:text-<?= $color ?>-500 group-hover:translate-x-1 transition-all"></i>
+                    <i class="ph ph-caret-right text-[#64748B] group-hover:text-<?= $color ?>-500 group-hover:translate-x-1 transition-all"></i>
                 </div>
-                <p class="text-2xl font-black text-slate-800"><?= peso((float)$data['revenue']) ?></p>
-                <p class="text-slate-400 text-xs mt-1"><?= $label ?> · <?= (int)$data['tickets'] ?> tickets</p>
+                <p class="text-2xl font-black text-[#0F172A]"><?= peso((float)$data['revenue']) ?></p>
+                <p class="text-[#4C5C79] text-xs mt-1"><?= $label ?> · <?= (int)$data['tickets'] ?> tickets</p>
             </div>
             <?php endforeach; ?>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Chart -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+            <div class="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                <h3 class="font-bold text-[#0F172A] mb-4 flex items-center gap-2">
                     <i class="ph ph-chart-bar text-orange-500"></i> Last 14 Days
                 </h3>
                 <canvas id="earningsChart" height="120"></canvas>
             </div>
 
             <!-- Recent trips -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+            <div class="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] p-6">
+                <h3 class="font-bold text-[#0F172A] mb-4 flex items-center gap-2">
                     <i class="ph ph-clock-counter-clockwise text-amber-500"></i> Recent Trips
                 </h3>
                 <?php if (empty($trips)): ?>
-                <div class="text-center py-8 text-slate-400"><p class="text-sm">No trips yet.</p></div>
+                <div class="text-center py-8 text-[#4C5C79]"><p class="text-sm">No trips yet.</p></div>
                 <?php else: ?>
                 <div class="space-y-3 overflow-auto max-h-72">
                     <?php foreach ($trips as $tr): ?>
-                    <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9]">
                         <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                            <?= $tr['status']==='active' ? 'bg-green-100' : 'bg-slate-100' ?>">
-                            <i class="ph ph-bus text-sm <?= $tr['status']==='active' ? 'text-green-600' : 'text-slate-400' ?>"></i>
+                            <?= $tr['status']==='active' ? 'bg-[#DBF7E4]' : 'bg-[#E8EEF8]' ?>">
+                            <i class="ph ph-bus text-sm <?= $tr['status']==='active' ? 'text-[#0D8E30]' : 'text-[#4C5C79]' ?>"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-xs text-slate-700 truncate"><?= htmlspecialchars($tr['start_name']) ?> → <?= htmlspecialchars($tr['end_name']) ?></p>
-                            <p class="text-slate-400 text-xs"><?= date('M d, h:i A', strtotime($tr['started_at'])) ?> · <?= $tr['passenger_count'] ?> pax</p>
+                            <p class="font-semibold text-xs text-[#0F172A] truncate"><?= htmlspecialchars($tr['start_name']) ?> → <?= htmlspecialchars($tr['end_name']) ?></p>
+                            <p class="text-[#4C5C79] text-xs"><?= date('M d, h:i A', strtotime($tr['started_at'])) ?> · <?= $tr['passenger_count'] ?> pax</p>
                         </div>
                         <div class="text-right shrink-0">
-                            <p class="font-black text-sm text-emerald-700"><?= peso((float)$tr['total_revenue']) ?></p>
-                            <span class="text-xs <?= $tr['status']==='active' ? 'text-green-600 font-bold' : 'text-slate-400' ?>"><?= ucfirst($tr['status']) ?></span>
+                            <p class="font-black text-sm text-[#0D8E30]"><?= peso((float)$tr['total_revenue']) ?></p>
+                            <span class="text-xs <?= $tr['status']==='active' ? 'text-[#0D8E30] font-bold' : 'text-[#4C5C79]' ?>"><?= ucfirst($tr['status']) ?></span>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -131,27 +131,27 @@ include '../includes/header.php';
 </div>
 
 <!-- Records Modal -->
-<div id="records-modal" class="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300" style="transition: opacity 0.3s ease, visibility 0.3s ease;">
+<div id="records-modal" class="fixed inset-0 z-[9999] bg-[#061A53]/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300" style="transition: opacity 0.3s ease, visibility 0.3s ease;">
     <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] transform scale-95 transition-transform duration-300" id="records-modal-box">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div class="p-6 border-b border-[#E2E8F0] flex justify-between items-center bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9]">
             <div>
-                <h3 id="records-modal-title" class="text-xl font-black text-slate-800">Earnings Records</h3>
-                <p class="text-sm text-slate-500 font-medium">Viewing ticket details</p>
+                <h3 id="records-modal-title" class="text-xl font-black text-[#0F172A]">Earnings Records</h3>
+                <p class="text-sm text-[#4C5C79] font-medium">Viewing ticket details</p>
             </div>
-            <button onclick="closeRecordsModal()" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
+            <button onclick="closeRecordsModal()" class="w-10 h-10 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#4C5C79] hover:text-[#0F172A] hover:bg-[#E8EEF8] transition">
                 <i class="ph ph-x text-lg"></i>
             </button>
         </div>
-        <div class="px-6 py-4 bg-white border-b border-slate-100">
+        <div class="px-6 py-4 bg-white border-b border-[#E2E8F0]">
             <div class="relative">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                <input type="text" id="records-search" oninput="filterModalRecords()" placeholder="Search passenger, ticket code, or destination..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all text-slate-700 placeholder-slate-400">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#4C5C79] text-lg"></i>
+                <input type="text" id="records-search" oninput="filterModalRecords()" placeholder="Search passenger, ticket code, or destination..." class="w-full pl-10 pr-4 py-2.5 bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9] border border-[#E2E8F0] rounded-xl text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all text-[#0F172A] placeholder-slate-400">
             </div>
         </div>
         <div class="p-6 overflow-y-auto no-scrollbar flex-1 bg-white relative">
             <div id="records-modal-loader" class="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center hidden">
                  <i class="ph ph-spinner-gap animate-spin text-4xl text-amber-500 mb-2"></i>
-                 <p class="text-sm font-bold text-slate-500">Loading records...</p>
+                 <p class="text-sm font-bold text-[#4C5C79]">Loading records...</p>
             </div>
             <div id="records-modal-content" class="space-y-3">
                 <!-- Records injected here -->
@@ -177,7 +177,7 @@ function renderModalRecords(records) {
     const content = document.getElementById('records-modal-content');
     
     if (records.length === 0) {
-        content.innerHTML = `<div class="text-center text-slate-400 py-10"><i class="ph ph-ticket text-5xl mb-3 block"></i> No matching records found.</div>`;
+        content.innerHTML = `<div class="text-center text-[#4C5C79] py-10"><i class="ph ph-ticket text-5xl mb-3 block"></i> No matching records found.</div>`;
         return;
     }
 
@@ -185,28 +185,28 @@ function renderModalRecords(records) {
         const dateStr = new Date(r.issued_at.replace(/-/g, '/')).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
         
         let statusBadge = '';
-        let amountClass = 'text-emerald-700';
+        let amountClass = 'text-[#0D8E30]';
         
         if (r.remitted == 1) {
-            statusBadge = '<span class="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] uppercase font-black rounded-lg">Remitted</span>';
-            amountClass = 'text-slate-500';
+            statusBadge = '<span class="px-2 py-1 bg-[#E8EEF8] text-[#4C5C79] text-[10px] uppercase font-black rounded-lg">Remitted</span>';
+            amountClass = 'text-[#4C5C79]';
         } else if (r.status === 'validated') {
-            statusBadge = '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] uppercase font-black rounded-lg">Cash collected</span>';
+            statusBadge = '<span class="px-2 py-1 bg-[#DBF7E4] text-[#0D8E30] text-[10px] uppercase font-black rounded-lg">Cash collected</span>';
         } else {
-            statusBadge = '<span class="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] uppercase font-black rounded-lg">Unpaid / Processing</span>';
-            amountClass = 'text-amber-600';
+            statusBadge = '<span class="px-2 py-1 bg-[#E4E1FD] text-[#4B2EFA] text-[10px] uppercase font-black rounded-lg">Unpaid / Processing</span>';
+            amountClass = 'text-[#4B2EFA]';
         }
 
         return `
-        <div class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-blue-200 transition bg-slate-50/50">
-            <div class="w-12 h-12 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0 shadow-sm">
-                <p class="text-[9px] font-black uppercase text-slate-400 leading-none mb-0.5">${new Date(r.issued_at.replace(/-/g, '/')).toLocaleString('en-US', {month:'short'})}</p>
-                <p class="text-lg font-black text-slate-700 leading-none">${new Date(r.issued_at.replace(/-/g, '/')).getDate()}</p>
+        <div class="flex items-center gap-4 p-4 rounded-2xl border border-[#E2E8F0] shadow-sm hover:border-blue-200 transition bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9]/50">
+            <div class="w-12 h-12 rounded-xl bg-white border border-[#E2E8F0] flex flex-col items-center justify-center shrink-0 shadow-sm">
+                <p class="text-[9px] font-black uppercase text-[#4C5C79] leading-none mb-0.5">${new Date(r.issued_at.replace(/-/g, '/')).toLocaleString('en-US', {month:'short'})}</p>
+                <p class="text-lg font-black text-[#0F172A] leading-none">${new Date(r.issued_at.replace(/-/g, '/')).getDate()}</p>
             </div>
             <div class="flex-1 min-w-0">
-                 <p class="font-bold text-slate-800 truncate">${r.passenger_name || 'Walk-in Passenger'}</p>
-                 <p class="text-xs text-slate-500 truncate">${r.origin_name} &rarr; <span class="font-semibold text-slate-700">${r.dest_name}</span></p>
-                 <p class="text-[10px] font-mono text-slate-400 mt-1">${r.ticket_code}</p>
+                 <p class="font-bold text-[#0F172A] truncate">${r.passenger_name || 'Walk-in Passenger'}</p>
+                 <p class="text-xs text-[#4C5C79] truncate">${r.origin_name} &rarr; <span class="font-semibold text-[#0F172A]">${r.dest_name}</span></p>
+                 <p class="text-[10px] font-mono text-[#4C5C79] mt-1">${r.ticket_code}</p>
             </div>
             <div class="text-right shrink-0">
                  <p class="font-black text-lg ${amountClass} whitespace-nowrap">₱ ${parseFloat(r.fare_amount).toFixed(2)}</p>
@@ -297,8 +297,8 @@ new Chart(document.getElementById('earningsChart'), {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.6)', callback: v => '₱'+v } },
-            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } }
+            y: { beginAtZero: true, grid: { color: 'rgba(15, 23, 42, 0.05)' }, ticks: { color: 'rgba(15, 23, 42, 0.5)', font: { weight: 'bold' }, callback: v => '₱'+v.toLocaleString() } },
+            x: { grid: { display: false }, ticks: { color: 'rgba(15, 23, 42, 0.5)', font: { weight: 'bold' } } }
         }
     }
 });

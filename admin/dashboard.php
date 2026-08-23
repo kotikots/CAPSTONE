@@ -89,10 +89,38 @@ $recentTrips = $pdo->query(
 include '../includes/header.php'; // HTML <head> and styling
 ?>
 
-<!-- Leaflet CSS for Maps -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<style>
+.bus-marker-wrap {
+    position: relative;
+    width: 36px; height: 36px;
+}
+.bus-marker-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #f59e0b;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 15px; font-weight: 900;
+    font-family: monospace;
+}
+.bus-marker-pulse {
+    position: absolute; top: -4px; left: -4px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(245,158,11,.35);
+    animation: bus-pulse 2s ease-out infinite;
+    pointer-events: none;
+}
+@keyframes bus-pulse {
+    0%   { transform: scale(1);   opacity: .8; }
+    100% { transform: scale(1.9); opacity: 0;  }
+}
+.custom-leaflet-icon { background: none; border: none; }
+</style>
 
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_admin.php'; ?>
@@ -214,7 +242,7 @@ include '../includes/header.php'; // HTML <head> and styling
                         
                         <div class="flex items-center justify-between mt-1.5 px-0.5">
                             <span class="text-[9px] font-black text-emerald-600 uppercase">Remitted</span>
-                            <span class="text-[9px] font-black text-orange-600 uppercase">With Driver</span>
+                            <span class="text-[9px] font-black text-orange-600 uppercase">Unremitted</span>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -223,11 +251,15 @@ include '../includes/header.php'; // HTML <head> and styling
         </div>
 
         <!-- Fleet Live Tracking Map -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-6">
-            <h3 class="font-bold text-slate-700 mb-5 flex items-center gap-2">
-                <i class="ph ph-map-pin-line text-amber-600"></i> Live Fleet Tracking
-            </h3>
-            <div id="fleetMap" class="w-full h-[400px] rounded-2xl z-0"></div>
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <i class="ph ph-map-pin-line text-amber-600"></i> Live Fleet Tracking
+                </h3>
+            </div>
+            <div class="relative bg-white rounded-[2rem] shadow-xl border border-slate-200 overflow-hidden" style="height:500px">
+                <div id="fleetMap" class="w-full h-full z-0"></div>
+            </div>
         </div>
 
         <!-- Recent Trips Table -->
@@ -257,17 +289,13 @@ include '../includes/header.php'; // HTML <head> and styling
                         <td class="px-5 py-4 text-center font-semibold"><?= $tr['passenger_count'] ?></td>
                         <td class="px-5 py-4 font-black text-emerald-700"><?= peso((float)$tr['total_revenue']) ?></td>
                         <td class="px-5 py-4">
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold
-                                <?= $tr['status']==='active' ? 'bg-orange-100 text-orange-700' : ($tr['status']==='completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600') ?>">
-                                <?= ucfirst($tr['status']) ?>
-                            </span>
-                            <?php if ($tr['status'] === 'active'): ?>
-                            <button onclick="forceEndTrip(<?= $tr['id'] ?>)" 
-                                    class="ml-2 text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-tighter transition active:scale-90"
-                                    title="Force End Trip">
-                                [Force End]
-                            </button>
-                            <?php endif; ?>
+                            <div class="flex flex-col items-start gap-2">
+                                <span class="w-[85px] inline-flex justify-center items-center py-1 rounded-md text-xs font-bold
+                                    <?= $tr['status']==='active' ? 'bg-orange-100 text-orange-700' : ($tr['status']==='completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600') ?>">
+                                    <?= ucfirst($tr['status']) ?>
+                                </span>
+
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -313,18 +341,19 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 }).addTo(map);
 
 // Custom Bus Icons
-const busIconActive = L.divIcon({
-    html: '<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
-    className: 'custom-leaflet-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-});
-const busIconIdle = L.divIcon({
-    html: '<div class="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center shadow-lg border-2 border-white"><i class="ph ph-bus text-white text-lg"></i></div>',
-    className: 'custom-leaflet-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-});
+function makeBusIcon(label, isIdle = false) {
+    let bg = isIdle ? '#94a3b8' : '#f59e0b';
+    let pulseBg = isIdle ? 'rgba(148,163,184,.35)' : 'rgba(245,158,11,.35)';
+    let pulseAnim = isIdle ? 'none' : 'bus-pulse 2s ease-out infinite';
+    return L.divIcon({
+        html: `<div class="bus-marker-wrap">
+                 <div class="bus-marker-pulse" style="background:${pulseBg}; animation:${pulseAnim}"></div>
+                 <div class="bus-marker-dot" style="background:${bg}">${label}</div>
+               </div>`,
+        className: 'custom-leaflet-icon',
+        iconSize: [36, 36], iconAnchor: [18, 18]
+    });
+}
 
 // Live marker tracking
 let fleetMarkers = {};
@@ -347,7 +376,8 @@ function syncFleetMap() {
                 const pos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
                 bounds.push(pos);
                 const isOnTrip = !!bus.trip_id;
-                const icon = isOnTrip ? busIconActive : busIconIdle;
+                const shortName = (bus.body_number || '').replace(/\D/g, '').replace(/^0+/, '') || (bus.body_number || '').slice(-2);
+                const icon = makeBusIcon(shortName, !isOnTrip);
 
                 if (fleetMarkers[id]) {
                     // Smoothly move existing marker
@@ -363,6 +393,11 @@ function syncFleetMap() {
                 const statusBadge = isOnTrip
                     ? '<span class="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">ON ROUTE</span>'
                     : '<span class="inline-block bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full">IDLE</span>';
+                
+                const routeInfo = isOnTrip 
+                    ? `<p class="text-xs text-slate-500 mt-1 mb-1">📍 ${bus.start_name || '?'} → ${bus.end_name || '?'}</p>
+                       <p class="text-xs text-slate-500 mb-2">👥 ${bus.passenger_count || 0} passengers on board</p>`
+                    : '';
 
                 fleetMarkers[id].bindPopup(`
                     <div class="p-2 min-w-[160px]">
@@ -371,11 +406,8 @@ function syncFleetMap() {
                             ${statusBadge}
                         </div>
                         <p class="font-bold text-slate-800 text-sm">${bus.plate_number}</p>
-                        <p class="text-xs text-slate-500 mb-2">${bus.driver_name || ''}</p>
-                        <div class="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded">
-                            <i class="ph ph-gauge text-amber-500"></i>
-                            <span>${speed} km/h</span>
-                        </div>
+                        <p class="text-xs text-slate-500 ${isOnTrip ? 'mb-1' : 'mb-2'}">🧑‍✈️ <b>${bus.driver_name || ''}</b></p>
+                        ${routeInfo}
                     </div>
                 `);
             });
@@ -405,27 +437,33 @@ function syncFleetMap() {
 syncFleetMap();
 setInterval(syncFleetMap, 5000);
 
-// Auto-refresh full page every 2 minutes (for stats/charts only — map is already live)
-setTimeout(() => {
-    window.location.reload();
-}, 120000);
+// NOTE: Removed the 2-minute window.location.reload() that was here.
+// The fleet map already syncs every 5 seconds via setInterval above — a hard
+// page reload was redundant and caused the "icon only moves on refresh" bug.
 
 function forceEndTrip(tripId) {
-    if (!confirm('Are you sure you want to FORCE END this trip? This will manually stop live tracking for this bus.')) return;
-    
-    fetch('api_force_end_trip.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip_id: tripId })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Success: Trip has been ended.');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
+    window.showConfirm({
+        title: 'Force End Trip',
+        message: 'Are you sure you want to FORCE END this trip? This will manually stop live tracking for this bus.',
+        type: 'danger',
+        confirmText: 'Yes, Force End'
+    }).then(confirmed => {
+        if (!confirmed) return;
+        
+        fetch('api_force_end_trip.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trip_id: tripId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.showToast('Success', 'Trip has been ended.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                window.showToast('Error', data.message || 'Unknown error', 'error');
+            }
+        });
     });
 }
 </script>

@@ -313,7 +313,7 @@ include '../includes/header.php';
 
         <!-- Back link (only on Step 1) -->
         <?php if (!$step || $step === null): ?>
-        <a href="login.php" class="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium mb-6 transition">
+        <a href="login.php" class="inline-flex items-center gap-2 text-[#061A53]/70 hover:text-[#061A53] text-sm font-medium mb-6 transition">
             <i class="ph ph-arrow-left"></i> Back to Login
         </a>
         <?php endif; ?>
@@ -552,9 +552,9 @@ include '../includes/header.php';
 
                     <!-- Strength Checklist -->
                     <div class="md:pt-[26px]">
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Password Requirements</p>
-                            <div class="grid grid-cols-1 gap-y-2">
+                        <div id="pw-req-box" class="p-3 bg-slate-50 rounded-2xl border border-slate-200 transition-all duration-300">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Password Requirements</p>
+                            <div class="grid grid-cols-1 gap-y-1">
                                 <div id="req-length"  class="flex items-center gap-2 text-slate-400 transition-colors duration-300"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">At least 8 characters</span></div>
                                 <div id="req-upper"   class="flex items-center gap-2 text-slate-400 transition-colors duration-300"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">Uppercase letter</span></div>
                                 <div id="req-lower"   class="flex items-center gap-2 text-slate-400 transition-colors duration-300"><i class="ph ph-circle text-[10px] icon"></i><span class="text-xs font-semibold">Lowercase letter</span></div>
@@ -640,13 +640,30 @@ if (passwordInput) {
 
     passwordInput.addEventListener('input', () => {
         const val = passwordInput.value;
+        let allMet = true;
         Object.values(reqs).forEach(req => {
             const met  = req.regex.test(val);
+            if (!met) allMet = false;
             const icon = req.el.querySelector('.icon');
-            req.el.classList.toggle('text-emerald-500', met);
-            req.el.classList.toggle('text-slate-400',  !met);
-            icon.className = 'icon ph text-[10px] ' + (met ? 'ph-check-circle-fill' : 'ph-circle');
+            
+            if (met) {
+                req.el.classList.add('hidden');
+            } else {
+                req.el.classList.remove('hidden');
+                req.el.classList.remove('text-emerald-500');
+                req.el.classList.add('text-slate-400');
+                icon.className = 'icon ph text-[10px] ph-circle';
+            }
         });
+        
+        const box = document.getElementById('pw-req-box');
+        if (box) {
+            if (allMet) {
+                box.classList.add('hidden');
+            } else {
+                box.classList.remove('hidden');
+            }
+        }
     });
 
     document.getElementById('reset-form')?.addEventListener('submit', function(e) {

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * includes/sidebar_driver.php
  * Left sidebar for authenticated drivers.
@@ -15,13 +15,13 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
     $_SESSION['bus_body'] = $_sidebarBus ?? '—';
 }
 ?>
-<aside class="w-64 bg-gradient-to-b from-brand-900 to-brand-700 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0">
+<aside class="w-64 text-white hidden md:flex flex-col h-screen shadow-2xl shrink-0 sticky top-0" style="background-color: #061A53;">
     <!-- Logo -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-white/10">
-        <img src="/PARE/assets/img/logo.png" alt="PARE Logo" class="w-10 h-10 object-contain drop-shadow-md">
+        <img src="<?= BASE_PATH ?>/assets/img/logo_white.png?v=1" alt="PARE Logo" class="w-auto h-8 object-contain drop-shadow-md">
         <div>
-            <h1 class="text-xl font-black tracking-tight">PARE</h1>
-            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Driver Portal</p>
+
+            <p class="text-[10px] text-blue-200 font-medium uppercase tracking-wider">Driver's Portal</p>
         </div>
     </div>
 
@@ -33,19 +33,19 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
             </div>
             <div>
                 <p class="font-bold text-xs truncate w-32 leading-tight"><?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?></p>
-                <p class="text-[9px] text-blue-400/80 uppercase font-bold tracking-tighter">Bus: <?= htmlspecialchars($_sidebarBus ?? '—') ?></p>
+                <p class="text-[9px] text-blue-200 uppercase font-bold tracking-tighter">Bus: <?= htmlspecialchars($_sidebarBus ?? '—') ?></p>
             </div>
         </div>
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
+    <nav id="sidebar-nav" class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => '/PARE/driver/dashboard_v2',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
-            ['href' => '/PARE/driver/passengers', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
-            ['href' => '/PARE/driver/earnings',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
-            ['href' => '/PARE/driver/profile',    'icon' => 'ph-user-gear',       'label' => 'My Profile'],
+            ['href' => BASE_PATH . '/driver/dashboard_v2',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
+            ['href' => BASE_PATH . '/driver/passengers', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
+            ['href' => BASE_PATH . '/driver/earnings',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
+            ['href' => BASE_PATH . '/driver/profile',    'icon' => 'ph-user-gear',       'label' => 'My Profile'],
         ];
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));
@@ -61,10 +61,24 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
 
     <!-- Logout -->
     <div class="p-3 border-t border-white/10">
-        <a href="/PARE/auth/logout.php"
-           class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-500 hover:bg-red-500/20 hover:text-red-300 text-xs font-bold transition-all">
+        <a href="<?= BASE_PATH ?>/auth/logout.php"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-200 hover:bg-red-500/20 hover:text-white text-xs font-bold transition-all">
             <i class="ph ph-sign-out text-base"></i>
             Logout
         </a>
     </div>
 </aside>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const nav = document.getElementById('sidebar-nav');
+        if (nav) {
+            const scrollPos = sessionStorage.getItem('driver-sidebar-scroll');
+            if (scrollPos) nav.scrollTop = scrollPos;
+            
+            nav.addEventListener('scroll', () => {
+                sessionStorage.setItem('driver-sidebar-scroll', nav.scrollTop);
+            });
+        }
+    });
+</script>
