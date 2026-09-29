@@ -21,7 +21,7 @@ try {
             d.full_name AS driver_name,
             s1.station_name AS start_name,
             s2.station_name AS end_name,
-            (SELECT COUNT(*) FROM tickets tk WHERE tk.trip_id = t.id AND tk.id NOT IN (SELECT p.ticket_id FROM payments p WHERE p.ticket_id = tk.id)) AS passenger_count
+            (SELECT COUNT(*) FROM tickets tk WHERE tk.trip_id = t.id AND (tk.status IS NULL OR tk.status != 'flagged') AND tk.id NOT IN (SELECT p.ticket_id FROM payments p WHERE p.ticket_id = tk.id)) AS passenger_count
         FROM buses b
         JOIN drivers d ON d.id = b.driver_id
         LEFT JOIN trips t ON t.bus_id = b.id AND t.status = 'active'

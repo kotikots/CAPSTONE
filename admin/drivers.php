@@ -22,9 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_driver_id'])) 
 
 $search = trim($_GET['q'] ?? '');
 $params = [];
-$where = "";
+$where = "WHERE d.is_archived = 0";
 if ($search) {
-    $where = "WHERE d.full_name LIKE ? OR d.license_number LIKE ?";
+    $where .= " AND (d.full_name LIKE ? OR d.license_number LIKE ?)";
     $params = ["%$search%", "%$search%"];
 }
 
@@ -32,8 +32,9 @@ $stmt = $pdo->prepare(
     "SELECT d.*,
             b.body_number, b.plate_number, b.model,
             COUNT(DISTINCT tr.id)   AS total_trips,
-            COUNT(DISTINCT t.id)    AS total_tickets,
-            COALESCE(SUM(t.fare_amount), 0) AS total_revenue
+            COUNT(DISTINCT CASE WHEN t.status != 'flagged' OR t.status IS NULL THEN t.id END) AS total_tickets,
+            COUNT(DISTINCT CASE WHEN t.status = 'flagged' THEN t.id END) AS total_flagged,
+            COALESCE(SUM(CASE WHEN t.status != 'flagged' OR t.status IS NULL THEN t.fare_amount ELSE 0 END), 0) AS total_revenue
      FROM   drivers d
      LEFT JOIN buses   b  ON b.driver_id = d.id AND b.is_active = 1
      LEFT JOIN trips   tr ON tr.driver_id = d.id
@@ -45,7 +46,7 @@ $stmt = $pdo->prepare(
 $stmt->execute($params);
 $drivers = $stmt->fetchAll();
 
-$allDriverNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM drivers ORDER BY full_name ASC");
+$allDriverNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM drivers WHERE is_archived = 0 ORDER BY full_name ASC");
 $allDriverNames = $allDriverNamesStmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Fetch all buses to allow reassignment from other drivers
@@ -64,9 +65,9 @@ include '../includes/header.php';
 ?>
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_admin.php'; ?>
-    <main class="flex-1 p-8 overflow-auto bg-slate-50">
+    <main class="flex-1 p-4 md:p-8 overflow-auto bg-slate-50 pb-24 md:pb-8">
 
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
                 <h2 class="text-2xl font-black text-slate-800">Drivers</h2>
                 <p class="text-slate-500 text-sm"><?= count($drivers) ?> active driver(s)</p>
@@ -83,7 +84,7 @@ include '../includes/header.php';
             <form method="GET" class="flex-1 flex gap-3">
                 <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" list="driver-names" autocomplete="off"
                        placeholder="Search by driver name or license..."
-                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2">
+                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2 rounded-lg">
                 
                 <datalist id="driver-names">
                     <?php foreach ($allDriverNames as $name): ?>
@@ -146,10 +147,11 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Stats -->
-                <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="grid grid-cols-4 gap-3 mb-4">
                     <?php foreach ([
                         ['Trips',      $d['total_trips'],   'ph-map-pin'],
                         ['Tickets',    $d['total_tickets'], 'ph-ticket'],
+                        ['Flagged',    $d['total_flagged'], 'ph-flag'],
                     ] as [$label, $val, $icon]): ?>
                     <div class="text-center p-2 bg-slate-50 rounded-xl">
                         <p class="font-black text-slate-800"><?= number_format((int)$val) ?></p>
@@ -157,8 +159,8 @@ include '../includes/header.php';
                     </div>
                     <?php endforeach; ?>
                     <div class="text-center p-2 bg-emerald-50 rounded-xl col-span-1">
-                        <p class="font-black text-emerald-700 text-sm"><?= peso((float)$d['total_revenue']) ?></p>
-                        <p class="text-slate-400 text-xs">Revenue</p>
+                        <p class="font-black text-emerald-700 text-[11px] sm:text-xs"><?= peso((float)$d['total_revenue']) ?></p>
+                        <p class="text-slate-400 text-[10px]">Revenue</p>
                     </div>
                 </div>
 
@@ -172,18 +174,12 @@ include '../includes/header.php';
                 </div>
 
                 <div class="flex items-center gap-2 pt-4 border-t border-slate-100">
-                    <button id="toggle-btn-<?= $d['id'] ?>"
-                            onclick="toggleDriverStatus(<?= $d['id'] ?>, <?= $d['is_active'] ? 0 : 1 ?>, '<?= addslashes($d['full_name']) ?>')" 
-                            class="flex-1 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all
-                                   <?= $d['is_active'] ? 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg' ?>">
-                        <i id="icon-<?= $d['id'] ?>" class="ph <?= $d['is_active'] ? 'ph-power' : 'ph-check-circle' ?> text-lg"></i>
-                        <span id="text-<?= $d['id'] ?>"><?= $d['is_active'] ? 'Deactivate' : 'Activate' ?></span>
-                    </button>
-                    <!-- Remove Button -->
-                    <button onclick="removeAccount(<?= $d['id'] ?>, 'driver', '<?= addslashes($d['full_name']) ?>')"
-                            class="w-11 h-11 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shrink-0"
-                            title="Remove Account Permanently">
-                        <i class="ph ph-trash text-xl"></i>
+                    <!-- Archive Button -->
+                    <button onclick="archiveAccount(<?= $d['id'] ?>, 'driver', '<?= addslashes($d['full_name']) ?>')"
+                            class="flex-1 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                            title="Archive Account">
+                        <i class="ph ph-archive text-lg"></i>
+                        <span>Archive Account</span>
                     </button>
                 </div>
             </div>
@@ -193,12 +189,12 @@ include '../includes/header.php';
 </div>
 
 <script>
-async function removeAccount(id, type, name) {
+async function archiveAccount(id, type, name) {
     const isConfirmed = await window.showConfirm({
-        title: 'Remove Account Permanently?',
-        message: `Are you sure you want to delete ${name}? This action cannot be undone and will only succeed if the account has no historical trip data.`,
+        title: 'Archive Account?',
+        message: `Are you sure you want to archive ${name}?`,
         type: 'danger',
-        confirmText: 'Yes, Remove Permanently'
+        confirmText: 'Yes, Archive Account'
     });
 
     if (!isConfirmed) return;
@@ -212,7 +208,7 @@ async function removeAccount(id, type, name) {
         const data = await res.json();
 
         if (data.success) {
-            window.showToast('Account Removed', `${name} has been deleted from the system.`, 'success');
+            window.showToast('Account Archived', `${name} has been archived.`, 'success');
             const card = document.getElementById(`card-${id}`);
             card.style.transform = 'scale(0.9)';
             card.style.opacity = '0';
@@ -232,7 +228,7 @@ async function toggleDriverStatus(driverId, newState, name) {
         title: `${verb} Driver Account?`,
         message: `Are you sure you want to ${verb.toLowerCase()} access for ${name}?`,
         type: newState ? 'info' : 'danger',
-        confirmText: `Yes, ${verb}`
+        confirmText: `Yes, ${verb.toLowerCase()}`
     });
 
     if (!confirmed) return;

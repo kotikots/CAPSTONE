@@ -93,8 +93,8 @@ const stations       = <?= json_encode($stations) ?>;
 const defaultPos     = [<?= KIOSK_LAT ?>, <?= KIOSK_LNG ?>];
 
 const map = L.map('map', { zoomControl: false }).setView(defaultPos, 13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap | PARE'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | PARE'
 }).addTo(map);
 
 // Route polyline removed as requested
@@ -228,7 +228,6 @@ function handleBusData(data) {
                     📍 ${bus.start_name || '?'} → ${bus.end_name || '?'}
                 </p>
                 <p style="font-size:11px;color:#64748b;margin:2px 0">
-                    🚌 ${Math.round(bus.speed_kmh || 0)} km/h &nbsp;|&nbsp;
                     👥 ${bus.passenger_count || 0} aboard
                 </p>
             </div>
@@ -253,32 +252,28 @@ function handleBusData(data) {
     }
 }
 
-function connectSSE() {
-    setStatus('connecting', 'Connecting…');
-
-    const es = new EventSource('stream_bus_location.php');
-
-    es.onmessage = function(e) {
+function fetchBusData() {
+    fetch('stream_bus_location.php', { credentials: 'same-origin' })
+    .then(r => r.text())
+    .then(text => {
         try {
-            const data = JSON.parse(e.data);
+            const data = JSON.parse(text);
             handleBusData(data);
         } catch (err) {
-            console.warn('SSE parse error', err);
+            console.error('Map JSON parse error. Raw response:', text);
+            setStatus('error', 'Server error. Checking...');
         }
-    };
-
-    es.onerror = function() {
+    })
+    .catch(err => {
+        console.warn('Map fetch error', err);
         setStatus('error', 'Reconnecting…');
-        // EventSource reconnects automatically — no manual retry needed
-    };
-
-    es.onopen = function() {
-        setStatus('connecting', 'Connected — waiting for data…');
-    };
+    });
 }
 
-// Start SSE connection
-connectSSE();
+// Start polling
+setStatus('connecting', 'Connected — waiting for data…');
+fetchBusData();
+setInterval(fetchBusData, 2000);
 </script>
 
 <?php include '../includes/mobile_nav_passenger.php'; ?>

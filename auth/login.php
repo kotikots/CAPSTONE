@@ -5,12 +5,12 @@
 
 session_start();
 
-require_once '../config/db.php';
-require_once '../includes/functions_security.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/functions_security.php';
 
 if (isset($_GET['cancel_mfa']) && $_GET['cancel_mfa'] == 1) {
     unset($_SESSION['mfa_pending'], $_SESSION['mfa_otp'], $_SESSION['pending_driver_id'], $_SESSION['pending_bus_body'], $_SESSION['pending_bus_plate'], $_SESSION['pending_user_id'], $_SESSION['pending_id_number'], $_SESSION['pending_full_name'], $_SESSION['pending_role']);
-    header('Location: login.php');
+    header('Location: /');
     exit;
 }
 
@@ -22,9 +22,9 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['driver_id'])) {
 
 function redirectFor(string $role): string {
     return match($role) {
-        'admin'    => '/PARE/admin/dashboard.php',
-        'driver'   => '/PARE/driver/dashboard_v2.php',
-        default    => '/PARE/passenger/dashboard.php',
+        'admin'    => '/dashboard',
+        'driver'   => '/driver-dashboard',
+        default    => '/passenger-dashboard',
     };
 }
 
@@ -224,8 +224,8 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
 
                 <!-- Logo + Name -->
                 <div class="flex items-center justify-center gap-4 mt-8 lg:mt-10 mb-2 lg:mb-2 w-full">
-                    <img src="/PARE/assets/img/logo.png?v=2" alt="PARE Logo"
-                         class="w-auto h-32 lg:h-48 object-contain drop-shadow-xl scale-125">
+                    <img src="/assets/img/logo.png?v=2" alt="PARE Logo"
+                         class="w-auto h-32 lg:h-48 object-contain drop-shadow-xl scale-150">
 
                 </div>
 
@@ -236,7 +236,7 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
 
                 <!-- Subtitle -->
                 <p class="text-slate-600 text-[13px] sm:text-[14px] lg:text-base font-normal leading-relaxed">
-                    Real-time bus tracking, instant ticketing, and<br class="block">
+                    Timely bus tracking, instant ticketing, and<br class="block">
                     seamless fare collection — all in one platform.
                 </p>
 
@@ -336,10 +336,10 @@ $loginAs = $_POST['login_as'] ?? 'passenger';
                 <div class="flex justify-between items-start mt-4">
                     <div id="register-footer" class="<?= $loginAs === 'driver' ? 'invisible' : '' ?>">
                         <p class="text-slate-600 text-[13px] sm:text-sm">
-                            No account yet? <br class="block sm:hidden"><a href="register.php" class="text-[#3b6fd4] underline font-bold hover:text-[#2f5ec4] transition">Register here</a>
+                            No account yet? <br class="block sm:hidden"><a href="/register" class="text-[#3b6fd4] underline font-bold hover:text-[#2f5ec4] transition">Register here</a>
                         </p>
                     </div>
-                    <a href="forgot_password.php" class="text-slate-600 font-bold text-[13px] sm:text-sm hover:text-slate-800 transition shrink-0 ml-2 mt-[2px] sm:mt-0">Forgot password?</a>
+                    <a href="/forgot-password" class="text-slate-600 font-bold text-[13px] sm:text-sm hover:text-slate-800 transition shrink-0 ml-2 mt-[2px] sm:mt-0">Forgot password?</a>
                 </div>
 
                 <!-- Admin hint -->

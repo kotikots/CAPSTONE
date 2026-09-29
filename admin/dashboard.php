@@ -34,7 +34,7 @@ $totalPassengers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='pass
 $totalDrivers    = (int)$pdo->query("SELECT COUNT(*) FROM drivers WHERE is_active=1")->fetchColumn();
 $totalBuses      = (int)$pdo->query("SELECT COUNT(*) FROM buses WHERE is_active=1")->fetchColumn();
 $activeTrips     = (int)$pdo->query("SELECT COUNT(*) FROM trips WHERE status='active'")->fetchColumn();
-$totalTickets    = (int)$pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
+$totalTickets    = (int)$pdo->query("SELECT COUNT(*) FROM tickets WHERE status IS NULL OR status != 'flagged'")->fetchColumn();
 
 // 3. CHART DATA: Fetch daily revenue for the last 7 days
 $chartStmt = $pdo->query(
@@ -140,7 +140,7 @@ include '../includes/header.php'; // HTML <head> and styling
         </div>
 
         <!-- Revenue Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8" id="dashboard-revenue-cards">
             <?php foreach ([
                 ['Today',       $revToday, 'ph-sun',        'emerald',   "vs yesterday"],
                 ['This Week',   $revWeek,  'ph-calendar',   'emerald',   "current week"],
@@ -161,7 +161,7 @@ include '../includes/header.php'; // HTML <head> and styling
         </div>
 
         <!-- Quick Stat Pills -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" id="dashboard-quick-stats">
             <?php foreach ([
                 ['Passengers',   $totalPassengers, 'ph-users',         'blue'],
                 ['Drivers',      $totalDrivers,    'ph-steering-wheel','orange'],
@@ -190,7 +190,7 @@ include '../includes/header.php'; // HTML <head> and styling
             </div>
 
             <!-- Revenue per Bus -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6" id="dashboard-revenue-bus">
                 <h3 class="font-bold text-slate-700 mb-5 flex items-center justify-between">
                     <span class="flex items-center gap-2">
                         <i class="ph ph-bus text-amber-600"></i> Today's Earnings per Bus
@@ -263,7 +263,7 @@ include '../includes/header.php'; // HTML <head> and styling
         </div>
 
         <!-- Recent Trips Table -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-x-auto">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-x-auto" id="dashboard-recent-trips">
             <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                 <h3 class="font-bold text-slate-700 flex items-center gap-2">
                     <i class="ph ph-map-pin-line text-amber-600"></i> Recent Trips
@@ -335,9 +335,9 @@ new Chart(document.getElementById('revenueChart'), {
 // Leaflet Map Initialization — Real-Time Polling
 const map = L.map('fleetMap').setView([15.4859, 120.9665], 11);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap &nbsp; | &copy; CartoDB'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 // Custom Bus Icons
@@ -466,6 +466,32 @@ function forceEndTrip(tripId) {
         });
     });
 }
+
+// Auto-refresh dashboard data (except map and chart) every 3 seconds
+setInterval(() => {
+    fetch(window.location.href)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = [
+                'dashboard-revenue-cards',
+                'dashboard-quick-stats',
+                'dashboard-revenue-bus',
+                'dashboard-recent-trips'
+            ];
+            
+            ids.forEach(id => {
+                const newEl = doc.getElementById(id);
+                const oldEl = document.getElementById(id);
+                if (newEl && oldEl) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.error('Dashboard auto-refresh error:', err));
+}, 3000);
 </script>
 
 <?php include '../includes/mobile_nav_admin.php'; ?>

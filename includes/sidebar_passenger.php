@@ -55,11 +55,14 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => BASE_PATH . '/passenger/dashboard', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
-            ['href' => BASE_PATH . '/passenger/map',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
-            ['href' => BASE_PATH . '/passenger/rides',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
-            ['href' => BASE_PATH . '/passenger/profile',   'icon' => 'ph-user-circle',            'label' => 'My Profile'],
+            ['href' => BASE_PATH . '/passenger-dashboard', 'icon' => 'ph-squares-four',           'label' => 'Dashboard'],
+            ['href' => BASE_PATH . '/map',       'icon' => 'ph-map-trifold',            'label' => 'Live Map'],
+            ['href' => BASE_PATH . '/rides',     'icon' => 'ph-clock-counter-clockwise', 'label' => 'My Rides'],
         ];
+        // Only show My Profile for discount accounts
+        if ($_sidebarDiscount !== 'none') {
+            $navItems[] = ['href' => BASE_PATH . '/profile', 'icon' => 'ph-user-circle', 'label' => 'My Profile'];
+        }
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));
         ?>
@@ -74,7 +77,7 @@ $_discountIcon = $_discountIcons[$_sidebarDiscount] ?? '';
 
     <!-- Logout -->
     <div class="p-3 border-t border-white/10">
-        <a href="<?= BASE_PATH ?>/auth/logout.php"
+        <a href="<?= BASE_PATH ?>/logout"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-200 hover:bg-red-500/20 hover:text-red-300 text-xs font-bold transition-all">
             <i class="ph ph-sign-out text-base"></i>
             Logout

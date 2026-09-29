@@ -29,6 +29,7 @@ try {
             s2.station_name AS end_name,
             (SELECT COUNT(*) FROM tickets tk
              WHERE tk.trip_id = t.id
+               AND (tk.status IS NULL OR tk.status != 'flagged')
                AND tk.id NOT IN (SELECT ticket_id FROM payments)
             ) AS passenger_count
         FROM trips t

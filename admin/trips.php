@@ -165,69 +165,90 @@ include '../includes/header.php';
 </div>
 
 <script>
+let openTrips = new Set();
+
+function loadTickets(tripId) {
+    const content = document.getElementById('detail-content-' + tripId);
+    if (!content) return;
+    
+    fetch(`get_trip_tickets.php?trip_id=${tripId}&t=${Date.now()}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) { content.textContent = 'No tickets in this trip.'; return; }
+            let tableHtml = `
+                <div class="border border-slate-200 rounded-xl overflow-x-auto bg-white mt-1 shadow-sm">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-100/80 text-slate-500 font-bold tracking-wider uppercase text-[10px]">
+                            <tr>
+                                <th class="px-4 py-3 border-b border-slate-200">Time</th>
+                                <th class="px-4 py-3 border-b border-slate-200">Ticket Code</th>
+                                <th class="px-4 py-3 border-b border-slate-200">Passenger</th>
+                                <th class="px-4 py-3 border-b border-slate-200">Route</th>
+                                <th class="px-4 py-3 border-b border-slate-200 text-right">Fare</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+            `;
+
+            data.forEach(t => {
+                // Format time safely, assuming standard SQL YYYY-MM-DD HH:MM:SS
+                const tDate = t.issued_at.replace(/-/g, '/'); // better Safari support
+                const d = new Date(tDate);
+                // Use fallback if invalid Date
+                const timeStr = isNaN(d) ? t.issued_at.split(' ')[1].substring(0,5) : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                let badgeClass = 'bg-slate-100 text-slate-600';
+                let typeRaw = (t.passenger_type || 'Regular').toLowerCase();
+                let typeText = t.passenger_type || 'Regular';
+                
+                if (typeRaw.includes('student') || typeRaw.includes('pwd') || typeRaw.includes('senior')) {
+                    badgeClass = 'bg-amber-100 text-amber-700'; 
+                } else if (typeRaw.includes('special') || typeRaw.includes('teacher') || typeRaw.includes('nurse')) {
+                    badgeClass = 'bg-fuchsia-100 text-fuchsia-700'; 
+                } else if (typeRaw === 'regular') {
+                    badgeClass = 'bg-amber-50 text-amber-600'; 
+                }
+
+                let fareDisplay = `<span class="text-emerald-700">₱${parseFloat(t.fare_amount).toFixed(2)}</span>`;
+                if (t.status === 'flagged') {
+                    fareDisplay = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded uppercase font-black text-[10px] mr-2">Flagged</span> <span class="text-slate-400 line-through">₱${parseFloat(t.fare_amount).toFixed(2)}</span>`;
+                }
+
+                tableHtml += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-4 py-3 text-slate-500 text-xs">${timeStr}</td>
+                        <td class="px-4 py-3 text-slate-600 font-mono text-xs font-semibold">${t.ticket_code}</td>
+                        <td class="px-4 py-3 text-slate-700 text-xs font-bold">
+                            ${t.passenger_name} <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] uppercase font-black tracking-tight ${badgeClass}">${typeText}</span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">${t.origin_name} &rarr; ${t.dest_name}</td>
+                        <td class="px-4 py-3 font-black text-xs text-right">${fareDisplay}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            content.innerHTML = tableHtml;
+        });
+}
+
 function toggleDetails(tripId) {
     const row     = document.getElementById('details-' + tripId);
-    const content = document.getElementById('detail-content-' + tripId);
+    
     if (row.classList.contains('hidden')) {
         row.classList.remove('hidden');
-        fetch(`get_trip_tickets.php?trip_id=${tripId}`)
-            .then(r => r.json())
-            .then(data => {
-                if (!data.length) { content.textContent = 'No tickets in this trip.'; return; }
-                let tableHtml = `
-                    <div class="border border-slate-200 rounded-xl overflow-x-auto bg-white mt-1 shadow-sm">
-                        <table class="w-full text-left border-collapse whitespace-nowrap">
-                            <thead class="bg-slate-100/80 text-slate-500 font-bold tracking-wider uppercase text-[10px]">
-                                <tr>
-                                    <th class="px-4 py-3 border-b border-slate-200">Time</th>
-                                    <th class="px-4 py-3 border-b border-slate-200">Ticket Code</th>
-                                    <th class="px-4 py-3 border-b border-slate-200">Passenger</th>
-                                    <th class="px-4 py-3 border-b border-slate-200">Route</th>
-                                    <th class="px-4 py-3 border-b border-slate-200 text-right">Fare</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                `;
-
-                data.forEach(t => {
-                    // Format time safely, assuming standard SQL YYYY-MM-DD HH:MM:SS
-                    const tDate = t.issued_at.replace(/-/g, '/'); // better Safari support
-                    const d = new Date(tDate);
-                    // Use fallback if invalid Date
-                    const timeStr = isNaN(d) ? t.issued_at.split(' ')[1].substring(0,5) : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                    let badgeClass = 'bg-slate-100 text-slate-600';
-                    let typeRaw = (t.passenger_type || 'Regular').toLowerCase();
-                    let typeText = t.passenger_type || 'Regular';
-                    
-                    if (typeRaw.includes('student') || typeRaw.includes('pwd') || typeRaw.includes('senior')) {
-                        badgeClass = 'bg-amber-100 text-amber-700'; 
-                    } else if (typeRaw.includes('special') || typeRaw.includes('teacher') || typeRaw.includes('nurse')) {
-                        badgeClass = 'bg-fuchsia-100 text-fuchsia-700'; 
-                    } else if (typeRaw === 'regular') {
-                        badgeClass = 'bg-amber-50 text-amber-600'; 
-                    }
-
-                    tableHtml += `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-4 py-3 text-slate-500 text-xs">${timeStr}</td>
-                            <td class="px-4 py-3 text-slate-600 font-mono text-xs font-semibold">${t.ticket_code}</td>
-                            <td class="px-4 py-3 text-slate-700 text-xs font-bold">
-                                ${t.passenger_name} <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] uppercase font-black tracking-tight ${badgeClass}">${typeText}</span>
-                            </td>
-                            <td class="px-4 py-3 text-slate-500 text-xs">${t.origin_name} &rarr; ${t.dest_name}</td>
-                            <td class="px-4 py-3 text-emerald-700 font-black text-xs text-right">₱${parseFloat(t.fare_amount).toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-
-                tableHtml += `</tbody></table></div>`;
-                content.innerHTML = tableHtml;
-            });
+        openTrips.add(tripId);
+        loadTickets(tripId);
     } else {
         row.classList.add('hidden');
+        openTrips.delete(tripId);
     }
 }
+
+// Auto-refresh expanded trips every 3 seconds
+setInterval(() => {
+    openTrips.forEach(tripId => loadTickets(tripId));
+}, 3000);
 
 function forceEndTrip(tripId) {
     window.showConfirm({

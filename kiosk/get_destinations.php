@@ -74,32 +74,33 @@ if (!$no_trip) {
 
 // ─── Build directional station query ─────────────────────────────────
 if ($no_trip) {
-    // No active trip: show ALL stations so the kiosk still works
     $stmt = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker ASC");
     $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } elseif ($direction === 'backward') {
-    // Traveling Rizal → Cabanatuan: show stations with LOWER km markers
-    $stmt = $pdo->prepare("SELECT * FROM stations WHERE km_marker < ? AND is_active = 1 ORDER BY km_marker DESC");
-    $stmt->execute([$reference_km]);
+    // Traveling Rizal → Cabanatuan: order DESC
+    $stmt = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker DESC");
     $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Traveling Cabanatuan → Rizal: show stations with HIGHER km markers
-    $stmt = $pdo->prepare("SELECT * FROM stations WHERE km_marker > ? AND is_active = 1 ORDER BY km_marker ASC");
-    $stmt->execute([$reference_km]);
+    // Traveling Cabanatuan → Rizal: order ASC
+    $stmt = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker ASC");
     $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// ─── Fallback: if directional filter returned empty, show ALL active stations ───
-// This prevents a blank screen when GPS is at a terminal edge and trip data is stale
-if (empty($stations)) {
-    $fallback = $pdo->query("SELECT * FROM stations WHERE is_active = 1 ORDER BY km_marker ASC");
-    $stations = $fallback->fetchAll(PDO::FETCH_ASSOC);
-    $direction = 'all'; // signal to frontend (no direction filtering applied)
 }
 
 // ─── Calculate dynamic fare for each destination ────────────────────
 foreach ($stations as &$s) {
-    $dist = abs((float)$s['km_marker'] - $reference_km);
+    $s_km = (float)$s['km_marker'];
+    
+    // Determine if passed
+    $s['is_passed'] = false;
+    if (!$no_trip && $direction !== 'all') {
+        if ($direction === 'backward') {
+            if ($s_km > $reference_km) $s['is_passed'] = true;
+        } else {
+            if ($s_km < $reference_km) $s['is_passed'] = true;
+        }
+    }
+
+    $dist = abs($s_km - $reference_km);
     
     // Regular Fare
     $extra_reg = max(0, $dist - (float)$reg['base_km']);

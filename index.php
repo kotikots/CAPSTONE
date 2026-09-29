@@ -3,5 +3,5 @@
  * index.php
  * Root index file that automatically redirects to the login/landing page.
  */
-header("Location: /PARE/auth/login.php");
-exit;
+require_once __DIR__ . '/auth/login.php';
+

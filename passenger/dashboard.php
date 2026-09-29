@@ -59,6 +59,13 @@ $ridesStmt = $pdo->prepare(
 $ridesStmt->execute([$uid]);
 $recentRides = $ridesStmt->fetchAll();
 
+// --- Ride stats ---
+$statsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS rides, COALESCE(SUM(fare_amount),0) AS spent FROM tickets WHERE passenger_id = ?"
+);
+$statsStmt->execute([$uid]);
+$stats = $statsStmt->fetch();
+
 $discountType = $profile['discount_type'] ?? 'none';
 $discountLabels = [
     'none' => ['Regular', 'bg-slate-100 text-slate-600', 'ph-user'],
@@ -93,7 +100,8 @@ include '../includes/header.php';
 
         <!-- Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <!-- Passenger ID -->
+            <?php if ($discountType !== 'none'): ?>
+            <!-- Passenger ID (Discount Only) -->
             <div class="bg-[#FFFFFF] rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-center gap-4">
                 <div class="w-14 h-14 rounded-2xl bg-[#E0E7FF] flex items-center justify-center">
                     <i class="ph ph-identification-card text-2xl text-[#4F46E5]"></i>
@@ -103,6 +111,18 @@ include '../includes/header.php';
                     <p class="text-xl font-black text-[#0F172A] truncate"><?= htmlspecialchars($profile['id_number'] ?? 'N/A') ?></p>
                 </div>
             </div>
+            <?php else: ?>
+            <!-- Total Spent (Basic Only) -->
+            <div class="bg-[#FFFFFF] rounded-3xl p-6 shadow-sm border border-[#E2E8F0] flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-[#DCFCE7] flex items-center justify-center">
+                    <i class="ph ph-wallet text-2xl text-[#16A34A]"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-[#64748B] text-xs font-bold uppercase tracking-wider">Total Spent</p>
+                    <p class="text-xl font-black text-[#0F172A] truncate"><?= peso((float)$stats['spent']) ?></p>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Last Trip -->
             <?php 

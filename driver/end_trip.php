@@ -17,6 +17,25 @@ if (!$tripId) {
     echo json_encode(['success' => false, 'message' => 'Missing trip_id']); exit;
 }
 
+// Check if there are any unpaid tickets for this trip
+$chkStmt = $pdo->prepare("
+    SELECT COUNT(*) 
+    FROM tickets t 
+    WHERE t.trip_id = ? 
+      AND (t.status IS NULL OR t.status != 'flagged')
+      AND t.id NOT IN (SELECT ticket_id FROM payments)
+");
+$chkStmt->execute([$tripId]);
+$unpaidCount = (int)$chkStmt->fetchColumn();
+
+if ($unpaidCount > 0) {
+    echo json_encode([
+        'success' => false, 
+        'message' => "Cannot end trip. There are still $unpaidCount uncollected ticket(s). Please collect the fare or void them first."
+    ]);
+    exit;
+}
+
 $stmt = $pdo->prepare(
     "UPDATE trips SET status = 'completed', ended_at = NOW()
      WHERE id = ? AND driver_id = ? AND status = 'active'"

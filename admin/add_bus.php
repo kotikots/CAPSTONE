@@ -84,17 +84,12 @@ include '../includes/header.php';
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_admin.php'; ?>
     
-    <main class="flex-1 p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
         <div class="max-w-2xl mx-auto">
             <!-- Header -->
-            <div class="mb-8 flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">Add New Bus</h2>
-                    <p class="text-slate-500 text-sm">Register a new vehicle and assign a driver.</p>
-                </div>
-                <a href="buses.php" class="text-slate-500 hover:text-slate-800 transition flex items-center gap-2 text-sm font-bold">
-                    <i class="ph ph-arrow-left"></i> Back to Fleet
-                </a>
+            <div class="mb-8">
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Add New Bus</h2>
+                <p class="text-slate-500 text-sm">Register a new vehicle and assign a driver.</p>
             </div>
 
             <!-- Messages -->
@@ -121,7 +116,10 @@ include '../includes/header.php';
             <?php endif; ?>
 
             <!-- Form Card -->
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 md:p-8">
+                <a href="buses.php" class="text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-2 text-sm font-bold mb-6">
+                    <i class="ph ph-arrow-left"></i> Back to Fleet
+                </a>
                 <form method="POST" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

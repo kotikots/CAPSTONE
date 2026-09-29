@@ -75,6 +75,36 @@ try {
             } catch (MailException $e) {
                 error_log("PHPMailer Error (account verification API): {$mail->ErrorInfo}");
             }
+        } elseif ($user && $user['is_active'] == 1 && $state == 0 && !empty($user['email'])) {
+            // Send deactivation email
+            $mail = new PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'khianvivar@gmail.com';
+                $mail->Password   = 'zqip kriq dnir obzp'; // Same password as in forgot_password.php
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($mail->Username, 'PARE System');
+                $mail->addAddress($user['email'], $user['full_name']);
+
+                $mail->isHTML(true);
+                $mail->Subject = 'PARE Account Deactivated';
+                $mail->Body    = "
+                    <h3>Hello {$user['full_name']},</h3>
+                    <p>Your PARE account has been deactivated by the administrator.</p>
+                    <p>You will no longer be able to log in or book rides. If you believe this is a mistake, please contact our support team.</p>
+                    <br>
+                    <p>Thank you.</p>
+                ";
+
+                $mail->send();
+                $mailSent = true;
+            } catch (MailException $e) {
+                error_log("PHPMailer Error (account deactivation API): {$mail->ErrorInfo}");
+            }
         }
     } else {
         // Toggle status for a driver in the 'drivers' table

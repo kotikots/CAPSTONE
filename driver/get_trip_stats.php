@@ -49,9 +49,8 @@ $paxStmt = $pdo->prepare("
     FROM   tickets t
     JOIN   stations s ON s.id = t.dest_station_id
     LEFT JOIN payments p ON p.ticket_id = t.id
-    WHERE  t.trip_id = ? AND (p.remitted IS NULL OR p.remitted = 0)
+    WHERE  t.trip_id = ? AND (t.status IS NULL OR t.status != 'flagged') AND (p.remitted IS NULL OR p.remitted = 0)
     ORDER  BY t.issued_at DESC 
-    LIMIT  30
 ");
 $paxStmt->execute([$trip_id]);
 $rawPax = $paxStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -65,12 +64,20 @@ foreach ($rawPax as $p) {
     $recentPax[] = $p;
 }
 
-// Sort: Near destination first, then by time
+// Sort: Unpaid first -> Near destination first -> Newest time first
 usort($recentPax, function($a, $b) {
-    if ($a['proximity'] === $b['proximity']) {
-        return strtotime($b['issued_at']) - strtotime($a['issued_at']);
+    // 1. Unpaid tickets at the top, Paid tickets at the bottom
+    if ($a['is_paid'] !== $b['is_paid']) {
+        return $a['is_paid'] ? 1 : -1;
     }
-    return ($a['proximity'] === 'near') ? -1 : 1;
+    
+    // 2. Near destination first (for unpaid tickets)
+    if ($a['proximity'] !== $b['proximity']) {
+        return ($a['proximity'] === 'near') ? -1 : 1;
+    }
+    
+    // 3. Fallback: newest tickets first
+    return strtotime($b['issued_at']) - strtotime($a['issued_at']);
 });
 
 // 3. Get trip totals: Total vs Collected
@@ -83,7 +90,7 @@ $statStmt = $pdo->prepare("
         SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 1 THEN t.fare_amount ELSE 0 END) as remitted_cash
     FROM tickets t
     LEFT JOIN payments p ON p.ticket_id = t.id
-    WHERE t.trip_id = ?
+    WHERE t.trip_id = ? AND (t.status IS NULL OR t.status != 'flagged')
 ");
 $statStmt->execute([$trip_id]);
 $stats = $statStmt->fetch(PDO::FETCH_ASSOC);

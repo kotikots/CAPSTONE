@@ -11,7 +11,7 @@ $pageTitle = $pageTitle ?? 'PARE System';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PARE – Web-Based Passenger Monitoring and Fare System with Real-Time Bus Tracking">
+    <meta name="description" content="PARE – Web-Based Passenger Monitoring and Fare System with Timely Bus Tracking">
     <title><?= htmlspecialchars($pageTitle) ?> | PARE System</title>
 
     <!-- Favicon -->
@@ -188,7 +188,8 @@ $pageTitle = $pageTitle ?? 'PARE System';
         }
 
         /* Prevent modals from becoming totally transparent */
-        #confirm-modal .bg-white {
+        #confirm-modal .bg-white,
+        #restore-modal .bg-white {
             background-color: rgba(255, 255, 255, 0.95) !important;
             border: 1px solid #ffffff !important;
             box-shadow: 0 0 40px rgba(14, 165, 233, 0.15) !important;
@@ -299,12 +300,12 @@ $pageTitle = $pageTitle ?? 'PARE System';
                 .then(function (data) {
                     if (!data.loggedIn) {
                         // Session is gone — replace history entry so back won't loop
-                        window.location.replace('/auth/login.php');
+                        window.location.replace('/');
                     }
                 })
                 .catch(function () {
                     // On any network error, fall back to login for safety
-                    window.location.replace('/auth/login.php');
+                    window.location.replace('/');
                 });
             }
         });
@@ -316,7 +317,7 @@ $pageTitle = $pageTitle ?? 'PARE System';
     <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
 
     <!-- Global Confirm Modal -->
-    <div id="confirm-modal" class="fixed inset-0 z-[9998] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="confirm-modal" class="fixed inset-0 z-[9998] bg-[#061A53]/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
             <div class="p-8 text-center">
                 <div id="confirm-icon-bg" class="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center">

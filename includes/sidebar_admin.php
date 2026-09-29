@@ -41,21 +41,22 @@ $currentPage = $currentPage ?? '';
         <?php
         $navGroups = [
             'Overview' => [
-                ['href' => BASE_PATH . '/admin/dashboard.php', 'icon' => 'ph-chart-pie',         'label' => 'Dashboard'],
+                ['href' => BASE_PATH . '/dashboard', 'icon' => 'ph-chart-pie',         'label' => 'Dashboard'],
             ],
             'Operations' => [
-                ['href' => BASE_PATH . '/admin/trips.php',     'icon' => 'ph-map-pin-line',       'label' => 'Trip Logs'],
-                ['href' => BASE_PATH . '/admin/fare_settings.php','icon' => 'ph-money',           'label' => 'Fare Settings'],
-                ['href' => BASE_PATH . '/admin/reports.php',   'icon' => 'ph-file-text',          'label' => 'Reports & Export'],
-                ['href' => BASE_PATH . '/admin/remittance.php','icon' => 'ph-wallet',             'label' => 'Remittances'],
+                ['href' => BASE_PATH . '/trips',     'icon' => 'ph-map-pin-line',       'label' => 'Trip Logs'],
+                ['href' => BASE_PATH . '/fare_settings','icon' => 'ph-money',           'label' => 'Fare Settings'],
+                ['href' => BASE_PATH . '/reports',   'icon' => 'ph-file-text',          'label' => 'Reports & Export'],
+                ['href' => BASE_PATH . '/remittance','icon' => 'ph-wallet',             'label' => 'Remittances'],
             ],
             'Management' => [
-                ['href' => BASE_PATH . '/admin/passengers.php','icon' => 'ph-users',              'label' => 'Passengers'],
-                ['href' => BASE_PATH . '/admin/drivers.php',   'icon' => 'ph-steering-wheel',     'label' => 'Drivers'],
-                ['href' => BASE_PATH . '/admin/buses.php',     'icon' => 'ph-bus',                'label' => 'Buses'],
+                ['href' => BASE_PATH . '/passengers','icon' => 'ph-users',              'label' => 'Passengers'],
+                ['href' => BASE_PATH . '/drivers',   'icon' => 'ph-steering-wheel',     'label' => 'Drivers'],
+                ['href' => BASE_PATH . '/buses',     'icon' => 'ph-bus',                'label' => 'Buses'],
+                ['href' => BASE_PATH . '/archives',  'icon' => 'ph-archive',            'label' => 'Archives'],
             ],
             'Security' => [
-                ['href' => BASE_PATH . '/admin/security.php',  'icon' => 'ph-shield-checkered',   'label' => 'Security Logs'],
+                ['href' => BASE_PATH . '/security',  'icon' => 'ph-shield-checkered',   'label' => 'Security Logs'],
             ],
         ];
 
@@ -79,7 +80,7 @@ $currentPage = $currentPage ?? '';
 
     <!-- Logout -->
     <div class="p-3 border-t border-white/10">
-        <a href="<?= BASE_PATH ?>/auth/logout.php"
+        <a href="<?= BASE_PATH ?>/logout"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-200 hover:bg-red-500/20 hover:text-white text-xs font-bold transition-all">
             <i class="ph ph-sign-out text-base"></i>
             Logout

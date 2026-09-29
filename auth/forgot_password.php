@@ -311,14 +311,15 @@ include '../includes/header.php';
 
     <div class="relative w-full max-w-md">
 
-        <!-- Back link (only on Step 1) -->
-        <?php if (!$step || $step === null): ?>
-        <a href="login.php" class="inline-flex items-center gap-2 text-[#061A53]/70 hover:text-[#061A53] text-sm font-medium mb-6 transition">
-            <i class="ph ph-arrow-left"></i> Back to Login
-        </a>
-        <?php endif; ?>
-
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+            <!-- Back link (only on Step 1) -->
+            <?php if (!$step || $step === null): ?>
+            <div class="px-8 pt-6 pb-0">
+                <a href="/" class="inline-flex items-center gap-2 text-[#061A53]/70 hover:text-[#061A53] text-sm font-medium transition">
+                    <i class="ph ph-arrow-left"></i> Back to Login
+                </a>
+            </div>
+            <?php endif; ?>
 
             <!-- ── Step indicator bar ─────────────────────────────────────── -->
             <?php
@@ -359,7 +360,7 @@ include '../includes/header.php';
                 <h2 class="text-2xl font-black text-slate-800 mb-2">Password Reset!</h2>
                 <p class="text-slate-500 text-sm mb-1"><?= htmlspecialchars($message) ?></p>
                 <p class="text-slate-400 text-xs mb-6">A confirmation has been sent to your email address.</p>
-                <a href="login.php"
+                <a href="/"
                    class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition-all">
                     Go to Login →
                 </a>
@@ -436,7 +437,7 @@ include '../includes/header.php';
 
             <p class="text-center text-slate-400 text-sm mt-6">
                 Remember your password?
-                <a href="login.php" class="text-blue-600 font-semibold hover:text-blue-800">Sign in</a>
+                <a href="/" class="text-blue-600 font-semibold hover:text-blue-800">Sign in</a>
             </p>
 
             <!-- ════════════════════════════════════════════════════════════ -->

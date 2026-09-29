@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * includes/sidebar_driver.php
  * Left sidebar for authenticated drivers.
@@ -42,10 +42,10 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
     <nav id="sidebar-nav" class="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <?php
         $navItems = [
-            ['href' => BASE_PATH . '/driver/dashboard_v2',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
-            ['href' => BASE_PATH . '/driver/passengers', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
-            ['href' => BASE_PATH . '/driver/earnings',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
-            ['href' => BASE_PATH . '/driver/profile',    'icon' => 'ph-user-gear',       'label' => 'My Profile'],
+            ['href' => BASE_PATH . '/driver-dashboard',  'icon' => 'ph-squares-four',    'label' => 'Dashboard'],
+            ['href' => BASE_PATH . '/driver-passengers', 'icon' => 'ph-users',           'label' => 'Passengers Today'],
+            ['href' => BASE_PATH . '/driver-earnings',   'icon' => 'ph-coins',           'label' => 'My Earnings'],
+            ['href' => BASE_PATH . '/driver-profile',    'icon' => 'ph-user-gear',       'label' => 'My Profile'],
         ];
         foreach ($navItems as $item):
             $active = str_contains($currentPage, basename($item['href']));
@@ -61,7 +61,7 @@ if (isset($pdo) && isset($_SESSION['driver_id'])) {
 
     <!-- Logout -->
     <div class="p-3 border-t border-white/10">
-        <a href="<?= BASE_PATH ?>/auth/logout.php"
+        <a href="<?= BASE_PATH ?>/logout"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-200 hover:bg-red-500/20 hover:text-white text-xs font-bold transition-all">
             <i class="ph ph-sign-out text-base"></i>
             Logout

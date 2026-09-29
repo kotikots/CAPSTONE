@@ -49,11 +49,11 @@ set_exception_handler(function($exception) {
 });
 
 date_default_timezone_set('Asia/Manila');
-define('BASE_PATH', '/PARE');
-$host = 'localhost';
-$db   = 'pare'; // Assuming pare_db from the other project
-$user = 'root';
-$pass = '';
+define('BASE_PATH', '');
+$host = 'sql209.infinityfree.com';
+$db   = 'if0_43038472_paredb';
+$user = 'if0_43038472';
+$pass = 'QFNj8zm3vM';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

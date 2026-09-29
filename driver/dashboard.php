@@ -35,10 +35,10 @@ $stationsList = $pdo->query("SELECT latitude, longitude FROM stations WHERE is_a
 // Today's stats
 $statsStmt = $pdo->prepare(
     "SELECT 
-        COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.fare_amount ELSE 0 END), 0) AS total_revenue,
-        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 0 THEN t.fare_amount ELSE 0 END), 0) AS cash_in_hand,
-        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 2 THEN t.fare_amount ELSE 0 END), 0) AS pending_remittance,
-        SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (p.id IS NULL OR p.remitted = 0) THEN 1 ELSE 0 END) AS passengers
+        COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 0 AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS cash_in_hand,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 2 AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS pending_remittance,
+        SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (t.status IS NULL OR t.status != 'flagged') THEN 1 ELSE 0 END) AS passengers
      FROM   tickets t
      JOIN   trips   tr ON tr.id = t.trip_id
      LEFT JOIN payments p ON p.ticket_id = t.id
@@ -69,7 +69,7 @@ include '../includes/header.php';
         <!-- Top bar -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-[#0F172A]">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>!</h2>
+                <h2 class="text-2xl font-black text-[#0F172A]">Good <?= (date('H')<12 ? 'Morning' : (date('H')<17 ? 'Afternoon' : 'Evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>!</h2>
                 <p class="text-[#4C5C79] text-sm mt-1"><?= date('l, F j, Y') ?></p>
             </div>
             <?php if ($activeTrip): ?>
@@ -101,7 +101,10 @@ include '../includes/header.php';
                     </div>
                     <div class="flex-1 text-left">
                         <p class="text-[#4C5C79] text-sm font-semibold tracking-tight">Cash in Hand</p>
-                        <p id="top-cash-in-hand" class="text-3xl font-black text-[#0D8E30] leading-tight whitespace-nowrap"><?= peso((float)$todayStats['cash_in_hand']) ?></p>
+                        <div class="flex items-baseline gap-1 text-[#0D8E30] whitespace-nowrap">
+                            <span class="text-xl font-bold">₱</span>
+                            <span id="top-cash-in-hand" class="text-3xl font-black leading-tight"><?= number_format((float)$todayStats['cash_in_hand'], 2) ?></span>
+                        </div>
                         <p class="text-[#4C5C79] text-[10px] uppercase font-black tracking-widest mt-1 opacity-70">Day's Total: <?= peso((float)$todayStats['total_revenue']) ?></p>
                     </div>
                 </div>
@@ -260,7 +263,7 @@ let autoActive = false;
 
 <?php if ($activeTrip): ?>
 function fetchTripStats() {
-    fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>')
+    fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>&t=' + Date.now(), { credentials: 'same-origin' })
     .then(r => r.json())
     .then(data => {
         if (!data.success) {
@@ -280,7 +283,7 @@ function fetchTripStats() {
         
         if (data.all_time_cash_in_hand !== undefined) {
             const topCashDiv = document.getElementById('top-cash-in-hand');
-            if (topCashDiv) topCashDiv.innerText = '₱ ' + parseFloat(data.all_time_cash_in_hand).toFixed(2);
+            if (topCashDiv) topCashDiv.innerText = parseFloat(data.all_time_cash_in_hand).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
         const list = document.getElementById('live-pax-list');
@@ -305,9 +308,15 @@ function fetchTripStats() {
             if (p.is_paid) {
                 paymentAction = `<span class="text-[9px] sm:text-[10px] font-bold text-[#0D8E30] uppercase bg-[#DBF7E4] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 border border-emerald-100"><i class="ph ph-check-fat-fill"></i> Paid</span>`;
             } else {
-                paymentAction = `<button onclick="collectPayment(${p.id}, this)" class="text-[9px] sm:text-[11px] font-black text-white uppercase bg-[#0D8E30] hover:bg-[#0D8E30] px-2 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl shadow-md transition active:scale-95 flex items-center gap-1 sm:gap-2" style="color: #ffffff !important;">
-                    <i class="ph ph-hand-coins text-sm sm:text-base"></i> <span class="hidden sm:inline">Receive Cash</span><span class="sm:hidden">Collect</span>
-                </button>`;
+                paymentAction = `
+                <div class="flex gap-1 sm:gap-2">
+                    <button onclick="flagTicket(${p.id}, this)" class="text-[9px] sm:text-[11px] font-black text-orange-600 uppercase bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl shadow-sm transition active:scale-95 flex items-center justify-center" title="Flag as No-Show">
+                        <i class="ph ph-flag text-sm sm:text-base"></i>
+                    </button>
+                    <button onclick="collectPayment(${p.id}, this)" class="text-[9px] sm:text-[11px] font-black text-white uppercase bg-[#0D8E30] hover:bg-[#0D8E30] px-2 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl shadow-md transition active:scale-95 flex items-center gap-1 sm:gap-2" style="color: #ffffff !important;">
+                        <i class="ph ph-hand-coins text-sm sm:text-base"></i> <span class="hidden sm:inline">Receive Cash</span><span class="sm:hidden">Collect</span>
+                    </button>
+                </div>`;
             }
 
             return `
@@ -371,6 +380,43 @@ function collectPayment(ticketId, btn) {
     });
 }
 
+async function flagTicket(ticketId, btn) {
+    const confirmed = await window.showConfirm({
+        title: 'Flag Ticket?',
+        message: 'Are you sure? Flagging this ticket will be recorded and audited by the Admin. Only do this for no-shows.',
+        type: 'danger',
+        confirmText: 'Yes, flag ticket'
+    });
+
+    if (!confirmed) return;
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i>';
+    
+    fetch('api_flag_ticket.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            window.showToast('Ticket Flagged', 'Ticket has been flagged for admin review.', 'success');
+            fetchTripStats(); // Refresh list immediately
+        } else {
+            window.showToast('Error', d.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(() => {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
 // Poll Kiosk via database every 3 seconds
 setInterval(fetchTripStats, 3000);
 fetchTripStats();
@@ -383,7 +429,7 @@ async function startTrip(direction) {
         title: 'Start New Trip?',
         message: `You are about to start a trip on route: ${dirTxt}. Passengers will be able to book tickets.`,
         type: 'info',
-        confirmText: 'Yes, Start Trip'
+        confirmText: 'Yes, start trip'
     });
 
     if (!confirmed) return;
@@ -412,7 +458,7 @@ async function endTrip(tripId) {
         title: 'End This Trip?',
         message: 'This will close all bookings for this run. This action cannot be undone.',
         type: 'danger',
-        confirmText: 'Yes, End Trip'
+        confirmText: 'Yes, end trip'
     });
 
     if (!confirmed) return;
@@ -489,6 +535,36 @@ async function remitCash(amount) {
 // This makes the bus icon move on the passenger's live map
 // ========================================
 <?php if ($activeTrip): ?>
+
+// ========================================
+// 🔋 Screen Wake Lock — Prevents screen from sleeping during active trip
+// ========================================
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active');
+            
+            // Re-acquire lock if page becomes visible again
+            document.addEventListener('visibilitychange', async () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock re-acquired');
+                }
+            });
+        } else {
+            console.warn('Screen Wake Lock API not supported in this browser.');
+        }
+    } catch (err) {
+        console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+    }
+}
+
+// Request lock immediately
+requestWakeLock();
+
 let mockLat = null;
 let mockLng = null;
 
@@ -535,6 +611,7 @@ function setMockGps() {
 
             fetch('push_location.php', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lat, lng, speed })
             })

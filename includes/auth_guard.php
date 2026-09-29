@@ -16,24 +16,25 @@ header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 
+if (!defined('BASE_PATH')) define('BASE_PATH', '');
 
 $requiredRole = $requiredRole ?? 'passenger';
 
 if ($requiredRole === 'driver') {
     if (!isset($_SESSION['driver_id'])) {
-        header('Location: /PARE/auth/login.php');
+        header('Location: ' . BASE_PATH . '/');
         exit;
     }
 } else {
     if (!isset($_SESSION['user_id'])) {
-        header('Location: /PARE/auth/login.php');
+        header('Location: ' . BASE_PATH . '/');
         exit;
     }
     if ($_SESSION['role'] !== $requiredRole) {
         $redirect = match($_SESSION['role']) {
-            'admin'  => '/PARE/admin/dashboard.php',
-            'driver' => '/PARE/driver/dashboard_v2.php',
-            default  => '/PARE/passenger/dashboard.php',
+            'admin'  => BASE_PATH . '/admin/dashboard.php',
+            'driver' => BASE_PATH . '/driver/dashboard_v2.php',
+            default  => BASE_PATH . '/passenger/dashboard.php',
         };
         header('Location: ' . $redirect);
         exit;

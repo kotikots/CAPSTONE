@@ -1,11 +1,11 @@
-﻿<?php
+<?php
 $currentPage = $currentPage ?? '';
 $navItems = [
-    ['href' => BASE_PATH . '/passenger/dashboard.php',  'icon' => 'ph-squares-four',           'label' => 'Home'],
-    ['href' => BASE_PATH . '/passenger/map.php',        'icon' => 'ph-map-trifold',            'label' => 'Map'],
-    ['href' => BASE_PATH . '/passenger/rides.php',      'icon' => 'ph-clock-counter-clockwise', 'label' => 'Rides'],
-    ['href' => BASE_PATH . '/passenger/profile.php',    'icon' => 'ph-user-circle',            'label' => 'Profile'],
-    ['href' => BASE_PATH . '/auth/logout.php',          'icon' => 'ph-sign-out',               'label' => 'Logout'],
+    ['href' => BASE_PATH . '/passenger-dashboard',  'icon' => 'ph-squares-four',           'label' => 'Home'],
+    ['href' => BASE_PATH . '/map',        'icon' => 'ph-map-trifold',            'label' => 'Map'],
+    ['href' => BASE_PATH . '/rides',      'icon' => 'ph-clock-counter-clockwise', 'label' => 'Rides'],
+    ['href' => BASE_PATH . '/profile',    'icon' => 'ph-user-circle',            'label' => 'Profile'],
+    ['href' => BASE_PATH . '/logout',          'icon' => 'ph-sign-out',               'label' => 'Logout'],
 ];
 ?>
 <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 px-2 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)]" style="background-color: #061A53;">

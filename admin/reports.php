@@ -24,7 +24,7 @@ $driverRevStmt = $pdo->prepare(
      FROM   drivers d
      JOIN   buses   b  ON b.driver_id = d.id
      LEFT JOIN trips   tr ON tr.bus_id = b.id
-     LEFT JOIN tickets t  ON t.trip_id  = tr.id AND DATE(t.issued_at) BETWEEN ? AND ?
+     LEFT JOIN tickets t  ON t.trip_id  = tr.id AND DATE(t.issued_at) BETWEEN ? AND ? AND (t.status IS NULL OR t.status != 'flagged')
      GROUP  BY d.id ORDER BY revenue DESC"
 );
 $driverRevStmt->execute([$from, $to]);
@@ -36,7 +36,7 @@ $dailyStmt = $pdo->prepare(
             COUNT(t.id) AS tickets,
             SUM(t.fare_amount) AS revenue
      FROM   tickets t
-     WHERE  DATE(t.issued_at) BETWEEN ? AND ?
+     WHERE  DATE(t.issued_at) BETWEEN ? AND ? AND (t.status IS NULL OR t.status != 'flagged')
      GROUP  BY DATE(t.issued_at) ORDER BY day ASC"
 );
 $dailyStmt->execute([$from, $to]);
@@ -166,9 +166,9 @@ include '../includes/header.php';
 </div>
 
 <!-- Export Modal -->
-<div id="export-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+<div id="export-modal" class="hidden fixed inset-0 bg-[#061A53]/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-slide-in">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div class="px-6 py-4 border-b border-[#E2E8F0] flex justify-between items-center bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#F1F5F9]">
             <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                 <i class="ph ph-export text-amber-500 text-xl"></i> Export Options
             </h3>
@@ -176,7 +176,7 @@ include '../includes/header.php';
                 <i class="ph ph-x font-bold"></i>
             </button>
         </div>
-        <div class="p-6">
+        <div class="p-6 bg-white">
             <form method="GET" target="_blank" id="export-form" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">From</label>

@@ -58,7 +58,7 @@
 
     <header class="bg-white/40 backdrop-blur-md border-b border-white/50 p-6 shadow-sm flex items-center justify-between">
         <div class="flex items-center gap-4 select-none tracking-tight" onclick="handleLogoClick()">
-            <img src="<?= BASE_PATH ?>/assets/img/logo.png?v=2" alt="PARE Logo" class="w-12 h-12 object-contain drop-shadow-sm">
+            <img src="<?= BASE_PATH ?>/assets/img/logo.png?v=2" alt="PARE Logo" class="w-12 h-12 object-contain drop-shadow-sm scale-[2] origin-left">
 
         </div>
         <div class="bg-white/60 px-6 py-2 rounded-2xl border border-white/80 shadow-sm">
@@ -151,7 +151,7 @@
                     
                     <input type="text" id="id-input" placeholder="e.g. SUM2023-01996"
                            class="w-full text-center text-3xl font-mono font-bold bg-white/70 border-2 border-white rounded-2xl px-6 py-5 focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-400/30 text-blue-900 placeholder-blue-900/30 tracking-widest mb-4 shadow-inner"
-                           autocomplete="off" autofocus>
+                           autocomplete="off" autofocus oninput="resetVerify()">
                     
                     <div id="verify-result" class="hidden mb-4 p-4 rounded-2xl text-left border bg-white/50 border-white/60"></div>
                     
@@ -570,6 +570,27 @@
             document.getElementById('id-input').focus();
         }
 
+        // ─── Reset Verify State on Input Change ───
+        function resetVerify() {
+            const resultDiv = document.getElementById('verify-result');
+            const verifyBtn = document.getElementById('verify-btn');
+            
+            // If there's an existing result or the button changed from its default
+            if (!resultDiv.classList.contains('hidden') || verifyBtn.textContent !== 'Verify & Continue') {
+                // Clear state
+                passenger.id = null;
+                passenger.name = null;
+                passenger.verified = false;
+                passenger.idNumber = null;
+                
+                // Hide result box and revert button
+                resultDiv.classList.add('hidden');
+                verifyBtn.textContent = 'Verify & Continue';
+                verifyBtn.disabled = false;
+                verifyBtn.onclick = verifyId;
+            }
+        }
+
         // ─── Verify ID number ───
         function verifyId() {
             const idNumber = document.getElementById('id-input').value.trim();
@@ -597,14 +618,33 @@
 
             // Store the ID number for logging
             passenger.idNumber = idNumber;
-
             verifyBtn.disabled = true;
             verifyBtn.textContent = 'Checking...';
+            
+            const boundId = localStorage.getItem('kiosk_bus_id') || 0;
 
-            fetch(`verify_discount.php?id_number=${encodeURIComponent(idNumber)}`)
+            fetch(`verify_discount.php?id_number=${encodeURIComponent(idNumber)}&bus_id=${boundId}`)
                 .then(r => r.json())
                 .then(data => {
                     verifyBtn.disabled = false;
+
+                    if (data.has_unpaid) {
+                        // Prevent multiple discounts on the same trip for unpaid tickets
+                        resultDiv.className = 'mb-4 p-4 rounded-2xl text-left bg-red-50 border border-red-200';
+                        resultDiv.innerHTML = `
+                            <p class="text-red-800 font-bold">⚠️ Discount Already Used</p>
+                            <p class="text-red-700 text-sm">${data.message}</p>
+                        `;
+                        resultDiv.classList.remove('hidden');
+                        
+                        // Let them proceed as regular if they want to pay for a companion
+                        verifyBtn.textContent = 'Proceed as Regular →';
+                        verifyBtn.onclick = function() { 
+                            ticket.type = 'regular';
+                            toStep2('regular'); 
+                        };
+                        return;
+                    }
 
                     if (data.found) {
                         // Passenger found in the system
@@ -750,6 +790,15 @@
                         let typeLabel = "Regular";
                         if (ticket.type === 'student') { fare = s.student_fare; typeLabel = ticket.specificType || "Student/SR/PWD"; }
                         else if (ticket.type === 'special') { fare = s.special_fare; typeLabel = ticket.specificType || "Teacher/Healthcare Worker"; }
+
+                        if (s.is_passed) {
+                            return `
+                            <button disabled class="opacity-40 pointer-events-none grayscale bg-white/40 p-8 rounded-2xl border border-white/30 text-center flex flex-col items-center">
+                                <span class="block text-lg font-black mb-2 text-slate-500">${s.station_name}</span>
+                                <span class="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2">Passed</span>
+                            </button>
+                            `;
+                        }
 
                         return `
                         <button onclick="toStep3('${s.station_name}', ${fare}, '${typeLabel}')" class="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 hover:bg-white/80 transition text-center flex flex-col items-center">

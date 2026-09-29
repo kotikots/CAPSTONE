@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PARE System: User Manual</title>
+    <!-- Modern Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            background-color: #f8fafc;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 60px 80px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        /* Print Button */
+        .print-btn-container {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        
+        .btn-print {
+            background-color: var(--blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-print:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-light);
+            margin-bottom: 40px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-bottom: 20px;
+            padding-left: 24px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Callouts / Alerts */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 24px 0;
+            display: flex;
+            gap: 16px;
+        }
+
+        .alert-info {
+            background-color: var(--blue-light);
+            border: 1px solid #bfdbfe;
+        }
+
+        .alert-warning {
+            background-color: #fefce8;
+            border: 1px solid #fef08a;
+        }
+
+        .alert-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .alert-info .alert-icon { color: var(--blue); }
+        .alert-warning .alert-icon { color: #d97706; }
+
+        .alert-content strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--primary);
+        }
+
+        /* Links */
+        a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background-color: #f8fafc;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            border: 1px solid var(--border);
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .toc li {
+            margin-bottom: 12px;
+        }
+
+        .toc a {
+            color: var(--text-main);
+        }
+
+        .toc a:hover {
+            color: var(--blue);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 40px 0;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .btn-print {
+                display: none;
+            }
+            h2 {
+                page-break-after: avoid;
+            }
+            .alert {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Print Button (Hidden when printing) -->
+        <div class="print-btn-container">
+            <button class="btn-print" onclick="window.print()">
+                <i class="ph ph-printer"></i>
+                Download as PDF
+            </button>
+        </div>
+
+        <h1>PARE System: User Manual</h1>
+        <p class="subtitle">Passenger and Revenue Monitoring System</p>
+
+        <p>Welcome to the PARE System. This web-based platform is designed to provide timely bus tracking, instant ticketing, and seamless fare collection — all unified in one seamless experience.</p>
+        <p>This manual serves as your comprehensive guide to navigating and utilizing the three core portals of the system: <strong>Passenger</strong>, <strong>Driver</strong>, and <strong>Admin</strong>.</p>
+
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#intro">1. Introduction & System Requirements</a></li>
+                <li><a href="#registration">2. Account Registration & Login</a></li>
+                <li><a href="#passenger">3. Passenger Portal</a></li>
+                <li><a href="#driver">4. Driver Portal</a></li>
+                <li><a href="#admin">5. Admin Portal</a></li>
+                <li><a href="#troubleshooting">6. Troubleshooting & FAQs</a></li>
+            </ul>
+        </div>
+
+        <h2 id="intro">1. Introduction & System Requirements</h2>
+        <p>The PARE System is a cloud-hosted web application, meaning you do not need to download or install any software to use it.</p>
+
+        <div class="alert alert-info">
+            <i class="ph-fill ph-info alert-icon"></i>
+            <div class="alert-content">
+                <strong>System Requirements</strong>
+                <ul>
+                    <li><strong>Device:</strong> Any modern smartphone, tablet, or computer.</li>
+                    <li><strong>Browser:</strong> An up-to-date web browser (Google Chrome, Safari, Mozilla Firefox).</li>
+                    <li><strong>Internet:</strong> A stable internet connection is required.</li>
+                    <li><strong>Permissions:</strong> You must allow "Location/GPS Tracking" when prompted by your browser to use the Live Map functionality.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 id="registration">2. Account Registration & Login</h2>
+
+        <h3>Registering as a Passenger</h3>
+        <ol>
+            <li>Go to the main homepage and click <strong>Register here</strong>.</li>
+            <li>Select your account type:
+                <ul>
+                    <li><strong>Regular Account:</strong> Standard fare. Quick sign-up with immediate access.</li>
+                    <li><strong>Discount Account:</strong> For Seniors, PWDs, and Students. <em>Requires ID scanning.</em></li>
+                </ul>
+            </li>
+            <li>If you select <strong>Discount Account</strong>, you will be prompted to take a photo of your valid ID. The system's OCR (Optical Character Recognition) will automatically extract your details.</li>
+            <li>Verify your email address via the One-Time Password (OTP) sent to your inbox.</li>
+            <li>Complete your profile details and submit.</li>
+        </ol>
+
+        <div class="alert alert-info">
+            <i class="ph-fill ph-lightbulb alert-icon"></i>
+            <div class="alert-content">
+                <strong>Note on Discounts</strong>
+                Regular accounts are granted instant access. Discount accounts will be placed in a <em>Pending Approval</em> state until an Admin reviews and approves the uploaded ID.
+            </div>
+        </div>
+
+        <h3>Logging In</h3>
+        <ol>
+            <li>Go to the main homepage.</li>
+            <li>Select your role tab: <strong>Passenger</strong> or <strong>Driver</strong> (Admins log in using the same form).</li>
+            <li>Enter your Email Address (or ID Number) and Password.</li>
+            <li>Click <strong>Sign In</strong>.</li>
+        </ol>
+
+        <div class="alert alert-warning">
+            <i class="ph-fill ph-shield-check alert-icon"></i>
+            <div class="alert-content">
+                <strong>Two-Step Verification (MFA)</strong>
+                Administrators and staff with enhanced privileges will be prompted to enter a 6-digit verification code sent to their email to protect sensitive system data.
+            </div>
+        </div>
+
+        <h2 id="passenger">3. Passenger Portal</h2>
+        <p>The Passenger Portal allows commuters to view bus locations, track their own rides, and manage their profiles.</p>
+        <ul>
+            <li><strong>Dashboard:</strong> Gives you a quick overview of your account, your discount status, and quick links to your most used features.</li>
+            <li><strong>Live Map:</strong> Displays a real-time GPS map. Active buses are shown as pulsing orange dots. You can tap on a bus to see its body number and current route.</li>
+            <li><strong>My Rides:</strong> A historical log of all your completed trips, including the date, time, bus number, and exact fare paid.</li>
+            <li><strong>My Profile:</strong> Update your contact number, address, and emergency contact details. If you have a discount account, your ID photo and status (Active/Pending) will be displayed here.</li>
+        </ul>
+
+        <h2 id="driver">4. Driver Portal</h2>
+        <p>The Driver Portal is optimized for mobile devices, allowing drivers to operate the system right from the driver's seat.</p>
+        <ul>
+            <li><strong>Drive (Dashboard):</strong> 
+                <ul>
+                    <li>To begin a shift, select your route and click <strong>Start Trip</strong>.</li>
+                    <li>This activates your bus on the Live Map for passengers to see.</li>
+                    <li>Once you arrive at the final destination, click <strong>End Trip</strong> to finalize the log.</li>
+                </ul>
+            </li>
+            <li><strong>QR Code Scanning:</strong> When passengers board, drivers can utilize the built-in scanner to scan passenger tickets/QR codes to instantly process fare deduction based on GPS distance.</li>
+            <li><strong>Lists (Passengers Today):</strong> View a manifest of all passengers who have boarded your bus during the current shift.</li>
+            <li><strong>Earnings:</strong> Track your daily cash collected, total passenger count, and see your historical remittance records.</li>
+        </ul>
+
+        <h2 id="admin">5. Admin Portal</h2>
+        <p>The Admin Portal is the central command center for fleet operators and management.</p>
+        <ul>
+            <li><strong>Overview (Dashboard):</strong> A high-level analytics view showing today's total revenue, total passengers, and currently active buses on the road.</li>
+            <li><strong>Trip Logs:</strong> A detailed list of all trips made by the fleet, including timestamps and driver assignments.</li>
+            <li><strong>Reports & Export:</strong> Generate detailed financial and operational reports. Use the <strong>Export to CSV</strong> button to download the data into Excel for accounting.</li>
+            <li><strong>Fare Settings:</strong> Configure the financial rules of the system:
+                <ul>
+                    <li>Base Fare (First N kilometers)</li>
+                    <li>Succeeding per-kilometer rate</li>
+                    <li>Discount percentages for Seniors, PWDs, and Students.</li>
+                </ul>
+            </li>
+            <li><strong>Passenger Management:</strong> View all registered passengers. Review pending Discount Account applications and click <strong>Approve</strong> or <strong>Archive</strong> based on their uploaded ID.</li>
+            <li><strong>Fleet Management (Buses & Drivers):</strong> Register new buses (assigning plate numbers and body numbers) and create new driver accounts.</li>
+            <li><strong>Security Logs:</strong> An audit trail showing system logins, failed attempts, and administrative actions to ensure complete accountability.</li>
+        </ul>
+
+        <h2 id="troubleshooting">6. Troubleshooting & FAQs</h2>
+
+        <div class="alert alert-warning">
+            <i class="ph-fill ph-warning-circle alert-icon"></i>
+            <div class="alert-content">
+                <strong>The Live Map is not showing any buses!</strong>
+                This usually means no drivers have clicked "Start Trip" on their end, or they have lost internet connection. Buses only appear on the map when they are actively on a route.
+            </div>
+        </div>
+
+        <p><strong>Q: I forgot my password. How do I get back in?</strong><br>
+        A: On the login screen, click <strong>Forgot password?</strong>. Enter your registered email address, and the system will send you a secure link to create a new password.</p>
+
+        <p><strong>Q: My discount account says "Pending Approval". Can I still ride?</strong><br>
+        A: You cannot access your QR ticket until an Admin approves your account. Please wait for an approval email, or contact management to expedite the process.</p>
+
+        <p><strong>Q: How do I change my assigned bus as a driver?</strong><br>
+        A: Drivers cannot change their own bus assignments. If you are driving a different bus today, an Administrator must update your assignment in the <strong>Buses</strong> tab of the Admin Portal.</p>
+
+        <hr>
+        <p style="text-align: center; color: var(--text-light); font-size: 14px;">
+            &copy; 2024 PARE System. All rights reserved.
+        </p>
+
+    </div>
+
+</body>
+</html>

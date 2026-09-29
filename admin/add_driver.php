@@ -100,7 +100,7 @@ include '../includes/header.php';
 <div class="flex min-h-screen">
     <?php include '../includes/sidebar_admin.php'; ?>
     
-    <main class="flex-1 p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
+    <main class="flex-1 p-4 md:p-8 bg-slate-50 overflow-auto pb-24 md:pb-8">
         <div class="max-w-2xl mx-auto">
             <!-- Header -->
             <div class="mb-8 flex items-center justify-between">
@@ -137,7 +137,7 @@ include '../includes/header.php';
             <?php endif; ?>
 
             <!-- Form Card -->
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 md:p-8">
                 <form method="POST" enctype="multipart/form-data" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -420,7 +420,7 @@ document.querySelector('#driver-form')?.addEventListener('submit', function(e) {
 });
 </script>
 
-<script src="../assets/js/ph-address-selector.js"></script>
+<script src="../assets/js/ph-address-selector.js?v=<?= time() ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const addrSelect = initPHAddress('');

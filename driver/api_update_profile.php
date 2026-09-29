@@ -21,15 +21,19 @@ if (!$data) {
     echo json_encode(['success' => false, 'message' => 'Invalid request data.']);
     exit;
 }
+// Fetch current data to retain old values if submitted data is empty
+$stmt = $pdo->prepare("SELECT * FROM drivers WHERE id = ?");
+$stmt->execute([$driverId]);
+$current = $stmt->fetch();
 
-$fullName      = trim($data['full_name'] ?? '');
-$contactNumber = trim($data['contact_number'] ?? '');
-$email         = trim($data['email'] ?? '');
-$address       = trim($data['address'] ?? '');
-$region        = trim($data['region'] ?? '');
-$province      = trim($data['province'] ?? '');
-$city          = trim($data['city'] ?? '');
-$barangay      = trim($data['barangay'] ?? '');
+$fullName      = !empty(trim($data['full_name'] ?? '')) ? trim($data['full_name']) : $current['full_name'];
+$contactNumber = !empty(trim($data['contact_number'] ?? '')) ? trim($data['contact_number']) : $current['contact_number'];
+$email         = isset($data['email']) && trim($data['email']) !== '' ? trim($data['email']) : $current['email'];
+$address       = !empty(trim($data['address'] ?? '')) ? trim($data['address']) : $current['address'];
+$region        = !empty(trim($data['region'] ?? '')) ? trim($data['region']) : $current['region'];
+$province      = !empty(trim($data['province'] ?? '')) ? trim($data['province']) : $current['province'];
+$city          = !empty(trim($data['city'] ?? '')) ? trim($data['city']) : $current['city'];
+$barangay      = !empty(trim($data['barangay'] ?? '')) ? trim($data['barangay']) : $current['barangay'];
 
 // Validation
 if (empty($fullName)) {

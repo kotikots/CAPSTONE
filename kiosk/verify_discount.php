@@ -36,6 +36,33 @@ if (!$user) {
 // ID found — check if they have a registered discount
 $hasDiscount = ($user['discount_type'] !== 'none' && !empty($user['discount_type']));
 
+// Prevent multiple discount usage on the same active trip if previous fare is unpaid
+$busId = (int)($_GET['bus_id'] ?? 0);
+if ($busId > 0 && $hasDiscount) {
+    $chkStmt = $pdo->prepare("
+        SELECT t.id 
+        FROM tickets t 
+        JOIN trips tr ON tr.id = t.trip_id 
+        WHERE t.passenger_id = ? 
+          AND tr.bus_id = ? 
+          AND tr.status = 'active' 
+          AND t.id NOT IN (SELECT ticket_id FROM payments)
+        LIMIT 1
+    ");
+    $chkStmt->execute([$user['id'], $busId]);
+    if ($chkStmt->fetch()) {
+        echo json_encode([
+            'found'    => true,
+            'verified' => false,
+            'passenger_id' => (int)$user['id'],
+            'name'     => $user['full_name'],
+            'has_unpaid' => true,
+            'message'  => 'Multiple Discount Detected: You already have an unpaid ticket for this trip.'
+        ]);
+        exit;
+    }
+}
+
 echo json_encode([
     'found'         => true,
     'verified'      => $hasDiscount,

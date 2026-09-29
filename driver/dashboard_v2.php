@@ -32,10 +32,10 @@ $stationsList = $pdo->query("SELECT latitude, longitude FROM stations WHERE is_a
 // Today's stats
 $statsStmt = $pdo->prepare(
     "SELECT 
-        COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() THEN t.fare_amount ELSE 0 END), 0) AS total_revenue,
-        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 0 THEN t.fare_amount ELSE 0 END), 0) AS cash_in_hand,
-        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 2 THEN t.fare_amount ELSE 0 END), 0) AS pending_remittance,
-        SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (p.id IS NULL OR p.remitted = 0) THEN 1 ELSE 0 END) AS passengers
+        COALESCE(SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 0 AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS cash_in_hand,
+        COALESCE(SUM(CASE WHEN p.id IS NOT NULL AND p.remitted = 2 AND (t.status IS NULL OR t.status != 'flagged') THEN t.fare_amount ELSE 0 END), 0) AS pending_remittance,
+        SUM(CASE WHEN DATE(t.issued_at) = CURDATE() AND (t.status IS NULL OR t.status != 'flagged') THEN 1 ELSE 0 END) AS passengers
      FROM   tickets t
      JOIN   trips   tr ON tr.id = t.trip_id
      LEFT JOIN payments p ON p.ticket_id = t.id
@@ -66,7 +66,7 @@ include '../includes/header.php';
         <!-- Top bar -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h2 class="text-2xl font-black text-[#0F172A]">Good <?= (date('H')<12 ? 'morning' : (date('H')<17 ? 'afternoon' : 'evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>!</h2>
+                <h2 class="text-2xl font-black text-[#0F172A]">Good <?= (date('H')<12 ? 'Morning' : (date('H')<17 ? 'Afternoon' : 'Evening')) ?>, <?= htmlspecialchars($_SESSION['full_name'] ?? 'Driver') ?>!</h2>
                 <p class="text-[#64748B] text-sm mt-1"><?= date('l, F j, Y') ?></p>
             </div>
             <?php if ($activeTrip): ?>
@@ -99,7 +99,10 @@ include '../includes/header.php';
                     </div>
                     <div class="flex-1 text-left">
                         <p class="text-[#4C5C79] text-sm font-semibold tracking-tight">Cash in Hand</p>
-                        <p id="top-cash-in-hand" class="text-3xl font-black text-[#0D8E30] leading-tight whitespace-nowrap"><?= peso((float)$todayStats['cash_in_hand']) ?></p>
+                        <div class="flex items-baseline gap-1 text-[#0D8E30] whitespace-nowrap">
+                            <span class="text-xl font-bold">₱</span>
+                            <span id="top-cash-in-hand" class="text-3xl font-black leading-tight"><?= number_format((float)$todayStats['cash_in_hand'], 2) ?></span>
+                        </div>
                         <p class="text-[#4C5C79] text-[10px] uppercase font-black tracking-widest mt-1 opacity-70">Day's Total: <?= peso((float)$todayStats['total_revenue']) ?></p>
                     </div>
                 </div>
@@ -271,7 +274,7 @@ let autoActive = false;
 
 <?php if ($activeTrip): ?>
 function fetchTripStats() {
-    fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>')
+    fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>&t=' + Date.now(), { credentials: 'same-origin' })
     .then(r => r.json())
     .then(data => {
         if (!data.success) {
@@ -286,9 +289,9 @@ function fetchTripStats() {
         
         // Update top counters
         document.getElementById('live-pax-count').innerText = data.total_passengers;
-        document.getElementById('live-cash-total').innerText = '₱ ' + parseFloat(data.total_cash).toFixed(2);
+        document.getElementById('live-cash-total').innerText = '₱ ' + parseFloat(data.pending_cash).toFixed(2);
         if (document.getElementById('top-cash-in-hand')) {
-            document.getElementById('top-cash-in-hand').innerText = '₱ ' + parseFloat(data.collected_cash).toFixed(2);
+            document.getElementById('top-cash-in-hand').innerText = parseFloat(data.collected_cash).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
         const list = document.getElementById('live-pax-list');
@@ -310,27 +313,35 @@ function fetchTripStats() {
             if (p.is_paid) {
                 paymentAction = `<span class="text-xs sm:text-sm font-bold text-[#0D8E30] uppercase bg-[#DBF7E4] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center justify-center gap-1 border border-emerald-100"><i class="ph ph-check-circle"></i> Paid</span>`;
             } else {
-                paymentAction = `<button onclick="collectPayment(${p.id}, this)" class="text-xs sm:text-sm font-black text-white uppercase bg-[#0D8E30] hover:bg-emerald-700 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1 sm:gap-2" style="color: #ffffff !important;">
-                    <i class="ph ph-hand-coins text-sm sm:text-base"></i> Receive Cash
-                </button>`;
+                paymentAction = `
+                <div class="flex gap-2">
+                    <button onclick="flagTicket(${p.id}, this)" class="text-xs sm:text-sm font-black text-orange-600 uppercase bg-orange-50 hover:bg-orange-100 border border-orange-200 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl shadow-sm transition active:scale-95 flex items-center justify-center" title="Flag as No-Show">
+                        <i class="ph ph-flag text-sm sm:text-base"></i>
+                    </button>
+                    <button onclick="collectPayment(${p.id}, this)" class="text-xs sm:text-sm font-black text-white uppercase bg-[#0D8E30] hover:bg-emerald-700 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1 sm:gap-2" style="color: #ffffff !important;">
+                        <i class="ph ph-hand-coins text-sm sm:text-base"></i> Receive Cash
+                    </button>
+                </div>`;
             }
 
             return `
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#E2E8F0] shadow-sm animate-[fadeIn_0.5s_ease-out]">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-400">
-                    <i class="ph ph-receipt text-xl drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <p class="font-black text-[#0F172A] text-base">₱ ${parseFloat(p.fare_amount).toFixed(2)}</p>
-                        <span class="font-mono font-bold text-blue-600 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded">${p.ticket_code}</span>
-                        <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${p.passenger_type}</p>
+            <div class="flex flex-col sm:flex-row gap-3 p-3 rounded-xl bg-white border border-[#E2E8F0] shadow-sm animate-[fadeIn_0.5s_ease-out]">
+                <div class="flex items-start gap-3 flex-1 min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-400">
+                        <i class="ph ph-receipt text-xl drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]"></i>
                     </div>
-                    <p class="text-xs text-[#94A3B8] truncate mt-0.5">${p.origin_name} &rarr; ${p.dest_name}</p>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="font-black text-[#0F172A] text-base">₱ ${parseFloat(p.fare_amount).toFixed(2)}</p>
+                            <span class="font-mono font-bold text-blue-600 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded break-all">${p.ticket_code}</span>
+                            <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${p.passenger_type}</p>
+                        </div>
+                        <p class="text-xs text-[#94A3B8] break-words mt-0.5">${p.origin_name} &rarr; ${p.dest_name}</p>
+                    </div>
                 </div>
-                <div class="text-right shrink-0">
-                    <div class="h-12 flex items-center justify-end mb-1">${paymentAction}</div>
-                    <p class="text-[10px] font-medium text-[#94A3B8] mt-1">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                <div class="flex items-center justify-between sm:flex-col sm:items-end shrink-0 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-none border-slate-100">
+                    <p class="text-[10px] font-medium text-[#94A3B8] sm:mt-1 order-1 sm:order-2">${new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <div class="flex items-center justify-end order-2 sm:order-1">${paymentAction}</div>
                 </div>
             </div>`;
         }).join('');
@@ -373,9 +384,75 @@ function collectPayment(ticketId, btn) {
     });
 }
 
+async function flagTicket(ticketId, btn) {
+    const confirmed = await window.showConfirm({
+        title: 'Flag Ticket?',
+        message: 'Are you sure? Flagging this ticket will be recorded and audited by the Admin. Only do this for no-shows.',
+        type: 'danger',
+        confirmText: 'Yes, flag ticket'
+    });
+
+    if (!confirmed) return;
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i>';
+    
+    fetch('api_flag_ticket.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            window.showToast('Ticket Flagged', 'Ticket has been flagged for admin review.', 'success');
+            fetchTripStats(); // Refresh list immediately
+        } else {
+            window.showToast('Error', d.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(() => {
+        window.showToast('Network Error', 'Failed to connect to server', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
 // Poll Kiosk via database every 3 seconds
 setInterval(fetchTripStats, 3000);
 fetchTripStats();
+
+// ========================================
+// 🔋 Screen Wake Lock — Prevents screen from sleeping during active trip
+// ========================================
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active');
+            
+            // Re-acquire lock if page becomes visible again
+            document.addEventListener('visibilitychange', async () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock re-acquired');
+                }
+            });
+        } else {
+            console.warn('Screen Wake Lock API not supported in this browser.');
+        }
+    } catch (err) {
+        console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+    }
+}
+
+// Request lock immediately since we are in an active trip
+requestWakeLock();
 
 // ========================================
 // 🛰️ Live GPS Tracking — pushes driver's phone location to server
@@ -444,6 +521,7 @@ function setMockGps() {
 
             fetch('push_location.php', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lat, lng, speed, accuracy: pos.coords.accuracy || null, trip_id: cachedTripId })
             })
@@ -479,7 +557,7 @@ async function startTrip(direction) {
         title: 'Start New Trip?',
         message: `You are about to start a trip on route: ${dirTxt}. Passengers will be able to book tickets.`,
         type: 'info',
-        confirmText: 'Yes, Start Trip'
+        confirmText: 'Yes, start trip'
     });
 
     if (!confirmed) return;
@@ -508,7 +586,7 @@ async function endTrip(tripId) {
         title: 'End This Trip?',
         message: 'This will close all bookings for this run. This action cannot be undone.',
         type: 'danger',
-        confirmText: 'Yes, End Trip'
+        confirmText: 'Yes, end trip'
     });
 
     if (!confirmed) return;
@@ -540,7 +618,7 @@ async function remitCash(amount) {
         title: 'Remit Cash to Admin',
         message: `You are about to remit ${amount} to the admin. Are you sure you have handed over this amount? This action cannot be undone.`,
         type: 'warning',
-        confirmText: 'Yes, I Remitted'
+        confirmText: 'Yes, I remitted'
     });
 
     if (!confirmed) return;

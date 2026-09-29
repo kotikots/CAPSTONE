@@ -105,7 +105,7 @@ include '../includes/header.php';
                 </h3>
                 
                 <form method="GET" class="flex w-full md:w-max gap-2">
-                    <div class="relative w-full md:w-64">
+                    <div class="relative w-full md:w-80">
                         <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search user, IP, or reason..." list="search-suggestions" autocomplete="off"
                                class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm">
@@ -127,8 +127,9 @@ include '../includes/header.php';
                     </button>
                 </form>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
+            <div id="security-logs-data-container">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
                     <thead>
                         <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/30">
                             <th class="px-4 py-2.5">Status</th>
@@ -163,7 +164,7 @@ include '../includes/header.php';
                             </td>
                             <td class="px-4 py-2.5">
                                 <p class="text-[10px] font-medium text-slate-600 mb-0.5"><?= htmlspecialchars($log['reason']) ?></p>
-                                <p class="text-[9px] text-slate-400 truncate w-40 italic" title="<?= htmlspecialchars($log['user_agent']) ?>"><?= htmlspecialchars($log['user_agent']) ?></p>
+                                <p class="text-[9px] text-slate-400 max-w-xs break-words italic" title="<?= htmlspecialchars($log['user_agent']) ?>"><?= htmlspecialchars($log['user_agent']) ?></p>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -217,10 +218,28 @@ include '../includes/header.php';
                 </div>
             </div>
             <?php endif; ?>
+            </div>
         </div>
 
     </main>
 </div>
+
+<script>
+setInterval(() => {
+    fetch(window.location.href)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContainer = doc.getElementById('security-logs-data-container');
+            const currentContainer = document.getElementById('security-logs-data-container');
+            if (newContainer && currentContainer) {
+                currentContainer.innerHTML = newContainer.innerHTML;
+            }
+        })
+        .catch(err => console.error('Auto-refresh error:', err));
+}, 3000);
+</script>
 
 <?php include '../includes/mobile_nav_admin.php'; ?>
 

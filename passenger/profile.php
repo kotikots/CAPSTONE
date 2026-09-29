@@ -1,4 +1,4 @@
-<?php
+ <?php
 /**
  * passenger/profile.php
  * View profile + change password.
@@ -12,6 +12,17 @@ require_once '../includes/auth_guard.php';
 require_once '../includes/functions_v2.php';
 
 $uid = $_SESSION['user_id'];
+
+// Check if user is a regular passenger (no discount).
+// If so, redirect to dashboard as they no longer have a profile page.
+$discountCheckStmt = $pdo->prepare("SELECT discount_type FROM users WHERE id = ?");
+$discountCheckStmt->execute([$uid]);
+$discountType = $discountCheckStmt->fetchColumn();
+if ($discountType === 'none') {
+    header("Location: dashboard.php");
+    exit;
+}
+
 $success = $_SESSION['flash_success'] ?? '';
 $error = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
@@ -63,6 +74,12 @@ $profileStmt = $pdo->prepare(
 );
 $profileStmt->execute([$uid]);
 $p = $profileStmt->fetch();
+
+if ($p) {
+    // Strip legacy +63 or +630 prefixes, ignoring leading spaces or spaces after +63
+    $p['contact_number'] = preg_replace('/^.*?\+63\s*0?/', '0', $p['contact_number'] ?? '');
+    $p['emergency_contact_number'] = preg_replace('/^.*?\+63\s*0?/', '0', $p['emergency_contact_number'] ?? '');
+}
 
 // Ride stats
 $statsStmt = $pdo->prepare(
@@ -192,13 +209,12 @@ include '../includes/header.php';
                                     </div>
                                 <?php elseif ($key === 'contact_number'): ?>
                                     <div class="relative flex items-center">
-                                        <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
                                         <input type="tel" id="input-contact_number" 
-                                               value="<?= htmlspecialchars(str_replace('+63', '', $value)) ?>"
-                                               maxlength="10"
-                                               pattern="[0-9]{10}"
-                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-                                               class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
+                                               value="<?= htmlspecialchars($value) ?>"
+                                               maxlength="11"
+                                               pattern="[0-9]{11}"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                                               class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
                                     </div>
                                 <?php else: ?>
                                     <i class="ph <?= $icon ?> absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
@@ -255,13 +271,12 @@ include '../includes/header.php';
                             
                             <div class="edit-mode hidden space-y-3">
                                 <div class="relative flex items-center">
-                                    <div class="absolute left-4 text-slate-400 font-bold border-r border-slate-100 pr-3">+63</div>
                                     <input type="tel" id="input-emergency_contact_number" 
-                                           value="<?= htmlspecialchars(str_replace('+63', '', $p['emergency_contact_number'] ?? '')) ?>"
-                                           maxlength="10"
-                                           pattern="[0-9]{10}"
-                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-                                           class="w-full bg-white border-2 border-blue-100 rounded-xl pl-16 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
+                                           value="<?= htmlspecialchars($p['emergency_contact_number'] ?? '') ?>"
+                                           maxlength="11"
+                                           pattern="[0-9]{11}"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                                           class="w-full bg-white border-2 border-blue-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-all">
                                 </div>
                             </div>
                         </div>
@@ -436,13 +451,13 @@ async function saveProfile() {
     const ecContact = data.emergency_contact_number;
     const email = data.email;
 
-    if (contact.length !== 10 || !/^\d+$/.test(contact)) {
-        window.showToast('Validation Error', 'Contact number must be exactly 10 digits.', 'error');
+    if (contact.length !== 11 || !/^\d+$/.test(contact)) {
+        window.showToast('Validation Error', 'Contact number must be exactly 11 digits.', 'error');
         return;
     }
 
-    if (ecContact && (ecContact.length !== 10 || !/^\d+$/.test(ecContact))) {
-        window.showToast('Validation Error', 'Emergency contact number must be exactly 10 digits.', 'error');
+    if (ecContact && (ecContact.length !== 11 || !/^\d+$/.test(ecContact))) {
+        window.showToast('Validation Error', 'Emergency contact number must be exactly 11 digits.', 'error');
         return;
     }
 
@@ -502,11 +517,26 @@ function togglePasswordVisibility(inputId, iconId) {
 }
 </script>
 
-<script src="../assets/js/ph-address-selector.js?v=2"></script>
+<script src="../assets/js/ph-address-selector.js?v=<?= time() ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const homeSelect = initPHAddress('');
         const ecSelect = initPHAddress('ec_');
+
+        // Pre-populate with existing data
+        homeSelect.setValues({
+            region: <?= json_encode($p['region'] ?? '') ?>,
+            province: <?= json_encode($p['province'] ?? '') ?>,
+            city: <?= json_encode($p['city'] ?? '') ?>,
+            barangay: <?= json_encode($p['barangay'] ?? '') ?>
+        });
+
+        ecSelect.setValues({
+            region: <?= json_encode($p['ec_region'] ?? '') ?>,
+            province: <?= json_encode($p['ec_province'] ?? '') ?>,
+            city: <?= json_encode($p['ec_city'] ?? '') ?>,
+            barangay: <?= json_encode($p['ec_barangay'] ?? '') ?>
+        });
 
         // Logic to update the "combined" hidden fields for legacy support
         const updateHidden = (prefix, targetId) => {

@@ -55,6 +55,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
         } catch (MailException $e) {
             error_log("PHPMailer Error (account verification): {$mail->ErrorInfo}");
         }
+    } elseif ($user && $user['is_active'] == 1 && $newState == 0 && !empty($user['email'])) {
+        // Send deactivation email
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'khianvivar@gmail.com';
+            $mail->Password   = 'zqip kriq dnir obzp'; // Use the standard project password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom($mail->Username, 'PARE System');
+            $mail->addAddress($user['email'], $user['full_name']);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'PARE Account Deactivated';
+            $mail->Body    = "
+                <h3>Hello {$user['full_name']},</h3>
+                <p>Your PARE account has been deactivated by the administrator.</p>
+                <p>You will no longer be able to log in or book rides. If you believe this is a mistake, please contact our support team.</p>
+                <br>
+                <p>Thank you.</p>
+            ";
+
+            $mail->send();
+        } catch (MailException $e) {
+            error_log("PHPMailer Error (account deactivation): {$mail->ErrorInfo}");
+        }
     }
 
     header('Location: passengers.php' . ($search ? '?q='.urlencode($search) : ''));
@@ -66,7 +95,7 @@ $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12;
 $offset  = ($page - 1) * $perPage;
 
-$where = "WHERE role = 'passenger'";
+$where = "WHERE role = 'passenger' AND is_archived = 0";
 $params = [];
 if ($search) {
     $where  .= " AND (full_name LIKE ? OR id_number LIKE ? OR contact_number LIKE ?)";
@@ -86,7 +115,7 @@ $stmt->execute($params);
 $passengers = $stmt->fetchAll();
 
 // Fetch all passenger names for search suggestions
-$allNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM users WHERE role = 'passenger' ORDER BY full_name ASC");
+$allNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM users WHERE role = 'passenger' AND is_archived = 0 ORDER BY full_name ASC");
 $allPassengerNames = $allNamesStmt->fetchAll(PDO::FETCH_COLUMN);
 
 include '../includes/header.php';
@@ -110,11 +139,11 @@ include '../includes/header.php';
             <form method="GET" class="flex-1 flex gap-3">
                 <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" list="passenger-names" autocomplete="off"
                        placeholder="Search by name, ID number, or contact..."
-                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2">
+                       class="flex-1 outline-none focus:outline-none border-none bg-transparent text-slate-700 placeholder-slate-300 text-sm px-2 rounded-lg">
                 
                 <datalist id="passenger-names">
                     <?php foreach ($allPassengerNames as $name): ?>
-                        <option value="<?= htmlspecialchars($name) ?>">
+                        <option value="<?= htmlspecialchars($name ?? '') ?>">
                     <?php endforeach; ?>
                 </datalist>
 
@@ -134,22 +163,22 @@ include '../includes/header.php';
                     <!-- ID Photo -->
                     <div class="w-16 h-16 rounded-2xl bg-amber-100 overflow-hidden shrink-0 shadow-inner">
                         <?php if ($p['id_picture']): ?>
-                        <img src="<?= BASE_PATH ?>/<?= htmlspecialchars($p['id_picture']) ?>" alt="ID" class="w-full h-full object-cover">
+                        <img src="<?= rtrim(BASE_PATH, '/') . '/' . ltrim($p['id_picture'], '/') ?>" alt="ID" class="w-full h-full object-cover">
                         <?php else: ?>
                         <div class="w-full h-full flex items-center justify-center"><i class="ph ph-user text-amber-400 text-3xl"></i></div>
                         <?php endif; ?>
                     </div>
 
                     <div class="flex-1 min-w-0">
-                        <p class="font-black text-slate-800 truncate"><?= htmlspecialchars($p['full_name']) ?></p>
-                        <p class="text-slate-400 text-xs mb-2 font-mono"><?= htmlspecialchars($p['id_number']) ?></p>
+                        <p class="font-black text-slate-800 truncate"><?= htmlspecialchars($p['full_name'] ?? '') ?></p>
+                        <p class="text-slate-400 text-xs mb-2 font-mono"><?= htmlspecialchars($p['id_number'] ?? '') ?></p>
                         <div class="space-y-1 text-xs">
                             <p class="flex items-center gap-1 text-slate-500">
-                                <i class="ph ph-phone"></i> <?= htmlspecialchars($p['contact_number']) ?>
+                                <i class="ph ph-phone"></i> <?= htmlspecialchars($p['contact_number'] ?? '') ?>
                             </p>
                             <p class="flex items-start gap-1 text-slate-500">
                                 <i class="ph ph-map-pin shrink-0 mt-0.5"></i>
-                                <span class="line-clamp-1"><?= htmlspecialchars($p['address']) ?></span>
+                                <span class="line-clamp-1"><?= htmlspecialchars($p['address'] ?? '') ?></span>
                             </p>
                             <p class="flex items-center gap-1 text-slate-500">
                                 <i class="ph ph-calendar"></i> Joined <?= date('M d, Y', strtotime($p['created_at'])) ?>
@@ -160,24 +189,29 @@ include '../includes/header.php';
 
 
                 <div class="flex flex-col items-end gap-2 shrink-0">
-                    <span id="badge-<?= $p['id'] ?>" class="<?= $p['is_active'] ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' ?> text-[10px] uppercase font-bold px-2 py-1 rounded-lg">
-                        <?= $p['is_active'] ? 'Active' : 'Inactive' ?>
+                    <span id="badge-<?= $p['id'] ?>" class="<?= $p['is_active'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' ?> text-[10px] uppercase font-bold px-2 py-1 rounded-lg">
+                        <?= $p['is_active'] ? 'Active' : 'Pending' ?>
                     </span>
                     
                     <div class="flex flex-col gap-2">
-                        <button id="toggle-btn-<?= $p['id'] ?>"
-                                onclick="toggleStatus(<?= $p['id'] ?>, <?= $p['is_active'] ? 0 : 1 ?>, '<?= addslashes($p['full_name']) ?>')"
-                                class="w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm
-                                       <?= $p['is_active'] ? 'bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' ?>"
-                                title="<?= $p['is_active'] ? 'Deactivate Account' : 'Activate Account' ?>">
-                            <i id="icon-<?= $p['id'] ?>" class="ph <?= $p['is_active'] ? 'ph-power' : 'ph-check-circle' ?> text-lg font-bold"></i>
-                        </button>
-
-                        <button onclick="removeAccount(<?= $p['id'] ?>, 'passenger', '<?= addslashes($p['full_name']) ?>')"
-                                class="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all"
-                                title="Remove Permanently">
-                            <i class="ph ph-trash text-lg"></i>
-                        </button>
+                        <?php if ($p['is_active']): ?>
+                            <button onclick="archiveAccount(<?= $p['id'] ?>, 'passenger', '<?= addslashes($p['full_name']) ?>')"
+                                    class="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all"
+                                    title="Archive Account">
+                                <i class="ph ph-archive text-lg"></i>
+                            </button>
+                        <?php else: ?>
+                            <button onclick="toggleStatus(<?= $p['id'] ?>, 1, '<?= addslashes($p['full_name']) ?>')"
+                                    class="w-9 h-9 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 flex items-center justify-center transition-all shadow-sm"
+                                    title="Approve Account">
+                                <i class="ph ph-check-circle text-lg font-bold"></i>
+                            </button>
+                            <button onclick="archiveAccount(<?= $p['id'] ?>, 'passenger', '<?= addslashes($p['full_name']) ?>')"
+                                    class="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all"
+                                    title="Decline & Archive">
+                                <i class="ph ph-archive text-lg"></i>
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -185,13 +219,13 @@ include '../includes/header.php';
         </div>
 
         <script>
-        async function removeAccount(id, type, name) {
+        async function archiveAccount(id, type, name) {
             event.stopPropagation();
             const isConfirmed = await window.showConfirm({
-                title: 'Remove Account Permanently?',
-                message: `Are you sure you want to delete ${name}? This action cannot be undone and will only succeed if the account has no historical trip data.`,
+                title: 'Archive Account?',
+                message: `Are you sure you want to archive ${name}? Their email will be freed up for future registration.`,
                 type: 'danger',
-                confirmText: 'Yes, Remove Permanently'
+                confirmText: 'Yes, Archive Account'
             });
 
             if (!isConfirmed) return;
@@ -205,7 +239,7 @@ include '../includes/header.php';
                 const data = await res.json();
 
                 if (data.success) {
-                    window.showToast('Account Removed', `${name} has been deleted.`, 'success');
+                    window.showToast('Account Archived', `${name} has been moved to archives.`, 'success');
                     const card = document.getElementById(`card-${id}`);
                     card.style.transform = 'scale(0.9)';
                     card.style.opacity = '0';
@@ -286,7 +320,7 @@ include '../includes/header.php';
                 title: `${verb} Account?`,
                 message: `Are you sure you want to ${verb.toLowerCase()} the account for ${name}?`,
                 type: newState ? 'info' : 'danger',
-                confirmText: `Yes, ${verb}`
+                confirmText: `Yes, ${verb.toLowerCase()}`
             });
 
             if (!confirmed) return;
@@ -358,7 +392,7 @@ include '../includes/header.php';
 <?php include '../includes/mobile_nav_admin.php'; ?>
 
 <!-- Passenger Details Modal with Blurred Background -->
-<div id="passenger-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-200 opacity-0" onclick="closePassengerModal()">
+<div id="passenger-modal" class="fixed inset-0 z-[100] bg-[#061A53]/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-200 opacity-0" onclick="closePassengerModal()">
     <!-- Stop propagation so clicking inside the modal doesn't close it -->
     <div class="rounded-3xl shadow-[0_25px_50px_-12px_rgba(59,111,212,0.3)] w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] border border-white/60" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 40%, #93c5fd 100%);" onclick="event.stopPropagation()">
         

@@ -61,6 +61,11 @@ $profileStmt = $pdo->prepare(
 $profileStmt->execute([$driverId]);
 $dr = $profileStmt->fetch();
 
+if ($dr) {
+    // Strip legacy +63 or +630 prefixes, ignoring leading spaces or spaces after +63
+    $dr['contact_number'] = preg_replace('/^.*?\+63\s*0?/', '0', $dr['contact_number'] ?? '');
+}
+
 // Trip stats for driver
 $statsStmt = $pdo->prepare(
     "SELECT COUNT(*) AS total_trips FROM trips WHERE driver_id = ?"
@@ -146,7 +151,7 @@ include '../includes/header.php';
                             <button onclick="toggleEdit(false)" class="bg-[#F8FAFC] text-[#4C5C79] hover:bg-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition">
                                 Cancel
                             </button>
-                            <button onclick="saveProfile()" class="bg-[#166AEC] text-white hover:bg-[#DAE8FD]0 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/20 active:scale-95">
+                            <button onclick="saveProfile()" class="bg-[#166AEC] text-white hover:bg-blue-700 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-blue-500/20 active:scale-95" style="color: white !important;">
                                 Save Changes
                             </button>
                         </div>
@@ -154,10 +159,10 @@ include '../includes/header.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <?php
                         $fields = [
-                            ['Full Name', $dr['full_name'], 'ph-user', 'full_name', true],
+                            ['Full Name', $dr['full_name'], 'ph-user', 'full_name', false],
                             ['License Number', $dr['license_number'], 'ph-certificate', 'license_number', false],
-                            ['Contact', $dr['contact_number'], 'ph-phone', 'contact_number', true],
-                            ['Email', $dr['email'] ?: '', 'ph-envelope', 'email', true],
+                            ['Contact', $dr['contact_number'], 'ph-phone', 'contact_number', false],
+                            ['Email', $dr['email'] ?: '', 'ph-envelope', 'email', false],
                             ['Address', $dr['address'], 'ph-map-pin', 'address', true],
                         ];
                         foreach ($fields as [$label, $value, $icon, $key, $editable]):
@@ -358,13 +363,16 @@ async function saveProfile() {
             window.showToast('Profile Updated', 'Your information has been saved successfully.', 'success');
             
             fields.forEach(f => {
-                const val = data[f];
-                const label = document.getElementById(`label-${f}`);
-                if (label) label.textContent = val || '—';
+                if (data[f] !== undefined) {
+                    const label = document.getElementById(`label-${f}`);
+                    if (label) label.textContent = data[f] || '—';
+                }
             });
  
-            const cardName = document.querySelector('h3.text-xl.font-black.text-[#0F172A]');
-            if (cardName) cardName.textContent = data.full_name;
+            if (data.full_name !== undefined) {
+                const cardName = document.querySelector('h3.text-xl.font-black');
+                if (cardName) cardName.textContent = data.full_name;
+            }
  
             toggleEdit(false);
         } else {
@@ -472,10 +480,18 @@ document.querySelector('form[method="POST"]').addEventListener('submit', functio
 });
 </script>
 
-<script src="../assets/js/ph-address-selector.js?v=2"></script>
+<script src="../assets/js/ph-address-selector.js?v=<?= time() ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const addrSelect = initPHAddress('');
+
+        // Pre-populate with existing data
+        addrSelect.setValues({
+            region: <?= json_encode($dr['region'] ?? '') ?>,
+            province: <?= json_encode($dr['province'] ?? '') ?>,
+            city: <?= json_encode($dr['city'] ?? '') ?>,
+            barangay: <?= json_encode($dr['barangay'] ?? '') ?>
+        });
 
         const updateHidden = () => {
             const r = document.getElementById(`region`).value;

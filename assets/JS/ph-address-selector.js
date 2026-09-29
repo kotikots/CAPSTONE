@@ -8,7 +8,7 @@
  * External Data source: https://github.com/isaacdarcilla/philippine-addresses
  */
 
-const PH_ADDRESS_BASE_URL = 'https://isaacdarcilla.github.io/philippine-addresses';
+const PH_ADDRESS_BASE_URL = 'https://cdn.jsdelivr.net/gh/isaacdarcilla/philippine-addresses@master';
 
 class PHAddressSelector {
     constructor(config) {
@@ -32,7 +32,7 @@ class PHAddressSelector {
             barangays: []
         };
 
-        this.init();
+        this.initPromise = this.init();
     }
 
     /**
@@ -40,17 +40,26 @@ class PHAddressSelector {
      */
     async init() {
         try {
-            // STEP 1: Load Regions immediately when the page loads
+            // STEP 0: Set initial placeholders immediately so they aren't blank
+            this.clearSelect('region');
+            this.clearSelect('province');
+            this.clearSelect('city');
+            this.clearSelect('barangay');
+
+            // STEP 1: Load Regions
             this.data.regions = await this.fetchData('region');
             this.populateSelect('region', this.data.regions);
 
-            // STEP 2: Listen for changes. When a user picks a region, trigger the province update.
-            this.selectors.region.addEventListener('change', () => this.handleRegionChange());
-            this.selectors.province.addEventListener('change', () => this.handleProvinceChange());
-            this.selectors.city.addEventListener('change', () => this.handleCityChange());
+            // STEP 2: Listen for changes.
+            if (this.selectors.region) this.selectors.region.addEventListener('change', () => this.handleRegionChange());
+            if (this.selectors.province) this.selectors.province.addEventListener('change', () => this.handleProvinceChange());
+            if (this.selectors.city) this.selectors.city.addEventListener('change', () => this.handleCityChange());
 
         } catch (error) {
             console.error('Failed to initialize PH Address Selector:', error);
+            if (this.selectors.region) {
+                this.selectors.region.innerHTML = `<option value="">Error loading addresses</option>`;
+            }
         }
     }
 
@@ -170,6 +179,7 @@ class PHAddressSelector {
      */
     async setValues(values) {
         if (!values) return;
+        await this.initPromise; // Wait for regions to load
 
         if (values.region) {
             this.selectors.region.value = values.region;
