@@ -253,7 +253,7 @@ function handleBusData(data) {
 }
 
 function fetchBusData() {
-    fetch('stream_bus_location.php', { credentials: 'same-origin' })
+    fetch('/passenger/stream_bus_location.php', { credentials: 'same-origin' })
     .then(r => r.text())
     .then(text => {
         try {

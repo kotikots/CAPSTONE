@@ -5,6 +5,8 @@
  * Reads from the buses table (updated by kiosk push_location.php).
  */
 require_once '../config/db.php';
+$requiredRole = 'admin';
+require_once '../includes/auth_guard.php';
 header('Content-Type: application/json');
 
 try {

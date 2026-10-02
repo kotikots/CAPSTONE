@@ -1,379 +1,544 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PARE System: User Manual</title>
-    <!-- Modern Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PARE System — User Manual</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    /* ===== GOOGLE FONT ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    /* ===== CSS RESET & ROOT ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #061A53;
+      --navy-light:#0d2b7a;
+      --amber:     #d97706;
+      --amber-light:#fef3c7;
+      --emerald:   #059669;
+      --emerald-light:#d1fae5;
+      --red:       #dc2626;
+      --red-light: #fee2e2;
+      --blue:      #2563eb;
+      --blue-light:#dbeafe;
+      --orange:    #ea580c;
+      --orange-light:#ffedd5;
+      --slate-50:  #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    /* ===== BASE ===== */
+    html { font-size: 10.5pt; }
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--slate-700);
+      background: #fff;
+      line-height: 1.7;
+    }
+
+    /* ===== SCREEN WRAPPER ===== */
+    .page-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 32px 64px;
+    }
+
+    /* ===== PRINT BUTTON ===== */
+    .print-btn-container {
+      position: absolute;
+      top: 32px;
+      right: 32px;
+      z-index: 10;
+    }
+    .btn-print {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 9pt;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      background: rgba(255,255,255,0.25);
+    }
+    @media print {
+      .print-btn-container { display: none; }
+    }
+
+    /* ===== COVER PAGE ===== */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 80px 60px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 60%, #1e40af 100%);
+      color: #fff;
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -120px; right: -120px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -80px;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+      pointer-events: none;
+    }
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      margin-bottom: 32px;
+    }
+    .cover-badge .dot {
+      width: 7px; height: 7px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100%{opacity:1;} 50%{opacity:0.4;}
+    }
+    .cover h1 {
+      font-size: 38pt;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .cover h1 span { color: #fbbf24; }
+    .cover .subtitle {
+      font-size: 14pt;
+      font-weight: 400;
+      color: #93c5fd;
+      margin-bottom: 48px;
+      max-width: 480px;
+    }
+    .cover-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-top: 0;
+    }
+    .cover-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cover-meta-item .label {
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+    }
+    .cover-meta-item .value {
+      font-size: 10pt;
+      font-weight: 600;
+      color: #e0f2fe;
+    }
+    .cover-divider {
+      width: 64px;
+      height: 4px;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      border-radius: 4px;
+      margin: 40px 0;
+    }
+    .cover-version {
+      margin-top: auto;
+      padding-top: 60px;
+      font-size: 8pt;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ===== TOC PAGE ===== */
+    .toc-page {
+      padding: 60px 0 40px;
+      page-break-after: always;
+      break-after: page;
+    }
+    .toc-page h2 {
+      font-size: 18pt;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 32px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid var(--amber);
+    }
+    .toc-group { margin-bottom: 24px; }
+    .toc-group-title {
+      font-size: 7.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--slate-400);
+      margin-bottom: 8px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--slate-200);
+      text-decoration: none;
+      color: var(--slate-700);
+    }
+    .toc-item:hover { color: var(--navy); }
+    .toc-item .toc-num {
+      font-size: 8pt;
+      font-weight: 700;
+      color: var(--amber);
+      min-width: 28px;
+    }
+    .toc-item .toc-title { font-size: 10pt; font-weight: 500; flex: 1; padding: 0 8px; }
     
-    <style>
-        :root {
-            --primary: #0f172a;
-            --blue: #2563eb;
-            --blue-light: #eff6ff;
-            --text-main: #334155;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-        }
+    /* ===== SECTION BREAKS ===== */
+    .section-break {
+      page-break-before: always;
+      break-before: page;
+      padding-top: 40px;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    /* ===== HEADINGS ===== */
+    h2.module-title {
+      font-size: 20pt;
+      font-weight: 900;
+      color: var(--navy);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+      padding-top: 8px;
+    }
+    .module-meta {
+      font-size: 8.5pt;
+      color: var(--slate-400);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--slate-100);
+    }
+    h3 {
+      font-size: 13pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin: 28px 0 12px;
+    }
+    p { margin-bottom: 16px; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-main);
-            background-color: #f8fafc;
-            line-height: 1.6;
-            padding: 40px 20px;
-        }
+    /* ===== LISTS ===== */
+    ol.steps {
+      list-style: none;
+      counter-reset: steps-counter;
+      margin-bottom: 24px;
+    }
+    ol.steps li {
+      counter-increment: steps-counter;
+      display: flex;
+      margin-bottom: 12px;
+      align-items: flex-start;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    ol.steps li::before {
+      content: counter(steps-counter);
+      background: var(--navy);
+      color: #fff;
+      font-size: 8pt;
+      font-weight: 800;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
 
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-            background: white;
-            padding: 60px 80px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
+    ul.bullets {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    ul.bullets li { margin-bottom: 8px; }
 
-        /* Print Button */
-        .print-btn-container {
-            text-align: right;
-            margin-bottom: 20px;
-        }
-        
-        .btn-print {
-            background-color: var(--blue);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
+    /* ===== ALERTS ===== */
+    .alert {
+      display: flex;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+      align-items: flex-start;
+    }
+    .alert-icon { font-size: 20pt; line-height: 1; }
+    .alert-title { font-weight: 800; font-size: 10pt; margin-bottom: 4px; }
+    .alert-body { font-size: 9.5pt; line-height: 1.6; }
+    
+    .alert-note { background: var(--blue-light); border: 1px solid #bfdbfe; color: #1e3a8a; }
+    .alert-note .alert-icon { color: var(--blue); }
+    
+    .alert-tip { background: var(--emerald-light); border: 1px solid #a7f3d0; color: #064e3b; }
+    .alert-tip .alert-icon { color: var(--emerald); }
+    
+    .alert-warn { background: var(--orange-light); border: 1px solid #fed7aa; color: #7c2d12; }
+    .alert-warn .alert-icon { color: var(--orange); }
 
-        .btn-print:hover {
-            background-color: #1d4ed8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-
-        /* Typography */
-        h1 {
-            font-size: 36px;
-            font-weight: 900;
-            color: var(--primary);
-            margin-bottom: 16px;
-            letter-spacing: -0.02em;
-        }
-
-        h2 {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            margin-top: 40px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border);
-        }
-
-        h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-top: 24px;
-            margin-bottom: 12px;
-        }
-
-        p {
-            margin-bottom: 16px;
-        }
-
-        .subtitle {
-            font-size: 18px;
-            color: var(--text-light);
-            margin-bottom: 40px;
-        }
-
-        /* Lists */
-        ul, ol {
-            margin-bottom: 20px;
-            padding-left: 24px;
-        }
-        
-        li {
-            margin-bottom: 8px;
-        }
-
-        /* Callouts / Alerts */
-        .alert {
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin: 24px 0;
-            display: flex;
-            gap: 16px;
-        }
-
-        .alert-info {
-            background-color: var(--blue-light);
-            border: 1px solid #bfdbfe;
-        }
-
-        .alert-warning {
-            background-color: #fefce8;
-            border: 1px solid #fef08a;
-        }
-
-        .alert-icon {
-            font-size: 24px;
-            flex-shrink: 0;
-        }
-
-        .alert-info .alert-icon { color: var(--blue); }
-        .alert-warning .alert-icon { color: #d97706; }
-
-        .alert-content strong {
-            display: block;
-            margin-bottom: 4px;
-            color: var(--primary);
-        }
-
-        /* Links */
-        a {
-            color: var(--blue);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Table of Contents */
-        .toc {
-            background-color: #f8fafc;
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 40px;
-            border: 1px solid var(--border);
-        }
-
-        .toc h3 {
-            margin-top: 0;
-        }
-
-        .toc ul {
-            list-style: none;
-            padding-left: 0;
-            margin-bottom: 0;
-        }
-
-        .toc li {
-            margin-bottom: 12px;
-        }
-
-        .toc a {
-            color: var(--text-main);
-        }
-
-        .toc a:hover {
-            color: var(--blue);
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 40px 0;
-        }
-
-        /* Print Styles */
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-            .container {
-                box-shadow: none;
-                padding: 0;
-                max-width: 100%;
-            }
-            .btn-print {
-                display: none;
-            }
-            h2 {
-                page-break-after: avoid;
-            }
-            .alert {
-                break-inside: avoid;
-            }
-        }
-    </style>
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        
-        <!-- Print Button (Hidden when printing) -->
-        <div class="print-btn-container">
-            <button class="btn-print" onclick="window.print()">
-                <i class="ph ph-printer"></i>
-                Download as PDF
-            </button>
-        </div>
-
-        <h1>PARE System: User Manual</h1>
-        <p class="subtitle">Passenger and Revenue Monitoring System</p>
-
-        <p>Welcome to the PARE System. This web-based platform is designed to provide timely bus tracking, instant ticketing, and seamless fare collection — all unified in one seamless experience.</p>
-        <p>This manual serves as your comprehensive guide to navigating and utilizing the three core portals of the system: <strong>Passenger</strong>, <strong>Driver</strong>, and <strong>Admin</strong>.</p>
-
-        <div class="toc">
-            <h3>Table of Contents</h3>
-            <ul>
-                <li><a href="#intro">1. Introduction & System Requirements</a></li>
-                <li><a href="#registration">2. Account Registration & Login</a></li>
-                <li><a href="#passenger">3. Passenger Portal</a></li>
-                <li><a href="#driver">4. Driver Portal</a></li>
-                <li><a href="#admin">5. Admin Portal</a></li>
-                <li><a href="#troubleshooting">6. Troubleshooting & FAQs</a></li>
-            </ul>
-        </div>
-
-        <h2 id="intro">1. Introduction & System Requirements</h2>
-        <p>The PARE System is a cloud-hosted web application, meaning you do not need to download or install any software to use it.</p>
-
-        <div class="alert alert-info">
-            <i class="ph-fill ph-info alert-icon"></i>
-            <div class="alert-content">
-                <strong>System Requirements</strong>
-                <ul>
-                    <li><strong>Device:</strong> Any modern smartphone, tablet, or computer.</li>
-                    <li><strong>Browser:</strong> An up-to-date web browser (Google Chrome, Safari, Mozilla Firefox).</li>
-                    <li><strong>Internet:</strong> A stable internet connection is required.</li>
-                    <li><strong>Permissions:</strong> You must allow "Location/GPS Tracking" when prompted by your browser to use the Live Map functionality.</li>
-                </ul>
-            </div>
-        </div>
-
-        <h2 id="registration">2. Account Registration & Login</h2>
-
-        <h3>Registering as a Passenger</h3>
-        <ol>
-            <li>Go to the main homepage and click <strong>Register here</strong>.</li>
-            <li>Select your account type:
-                <ul>
-                    <li><strong>Regular Account:</strong> Standard fare. Quick sign-up with immediate access.</li>
-                    <li><strong>Discount Account:</strong> For Seniors, PWDs, and Students. <em>Requires ID scanning.</em></li>
-                </ul>
-            </li>
-            <li>If you select <strong>Discount Account</strong>, you will be prompted to take a photo of your valid ID. The system's OCR (Optical Character Recognition) will automatically extract your details.</li>
-            <li>Verify your email address via the One-Time Password (OTP) sent to your inbox.</li>
-            <li>Complete your profile details and submit.</li>
-        </ol>
-
-        <div class="alert alert-info">
-            <i class="ph-fill ph-lightbulb alert-icon"></i>
-            <div class="alert-content">
-                <strong>Note on Discounts</strong>
-                Regular accounts are granted instant access. Discount accounts will be placed in a <em>Pending Approval</em> state until an Admin reviews and approves the uploaded ID.
-            </div>
-        </div>
-
-        <h3>Logging In</h3>
-        <ol>
-            <li>Go to the main homepage.</li>
-            <li>Select your role tab: <strong>Passenger</strong> or <strong>Driver</strong> (Admins log in using the same form).</li>
-            <li>Enter your Email Address (or ID Number) and Password.</li>
-            <li>Click <strong>Sign In</strong>.</li>
-        </ol>
-
-        <div class="alert alert-warning">
-            <i class="ph-fill ph-shield-check alert-icon"></i>
-            <div class="alert-content">
-                <strong>Two-Step Verification (MFA)</strong>
-                Administrators and staff with enhanced privileges will be prompted to enter a 6-digit verification code sent to their email to protect sensitive system data.
-            </div>
-        </div>
-
-        <h2 id="passenger">3. Passenger Portal</h2>
-        <p>The Passenger Portal allows commuters to view bus locations, track their own rides, and manage their profiles.</p>
-        <ul>
-            <li><strong>Dashboard:</strong> Gives you a quick overview of your account, your discount status, and quick links to your most used features.</li>
-            <li><strong>Live Map:</strong> Displays a real-time GPS map. Active buses are shown as pulsing orange dots. You can tap on a bus to see its body number and current route.</li>
-            <li><strong>My Rides:</strong> A historical log of all your completed trips, including the date, time, bus number, and exact fare paid.</li>
-            <li><strong>My Profile:</strong> Update your contact number, address, and emergency contact details. If you have a discount account, your ID photo and status (Active/Pending) will be displayed here.</li>
-        </ul>
-
-        <h2 id="driver">4. Driver Portal</h2>
-        <p>The Driver Portal is optimized for mobile devices, allowing drivers to operate the system right from the driver's seat.</p>
-        <ul>
-            <li><strong>Drive (Dashboard):</strong> 
-                <ul>
-                    <li>To begin a shift, select your route and click <strong>Start Trip</strong>.</li>
-                    <li>This activates your bus on the Live Map for passengers to see.</li>
-                    <li>Once you arrive at the final destination, click <strong>End Trip</strong> to finalize the log.</li>
-                </ul>
-            </li>
-            <li><strong>QR Code Scanning:</strong> When passengers board, drivers can utilize the built-in scanner to scan passenger tickets/QR codes to instantly process fare deduction based on GPS distance.</li>
-            <li><strong>Lists (Passengers Today):</strong> View a manifest of all passengers who have boarded your bus during the current shift.</li>
-            <li><strong>Earnings:</strong> Track your daily cash collected, total passenger count, and see your historical remittance records.</li>
-        </ul>
-
-        <h2 id="admin">5. Admin Portal</h2>
-        <p>The Admin Portal is the central command center for fleet operators and management.</p>
-        <ul>
-            <li><strong>Overview (Dashboard):</strong> A high-level analytics view showing today's total revenue, total passengers, and currently active buses on the road.</li>
-            <li><strong>Trip Logs:</strong> A detailed list of all trips made by the fleet, including timestamps and driver assignments.</li>
-            <li><strong>Reports & Export:</strong> Generate detailed financial and operational reports. Use the <strong>Export to CSV</strong> button to download the data into Excel for accounting.</li>
-            <li><strong>Fare Settings:</strong> Configure the financial rules of the system:
-                <ul>
-                    <li>Base Fare (First N kilometers)</li>
-                    <li>Succeeding per-kilometer rate</li>
-                    <li>Discount percentages for Seniors, PWDs, and Students.</li>
-                </ul>
-            </li>
-            <li><strong>Passenger Management:</strong> View all registered passengers. Review pending Discount Account applications and click <strong>Approve</strong> or <strong>Archive</strong> based on their uploaded ID.</li>
-            <li><strong>Fleet Management (Buses & Drivers):</strong> Register new buses (assigning plate numbers and body numbers) and create new driver accounts.</li>
-            <li><strong>Security Logs:</strong> An audit trail showing system logins, failed attempts, and administrative actions to ensure complete accountability.</li>
-        </ul>
-
-        <h2 id="troubleshooting">6. Troubleshooting & FAQs</h2>
-
-        <div class="alert alert-warning">
-            <i class="ph-fill ph-warning-circle alert-icon"></i>
-            <div class="alert-content">
-                <strong>The Live Map is not showing any buses!</strong>
-                This usually means no drivers have clicked "Start Trip" on their end, or they have lost internet connection. Buses only appear on the map when they are actively on a route.
-            </div>
-        </div>
-
-        <p><strong>Q: I forgot my password. How do I get back in?</strong><br>
-        A: On the login screen, click <strong>Forgot password?</strong>. Enter your registered email address, and the system will send you a secure link to create a new password.</p>
-
-        <p><strong>Q: My discount account says "Pending Approval". Can I still ride?</strong><br>
-        A: You cannot access your QR ticket until an Admin approves your account. Please wait for an approval email, or contact management to expedite the process.</p>
-
-        <p><strong>Q: How do I change my assigned bus as a driver?</strong><br>
-        A: Drivers cannot change their own bus assignments. If you are driving a different bus today, an Administrator must update your assignment in the <strong>Buses</strong> tab of the Admin Portal.</p>
-
-        <hr>
-        <p style="text-align: center; color: var(--text-light); font-size: 14px;">
-            &copy; 2024 PARE System. All rights reserved.
-        </p>
-
+  <!-- COVER PAGE -->
+  <div class="cover">
+    <div class="print-btn-container">
+      <button class="btn-print" onclick="window.print()">
+        <i class="ph ph-printer"></i> Download as PDF
+      </button>
     </div>
 
+    <div class="cover-badge">
+      <div class="dot"></div>
+      System Documentation
+    </div>
+    <h1>PARE System <span>User Manual</span></h1>
+    <p class="subtitle">A comprehensive guide to navigating and utilizing the Passenger, Driver, and Admin portals of the PARE System.</p>
+    
+    <div class="cover-divider"></div>
+    
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="label">Prepared For</span>
+        <span class="value">PARE System Users</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Date</span>
+        <span class="value">September 2026</span>
+      </div>
+    </div>
+    
+    <div class="cover-version">Version 1.0</div>
+  </div>
+
+  <div class="page-wrapper">
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc-page">
+      <h2>Table of Contents</h2>
+      
+      <div class="toc-group">
+        <div class="toc-group-title">Getting Started</div>
+        <a href="#s1" class="toc-item">
+          <span class="toc-num">1</span>
+          <span class="toc-title">Introduction & System Requirements</span>
+        </a>
+        <a href="#s2" class="toc-item">
+          <span class="toc-num">2</span>
+          <span class="toc-title">Account Registration & Login</span>
+        </a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Portals</div>
+        <a href="#s3" class="toc-item">
+          <span class="toc-num">3</span>
+          <span class="toc-title">Passenger Portal</span>
+        </a>
+        <a href="#s4" class="toc-item">
+          <span class="toc-num">4</span>
+          <span class="toc-title">Driver Portal</span>
+        </a>
+        <a href="#s5" class="toc-item">
+          <span class="toc-num">5</span>
+          <span class="toc-title">Admin Portal</span>
+        </a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Support</div>
+        <a href="#s6" class="toc-item">
+          <span class="toc-num">6</span>
+          <span class="toc-title">Troubleshooting & FAQs</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- SECTION 1 -->
+    <div id="s1" class="section-break">
+      <h2 class="module-title">1. Introduction & System Requirements</h2>
+      <div class="module-meta">PARE Platform Overview</div>
+      
+      <p>The PARE System is a cloud-hosted web application designed to streamline bus fleet management, process instant ticket bookings, track driver remittances, and provide real-time GPS tracking for daily commuters. You do not need to download or install any software.</p>
+
+      <div class="alert alert-note">
+        <span class="alert-icon"><i class="ph-fill ph-info"></i></span>
+        <div class="alert-body">
+          <div class="alert-title">System Requirements</div>
+          <ul class="bullets" style="margin-bottom:0;">
+            <li><strong>Device:</strong> Any modern smartphone, tablet, or computer.</li>
+            <li><strong>Browser:</strong> An up-to-date web browser (Google Chrome, Safari, Mozilla Firefox).</li>
+            <li><strong>Permissions:</strong> You must allow "Location/GPS Tracking" when prompted to use the Live Map.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2 -->
+    <div id="s2" class="section-break">
+      <h2 class="module-title">2. Account Registration & Login</h2>
+      <div class="module-meta">auth/register.php | auth/login.php</div>
+      
+      <h3>2.1 Registering as a Passenger</h3>
+      <ol class="steps">
+        <li><div>On the login screen, click the <strong>Register here</strong> link.</div></li>
+        <li><div>Select your account type: <strong>Regular Account</strong> (instant access) or <strong>Discount Account</strong> (requires ID).</div></li>
+        <li><div>If you selected <strong>Discount Account</strong>, follow the prompts to capture or upload a clear photo of your valid ID (Senior, PWD, Student).</div></li>
+        <li><div>Fill in your personal details (Name, Address, Emergency Contact).</div></li>
+        <li><div>Retrieve the 6-digit verification code sent to your email and enter it to verify your account.</div></li>
+      </ol>
+
+      <div class="alert alert-warn">
+        <span class="alert-icon"><i class="ph-fill ph-warning-circle"></i></span>
+        <div class="alert-body">
+          <div class="alert-title">Discount Approval Process</div>
+          Discount Accounts will remain in a "Pending Approval" state until an Administrator reviews your uploaded ID. You cannot use the discount until approved.
+        </div>
+      </div>
+
+      <h3>2.2 Logging In</h3>
+      <ol class="steps">
+        <li><div>Navigate to the main homepage.</div></li>
+        <li><div>Select your role by clicking either the <strong>Passenger</strong> or <strong>Driver</strong> tab.</div></li>
+        <li><div>Enter your Email Address (or ID Number) and Password, then click <strong>Sign In</strong>.</div></li>
+        <li><div>If prompted with Two-Step Verification (MFA), check your email for the OTP and enter it to proceed.</div></li>
+      </ol>
+    </div>
+
+    <!-- SECTION 3 -->
+    <div id="s3" class="section-break">
+      <h2 class="module-title">3. Passenger Portal</h2>
+      <div class="module-meta">passenger/dashboard.php | passenger/map.php</div>
+
+      <p>The Passenger Portal allows commuters to view active buses in real-time, review past trips, and manage their profile.</p>
+
+      <h3>3.1 Tracking a Live Bus</h3>
+      <ol class="steps">
+        <li><div>From the navigation sidebar, click the <strong>Live Map</strong> tab.</div></li>
+        <li><div>Observe the map interface; active buses are indicated by pulsing orange dots.</div></li>
+        <li><div>Click on any orange dot to view the specific bus body number and its current location.</div></li>
+      </ol>
+
+      <h3>3.2 Viewing Trip History</h3>
+      <p>Click the <strong>My Rides</strong> tab to review your historical log of completed trips. You will see the date, time, assigned bus number, and exact fare deducted.</p>
+    </div>
+
+    <!-- SECTION 4 -->
+    <div id="s4" class="section-break">
+      <h2 class="module-title">4. Driver Portal</h2>
+      <div class="module-meta">driver/dashboard_v2.php | driver/earnings.php</div>
+
+      <p>The Driver Portal is optimized for mobile devices to allow drivers to operate the system effortlessly while in the vehicle.</p>
+
+      <h3>4.1 Starting and Ending a Trip</h3>
+      <ol class="steps">
+        <li><div>Upon logging in, you will be directed to the <strong>Drive</strong> dashboard.</div></li>
+        <li><div>Select your route for the current shift.</div></li>
+        <li><div>Click the <strong>Start Trip</strong> button to activate your GPS location for passengers.</div></li>
+        <li><div>When you reach the final terminal, click the <strong>End Trip</strong> button to finalize the shift log.</div></li>
+      </ol>
+
+      <div class="alert alert-tip">
+        <span class="alert-icon"><i class="ph-fill ph-scan"></i></span>
+        <div class="alert-body">
+          <div class="alert-title">Scanning Passenger Tickets</div>
+          When passengers board, use the built-in scanner to scan passenger tickets/QR codes. The system will automatically calculate and deduct the fare based on your GPS distance.
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5 -->
+    <div id="s5" class="section-break">
+      <h2 class="module-title">5. Admin Portal</h2>
+      <div class="module-meta">admin/dashboard.php | admin/fare_settings.php</div>
+
+      <p>The Admin Portal is the central command center for fleet operators to monitor revenue and configure system-wide rules.</p>
+
+      <h3>5.1 Configuring Fare Settings</h3>
+      <ol class="steps">
+        <li><div>From the navigation menu, click the <strong>Fare Settings</strong> tab.</div></li>
+        <li><div>Enter the <strong>Base Fare</strong> (for the first 4 kilometers) and the <strong>Succeeding Km Rate</strong>.</div></li>
+        <li><div>Under Discounts, enter the percentage discount (e.g., 20%) for Seniors, PWDs, and Students.</div></li>
+        <li><div>Click the <strong>Save Changes</strong> button.</div></li>
+      </ol>
+
+      <h3>5.2 Approving Discount Applications</h3>
+      <ol class="steps">
+        <li><div>Click the <strong>Passengers</strong> tab in the navigation menu.</div></li>
+        <li><div>Look for accounts marked with a <strong>Pending Approval</strong> badge.</div></li>
+        <li><div>Click the <strong>View ID</strong> button to review the scanned document.</div></li>
+        <li><div>Click <strong>Approve</strong> if the ID is valid, or <strong>Reject</strong> if the ID is illegible or invalid.</div></li>
+      </ol>
+    </div>
+
+    <!-- SECTION 6 -->
+    <div id="s6" class="section-break">
+      <h2 class="module-title">6. Troubleshooting & FAQs</h2>
+      <div class="module-meta">Common Support Scenarios</div>
+
+      <h3>6.1 Live Map Issues</h3>
+      <p><strong>The Live Map is not showing any buses. What should I do?</strong><br>
+      Ensure that you have granted Location/GPS permissions to your browser. If you are a passenger, it is also possible that no drivers have clicked the <strong>Start Trip</strong> button yet for their shift.</p>
+
+      <h3>6.2 Account Recovery</h3>
+      <p><strong>I forgot my password. How can I regain access?</strong><br>
+      On the login screen, click the <strong>Forgot password?</strong> link. Enter your registered email address and click <strong>Send Link</strong>. Check your inbox for a secure link to reset your password.</p>
+
+      <h3>6.3 Pending Status</h3>
+      <p><strong>Why is my Passenger account still "Pending Approval"?</strong><br>
+      You likely registered for a Discount Account. You cannot access your QR ticket until an Administrator manually reviews and approves the ID you uploaded.</p>
+    </div>
+
+  </div>
 </body>
 </html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator User Manual</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 { 
+            color: #2c3e50; 
+        }
+        h1 { 
+            border-bottom: 3px solid #3498db; 
+            padding-bottom: 10px; 
+            margin-bottom: 5px;
+        }
+        h2 { 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 8px; 
+            margin-top: 40px; 
+            color: #2980b9;
+        }
+        h3 {
+            margin-top: 25px;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin: 20px 0; 
+        }
+        th, td { 
+            border: 1px solid #e0e0e0; 
+            padding: 12px 15px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #f8f9fa; 
+            font-weight: 600; 
+        }
+        blockquote { 
+            border-left: 4px solid #f39c12; 
+            margin: 20px 0; 
+            padding: 15px; 
+            color: #555; 
+            background-color: #fdfae6; 
+            font-style: italic;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #eee;
+            margin: 40px 0;
+        }
+        code {
+            background-color: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Administrator User Manual</h1>
+        <h2 style="margin-top: 0; border: none; color: #7f8c8d; font-weight: normal;">Bus Fleet and Ticketing Management System</h2>
+
+        <hr>
+
+        <h2>1. Front Matter & Document Control</h2>
+
+        <h3>Title Page</h3>
+        <p><strong>System Name:</strong> Bus Fleet and Ticketing Management System<br>
+        <strong>Version:</strong> 1.0<br>
+        <strong>Date:</strong> October 2, 2026</p>
+
+        <h3>Version History / Changelog</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Date</th>
+                    <th>Author</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1.0</td>
+                    <td>October 2, 2026</td>
+                    <td>System Administrator</td>
+                    <td>Initial Release</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Table of Contents</h3>
+        <ol>
+            <li>Front Matter & Document Control</li>
+            <li>Introduction & Overview</li>
+            <li>Getting Started</li>
+            <li>Interface Guide & Navigation</li>
+            <li>Core Operating Instructions (The Workflows)</li>
+            <li>Troubleshooting & FAQs</li>
+            <li>Appendices & Support</li>
+        </ol>
+
+        <hr>
+
+        <h2>2. Introduction & Overview</h2>
+
+        <h3>System Purpose</h3>
+        <p>The Bus Fleet and Ticketing Management System is a comprehensive platform designed to centralize fleet tracking, streamline ticket management, and monitor daily revenue. It provides an authoritative control center for administrators to oversee operations, ensure efficient dispatching, and maintain financial integrity.</p>
+
+        <h3>Target Audience</h3>
+        <p>This manual is specifically tailored for:</p>
+        <ul>
+            <li><strong>System Administrators:</strong> Responsible for configuring system-wide settings, managing user accounts, and overseeing technical operations.</li>
+            <li><strong>Dispatchers:</strong> Focused on day-to-day fleet operations, monitoring active trips, and tracking driver remittances.</li>
+        </ul>
+
+        <h3>System Requirements</h3>
+        <ul>
+            <li>A modern web browser (Google Chrome, Mozilla Firefox, Microsoft Edge, or Safari).</li>
+            <li>An active, stable internet connection to ensure real-time dashboard updates and live GPS tracking functionalities.</li>
+        </ul>
+
+        <hr>
+
+        <h2>3. Getting Started</h2>
+
+        <h3>Access & Authentication</h3>
+        <p>To access the administrative features, authorized personnel must authenticate through the secure portal.</p>
+        <ol>
+            <li><strong>Accessing the Portal:</strong> Open your web browser and navigate to the admin portal via <strong>Admin_index.php</strong>.</li>
+            <li><strong>Logging In:</strong> Enter your authorized administrator credentials (Username and Password) into the provided fields and click the <strong>Login</strong> button.</li>
+            <li><strong>Logging Out:</strong> To securely end your session and prevent unauthorized access, locate your profile icon in the upper right corner of the dashboard and select <strong>Logout</strong>. Always log out when stepping away from your workstation.</li>
+        </ol>
+
+        <hr>
+
+        <h2>4. Interface Guide & Navigation</h2>
+
+        <h3>Dashboard Overview</h3>
+        <p>Upon successful login, you are directed to <strong>dashboard.php</strong>. This is the central hub of the system, displaying critical operational metrics such as the number of active buses, on-duty drivers, real-time ticket sales, and total revenue for the day.</p>
+        <blockquote>[Insert Screenshot: Dashboard Overview]</blockquote>
+
+        <h3>Navigation Menu</h3>
+        <p>The primary navigation menu is located on the left-hand sidebar. It provides quick access to the following modules:</p>
+        <ul>
+            <li><strong>Buses:</strong> Access <strong>buses.php</strong> to view the entire fleet. Use <strong>add_bus.php</strong> to register new vehicles and <strong>edit_bus.php</strong> to update existing vehicle details.</li>
+            <li><strong>Drivers:</strong> Navigate to <strong>drivers.php</strong> to oversee driver profiles or use <strong>add_driver.php</strong> to register new drivers.</li>
+            <li><strong>Passengers:</strong> Access <strong>passengers.php</strong> to manage passenger accounts and review ticketing histories.</li>
+            <li><strong>Trips:</strong> Go to <strong>trips.php</strong> to monitor scheduled and active routes. View associated passenger tickets via <strong>get_trip_tickets.php</strong>.</li>
+            <li><strong>Remittance:</strong> Access <strong>remittance.php</strong> to track financial deposits and verify expected shift earnings from drivers.</li>
+            <li><strong>Reports:</strong> Generate and view system analytics via <strong>reports.php</strong>.</li>
+            <li><strong>Security:</strong> Navigate to <strong>security.php</strong> to manage system settings, permissions, and security logs.</li>
+        </ul>
+
+        <h3>Icons & Symbols Legend</h3>
+        <ul>
+            <li><strong>Active (Green Toggle / Icon):</strong> Indicates an operational bus, an active user account, or a trip currently in progress.</li>
+            <li><strong>Inactive (Gray/Red Toggle):</strong> Indicates an out-of-service bus or a suspended account. These statuses can be changed using <strong>api_toggle_status.php</strong>.</li>
+            <li><strong>Force End Warning (Red Triangle):</strong> Represents the action tied to <strong>api_force_end_trip.php</strong>. This icon indicates a trip that has been manually aborted due to an emergency or system error.</li>
+        </ul>
+
+        <hr>
+
+        <h2>5. Core Operating Instructions (The Workflows)</h2>
+
+        <h3>Managing the Fleet: Adding a New Bus and Assigning a Handler</h3>
+        <ol>
+            <li>Click on <strong>Buses</strong> from the navigation menu to open <strong>buses.php</strong>.</li>
+            <li>Click the <strong>Add New Bus</strong> button to navigate to <strong>add_bus.php</strong>.</li>
+            <li>Input the required vehicle data, including Plate Number, Capacity, and Model. Click <strong>Save</strong> to register the vehicle in the system.</li>
+            <li>Return to the fleet list in <strong>buses.php</strong> and locate the newly added bus. Click <strong>Assign Handler</strong>.</li>
+            <li>You will be directed to <strong>assign_bus_handler.php</strong>. Select an available driver from the dropdown menu and click <strong>Confirm Assignment</strong>.</li>
+        </ol>
+
+        <h3>Monitoring Operations: Viewing Live Locations and Managing Trips</h3>
+        <ol>
+            <li>To view live fleet locations, navigate to the <strong>Map/Tracking</strong> widget on the <strong>Dashboard</strong>. This feature pulls real-time coordinate data via <strong>get_fleet_locations.php</strong>.</li>
+            <li>To monitor specific routes, click <strong>Trips</strong> (<strong>trips.php</strong>) from the navigation menu.</li>
+            <li>Locate an active trip and click <strong>View Tickets</strong> to see the passenger manifest, driven by <strong>get_trip_tickets.php</strong>.</li>
+            <li><strong>Using the Force End Trip Function:</strong> In the event of a bus breakdown or emergency, locate the active trip on the <strong>Trips</strong> page and click <strong>Force End Trip</strong>. This action executes <strong>api_force_end_trip.php</strong> and immediately concludes the trip to prevent further bookings. Confirm the warning prompt to finalize. <em>Note: Use this function strictly as a last resort.</em></li>
+        </ol>
+
+        <h3>Financial Management: Configuring Fares and Viewing Remittances</h3>
+        <ol>
+            <li><strong>Configuring Fare Settings:</strong> Click <strong>Financials</strong>, then <strong>Fare Settings</strong> to open <strong>fare_settings.php</strong>. Adjust the base fare and per-kilometer rates as necessary, then click <strong>Update Fares</strong> to apply the new logic system-wide.</li>
+            <li><strong>Reviewing Remittances:</strong> Click <strong>Remittance</strong> (<strong>remittance.php</strong>) in the navigation menu. Select a driver or date to review their completed shifts, expected ticket revenue, and cash turned over to the office.</li>
+        </ol>
+
+        <h3>Reporting: Generating, Printing, and Exporting Data</h3>
+        <ol>
+            <li>Navigate to <strong>Reports</strong> (<strong>reports.php</strong>) via the left-hand menu.</li>
+            <li>Select your desired report type (e.g., Revenue, Passenger Volume) and define the date range.</li>
+            <li>To print the document for physical filing, click <strong>Print Report</strong>, which invokes <strong>print_report.php</strong> in a printer-friendly layout.</li>
+            <li>To export the data for spreadsheet software (like Microsoft Excel), click <strong>Export to CSV</strong>. The system will download the file via <strong>export_csv.php</strong>.</li>
+        </ol>
+
+        <hr>
+
+        <h2>6. Troubleshooting & FAQs</h2>
+
+        <h3>Common Errors & Resolutions</h3>
+        <ol>
+            <li><strong>Error: Failed CSV Export</strong>
+                <ul>
+                    <li><strong>Symptom:</strong> Clicking <strong>Export to CSV</strong> does not download a file.</li>
+                    <li><strong>Resolution:</strong> Check if your browser is blocking pop-ups or automatic downloads. Ensure you have selected a valid date range. If the dataset is too massive, try generating the report in smaller date increments.</li>
+                </ul>
+            </li>
+            <li><strong>Error: Inactive Driver Status</strong>
+                <ul>
+                    <li><strong>Symptom:</strong> You cannot assign a specific driver to a bus.</li>
+                    <li><strong>Resolution:</strong> The driver’s account may be suspended. Navigate to <strong>Drivers</strong> (<strong>drivers.php</strong>), locate the driver, and check their status toggle. Click the toggle to invoke <strong>api_toggle_status.php</strong> and switch them back to Active.</li>
+                </ul>
+            </li>
+            <li><strong>Error: GPS Location Not Updating</strong>
+                <ul>
+                    <li><strong>Symptom:</strong> A bus location appears frozen on the map (<strong>get_fleet_locations.php</strong>).</li>
+                    <li><strong>Resolution:</strong> Contact the driver to ensure their mobile device has location services enabled and is connected to the internet.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Frequently Asked Questions</h3>
+        <ul>
+            <li><strong>Q: When do adjustments made in Fare Settings take effect?</strong><br>
+            <strong>A:</strong> Any changes made in <strong>fare_settings.php</strong> apply immediately to all <em>new</em> tickets booked after the update. Active trips and already-purchased tickets retain the old rate.</li>
+            <li><strong>Q: Can a deleted passenger account be recovered?</strong><br>
+            <strong>A:</strong> No. When an administrator deletes an account using <strong>api_delete_account.php</strong>, the action is irreversible to comply with data privacy standards. The user must register a new account.</li>
+            <li><strong>Q: What happens to ticket records when I use "Force End Trip"?</strong><br>
+            <strong>A:</strong> When <strong>api_force_end_trip.php</strong> is executed, all previously purchased tickets remain valid in the system history for auditing purposes. However, the trip is abruptly marked as completed, and no further transactions can occur for that specific schedule.</li>
+        </ul>
+
+        <hr>
+
+        <h2>7. Appendices & Support</h2>
+
+        <h3>Glossary</h3>
+        <ul>
+            <li><strong>Force-End:</strong> An emergency administrative override that immediately terminates an active trip.</li>
+            <li><strong>Kiosk Integration:</strong> The frontend scripting (<strong>kiosk_logic.js</strong>) that synchronizes the backend database with physical self-service ticketing machines at terminals.</li>
+            <li><strong>Ph-Address-Selector:</strong> A localized utility script (<strong>ph-address-selector.js</strong>) ensuring standardized Philippine address formatting during user registration and management.</li>
+            <li><strong>Remittance:</strong> The expected cash value of all physical tickets sold by a driver or conductor during their assigned shift, which must be surrendered to the administration.</li>
+            <li><strong>Trip Ticket:</strong> The digital or physical receipt proving a passenger's payment and seat reservation for a specific trip schedule.</li>
+        </ul>
+
+        <h3>Contact Information</h3>
+        <p>If you encounter critical system failures or require backend assistance beyond the scope of this manual, please contact the IT support team:</p>
+        <ul>
+            <li><strong>IT Support Helpdesk:</strong> admin.support@busfleet.local</li>
+            <li><strong>Emergency Outage Line:</strong> (02) 8123-4567</li>
+            <li><strong>Operating Hours:</strong> 24/7 for system-down emergencies; 8:00 AM - 5:00 PM for standard inquiries.</li>
+        </ul>
+    </div>
+</body>
+</html>

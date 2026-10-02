@@ -39,12 +39,18 @@ function showCustomErrorPage() {
 }
 
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    error_log("Error [$errno]: $errstr in $errfile on line $errline");
+    static $in_error = false;
+    if ($in_error) return;
+    $in_error = true;
+    @error_log("Error [$errno]: $errstr in $errfile on line $errline");
     showCustomErrorPage();
 });
 
 set_exception_handler(function($exception) {
-    error_log("Uncaught Exception: " . $exception->getMessage());
+    static $in_exception = false;
+    if ($in_exception) return;
+    $in_exception = true;
+    @error_log("Uncaught Exception: " . $exception->getMessage());
     showCustomErrorPage();
 });
 

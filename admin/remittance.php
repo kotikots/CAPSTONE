@@ -12,11 +12,10 @@ require_once '../config/db.php';
 require_once '../includes/auth_guard.php';
 require_once '../includes/functions.php';
 
-// Handle Remit Action
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'remit') {
-    if (isset($_POST['driver_id']) && isset($_POST['admin_password'])) {
-        $driverId = (int)$_POST['driver_id'];
-        $adminPassword = $_POST['admin_password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['req_type']) && $_POST['req_type'] === 'confirm_remit') {
+    if (isset($_POST['target_id']) && isset($_POST['auth_pin'])) {
+        $driverId = (int)$_POST['target_id'];
+        $adminPassword = $_POST['auth_pin'];
 
         // Verify admin password
         $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ? LIMIT 1");
@@ -38,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $_SESSION['error'] = "Incorrect admin password. Remittance cancelled.";
         }
     }
-    header("Location: remittance.php");
+    header("Location: remittance");
     exit;
 }
 
@@ -87,13 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <h3 class="font-black text-slate-800 tracking-tight text-xl">Admin Approval</h3>
         </div>
         
-        <form id="admin-pass-form" method="POST" action="remittance.php" class="p-6 space-y-6 bg-white">
-            <input type="hidden" name="action" value="remit">
-            <input type="hidden" name="driver_id" id="remit-driver-id">
+        <form id="admin-pass-form" method="POST" action="" class="p-6 space-y-6 bg-white">
+            <input type="hidden" name="req_type" value="confirm_remit">
+            <input type="hidden" name="target_id" id="remit-driver-id">
             
             <div class="text-center">
                 <p class="text-slate-500 font-medium text-sm mb-4">Please enter your admin password to confirm the remittance of <span id="remit-amount-display" class="font-bold text-slate-800"></span> from <span id="remit-driver-name" class="font-bold text-slate-800"></span>.</p>
-                <input type="password" name="admin_password" id="admin-pass-input" required placeholder="Enter Admin Password" class="w-full text-center bg-white border-2 border-slate-200 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium text-slate-800">
+                <input type="password" name="auth_pin" id="admin-pass-input" required placeholder="Enter Admin Password" class="w-full text-center bg-white border-2 border-slate-200 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium text-slate-800">
             </div>
             
             <div class="pt-2 flex gap-3">
@@ -127,16 +126,22 @@ document.getElementById('admin-pass-modal').addEventListener('click', function(e
     if (e.target === this) closePassModal();
 });
 
-// Auto-refresh remittance cards every 3 seconds
+// Auto-refresh remittance cards every 15 seconds to respect InfinityFree limits
 setInterval(() => {
-    fetch('ajax_remittance_cards.php')
-        .then(response => response.text())
+    fetch('ajax_remittance_cards.php', { cache: 'no-store' })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
         .then(html => {
+            // Prevent InfinityFree error pages from wiping the UI
+            if (html.includes('403 Forbidden') || html.includes('InfinityFree') || html.includes('epizy')) return;
+            
             const container = document.getElementById('remittance-cards-container');
             if (container) container.innerHTML = html;
         })
         .catch(err => console.error('Error fetching remittance cards:', err));
-}, 3000);
+}, 15000);
 </script>
 
 <?php include '../includes/mobile_nav_admin.php'; ?>

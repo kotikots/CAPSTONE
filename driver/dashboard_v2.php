@@ -274,7 +274,7 @@ let autoActive = false;
 
 <?php if ($activeTrip): ?>
 function fetchTripStats() {
-    fetch('get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>&t=' + Date.now(), { credentials: 'same-origin' })
+    fetch('/driver/get_trip_stats.php?trip_id=<?= $activeTrip['id'] ?>&t=' + Date.now(), { credentials: 'same-origin' })
     .then(r => r.json())
     .then(data => {
         if (!data.success) {
@@ -361,7 +361,7 @@ function collectPayment(ticketId, btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i>';
     
-    fetch('api_collect_payment.php', {
+    fetch('/driver/api_collect_payment.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket_id: ticketId })
@@ -398,7 +398,7 @@ async function flagTicket(ticketId, btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i>';
     
-    fetch('api_flag_ticket.php', {
+    fetch('/driver/api_flag_ticket.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket_id: ticketId })
@@ -479,7 +479,7 @@ function setMockGps() {
     let lastLat     = null;
     let lastLng     = null;
     let cachedTripId = null;
-    const PUSH_INTERVAL = 2000;   // Push every 2 seconds (was 5s)
+    const PUSH_INTERVAL = 15000;   // Push every 15 seconds (InfinityFree compliance)
     const MIN_MOVE_M    = 5;      // Only push if moved >5m OR time elapsed
 
     function haversineM(lat1, lng1, lat2, lng2) {
@@ -519,7 +519,7 @@ function setMockGps() {
             lastLat = lat;
             lastLng = lng;
 
-            fetch('push_location.php', {
+            fetch('/driver/push_location', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
@@ -562,7 +562,7 @@ async function startTrip(direction) {
 
     if (!confirmed) return;
 
-    fetch('start_trip.php', { 
+    fetch('/driver/start_trip.php', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ direction: direction })
@@ -591,7 +591,7 @@ async function endTrip(tripId) {
 
     if (!confirmed) return;
 
-    fetch('end_trip.php', {
+    fetch('/driver/end_trip.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trip_id: tripId })
@@ -630,7 +630,7 @@ async function remitCash(amount) {
     }
 
     try {
-        const res = await fetch('api_remit_cash.php', {
+        const res = await fetch('/driver/api_remit_cash.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });

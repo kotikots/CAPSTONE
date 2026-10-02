@@ -360,9 +360,16 @@ let fleetMarkers = {};
 let initialFit = false;
 
 function syncFleetMap() {
-    fetch('get_fleet_locations.php')
-        .then(r => r.json())
-        .then(data => {
+    fetch('/admin/get_fleet_locations', { cache: 'no-store' })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
+        .then(text => {
+            // Check if InfinityFree blocked it with HTML
+            if (text.includes('403 Forbidden') || text.includes('<html')) return;
+            
+            const data = JSON.parse(text);
             if (!data.success) return;
 
             const activeIds = new Set();
@@ -433,9 +440,9 @@ function syncFleetMap() {
         .catch(err => console.warn('Fleet sync error:', err));
 }
 
-// Poll every 5 seconds for live tracking
+// Poll every 15 seconds for live tracking (InfinityFree limit compliance)
 syncFleetMap();
-setInterval(syncFleetMap, 5000);
+setInterval(syncFleetMap, 15000);
 
 // NOTE: Removed the 2-minute window.location.reload() that was here.
 // The fleet map already syncs every 5 seconds via setInterval above — a hard
@@ -450,7 +457,7 @@ function forceEndTrip(tripId) {
     }).then(confirmed => {
         if (!confirmed) return;
         
-        fetch('api_force_end_trip.php', {
+        fetch('/admin/api_force_end_trip.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trip_id: tripId })
@@ -491,7 +498,7 @@ setInterval(() => {
             });
         })
         .catch(err => console.error('Dashboard auto-refresh error:', err));
-}, 3000);
+}, 30000);
 </script>
 
 <?php include '../includes/mobile_nav_admin.php'; ?>
