@@ -22,9 +22,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 // 2. INPUT: Get the data from the frontend (the target user type, their ID, and the new state)
 $data = json_decode(file_get_contents('php://input'), true);
-$type = $data['type'] ?? ''; // Can be 'passenger' or 'driver'
-$id   = (int)($data['id'] ?? 0);
-$state= (int)($data['state'] ?? 0); // 1 for Active, 0 for Inactive
+$type = $data['type'] ?? $_POST['type'] ?? ''; // Can be 'passenger' or 'driver'
+$id   = (int)($data['id'] ?? $_POST['id'] ?? 0);
+$state= (int)($data['state'] ?? $_POST['state'] ?? 0); // 1 for Active, 0 for Inactive
 
 // 3. VALIDATION: Check if we have everything we need
 if (!$id || !in_array($type, ['passenger', 'driver'])) {
@@ -54,8 +54,9 @@ try {
                 $mail->SMTPAuth   = true;
                 $mail->Username   = 'khianvivar@gmail.com';
                 $mail->Password   = 'zqip kriq dnir obzp'; // Same password as in forgot_password.php
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port       = 465;
+                $mail->Timeout    = 3; // Fail fast if SMTP is blocked (e.g. on InfinityFree)
 
                 $mail->setFrom($mail->Username, 'PARE System');
                 $mail->addAddress($user['email'], $user['full_name']);
@@ -84,8 +85,9 @@ try {
                 $mail->SMTPAuth   = true;
                 $mail->Username   = 'khianvivar@gmail.com';
                 $mail->Password   = 'zqip kriq dnir obzp'; // Same password as in forgot_password.php
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port       = 465;
+                $mail->Timeout    = 3; // Fail fast if SMTP is blocked (e.g. on InfinityFree)
 
                 $mail->setFrom($mail->Username, 'PARE System');
                 $mail->addAddress($user['email'], $user['full_name']);

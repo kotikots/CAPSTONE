@@ -1,6 +1,15 @@
 <?php
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_PARSE])) {
+        echo "<h1>FATAL ERROR DETECTED</h1>";
+        echo "<pre>";
+        print_r($error);
+        echo "</pre>";
+    }
+});
 /**
- * admin/add_driver.php
+ * admin/add-driver.php
  * Admin form to create a new driver with profile picture upload.
  */
 $requiredRole = 'admin';
@@ -108,7 +117,7 @@ include '../includes/header.php';
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight">Add New Driver</h2>
                     <p class="text-slate-500 text-sm">Register a new driver for your fleet.</p>
                 </div>
-                <a href="drivers.php" class="text-slate-500 hover:text-slate-800 transition flex items-center gap-2 text-sm font-bold">
+                <a href="/drivers" class="text-slate-500 hover:text-slate-800 transition flex items-center gap-2 text-sm font-bold">
                     <i class="ph ph-arrow-left"></i> Back to List
                 </a>
             </div>
@@ -123,7 +132,7 @@ include '../includes/header.php';
                         <p class="font-bold">Driver Added Successfully!</p>
                         <p class="text-sm opacity-90">The driver can now log in using their email and license number.</p>
                     </div>
-                    <a href="drivers.php" class="ml-auto bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">View Drivers</a>
+                    <a href="/drivers" class="ml-auto bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">View Drivers</a>
                 </div>
             <?php endif; ?>
 
@@ -138,7 +147,7 @@ include '../includes/header.php';
 
             <!-- Form Card -->
             <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 md:p-8">
-                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                <form action="/add-driver" method="POST" enctype="multipart/form-data" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Full Name -->

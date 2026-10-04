@@ -194,13 +194,26 @@ function handleBusData(data) {
 
     const buses     = data.buses || [];
     const newIds    = new Set();
+    const seenPos   = new Set();
     let   count     = 0;
 
     buses.forEach(bus => {
         if (!bus.latitude || !bus.longitude) return;
         count++;
         const id  = bus.bus_id;
-        const pos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
+        let lat = parseFloat(bus.latitude);
+        let lng = parseFloat(bus.longitude);
+
+        // Prevent exact overlap if buses are parked at the same terminal (Jitter)
+        let posKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+        while (seenPos.has(posKey)) {
+            lat += (Math.random() - 0.5) * 0.0003;
+            lng += (Math.random() - 0.5) * 0.0003;
+            posKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+        }
+        seenPos.add(posKey);
+
+        const pos = [lat, lng];
         newIds.add(id);
 
         if (!busMarkers[id]) {

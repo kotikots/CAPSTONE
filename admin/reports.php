@@ -190,11 +190,11 @@ include '../includes/header.php';
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3 mt-6">
-                    <button type="button" onclick="submitExport('export_csv.php')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
+                    <button type="button" onclick="submitExport('download-records')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
                         <i class="ph ph-file-csv text-3xl mb-2 text-emerald-500"></i>
                         <span class="font-bold text-sm text-center">Export<br>CSV</span>
                     </button>
-                    <button type="button" onclick="submitExport('print_report.php')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
+                    <button type="button" onclick="submitExport('view-report')" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition active:scale-95">
                         <i class="ph ph-file-pdf text-3xl mb-2 text-rose-500"></i>
                         <span class="font-bold text-sm text-center">Printable<br>PDF</span>
                     </button>

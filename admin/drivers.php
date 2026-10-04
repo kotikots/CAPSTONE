@@ -16,7 +16,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_driver_id'])) 
     $toggleId = (int)$_POST['toggle_driver_id'];
     $newState = (int)$_POST['new_state'];
     $pdo->prepare("UPDATE drivers SET is_active = ? WHERE id = ?")->execute([$newState, $toggleId]);
-    header('Location: drivers.php');
+    $_SESSION['flash_msg'] = $newState ? 'Driver activated.' : 'Driver deactivated.';
+    $_SESSION['flash_type'] = 'info';
+    header('Location: /drivers');
+    exit;
+}
+
+// Handle archive driver POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['archive_driver_id'])) {
+    $archiveId = (int)$_POST['archive_driver_id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE drivers SET is_archived = 1, is_active = 0 WHERE id = ?");
+        $stmt->execute([$archiveId]);
+        $_SESSION['flash_msg'] = 'Driver archived successfully!';
+        $_SESSION['flash_type'] = 'success';
+    } catch (PDOException $e) {
+        $_SESSION['flash_msg'] = 'Error archiving driver.';
+        $_SESSION['flash_type'] = 'error';
+    }
+    header('Location: /drivers');
     exit;
 }
 
@@ -61,6 +79,11 @@ $allBuses = $pdo->query("
 // Check for active trips to display warnings
 $activeTripDrivers = $pdo->query("SELECT DISTINCT driver_id FROM trips WHERE status = 'active'")->fetchAll(PDO::FETCH_COLUMN);
 
+// Check for flash messages
+$flashMsg  = $_SESSION['flash_msg'] ?? null;
+$flashType = $_SESSION['flash_type'] ?? 'success';
+unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
+
 include '../includes/header.php';
 ?>
 <div class="flex min-h-screen">
@@ -72,11 +95,23 @@ include '../includes/header.php';
                 <h2 class="text-2xl font-black text-slate-800">Drivers</h2>
                 <p class="text-slate-500 text-sm"><?= count($drivers) ?> active driver(s)</p>
             </div>
-            <a href="add_driver.php" 
+            <a href="/add-driver" 
                class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95">
                 <i class="ph ph-plus-circle text-xl"></i> Add New Driver
             </a>
         </div>
+
+        <?php if ($flashMsg): ?>
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.showToast(
+                '<?= $flashType === "success" ? "Success" : ($flashType === "info" ? "Updated" : "Error") ?>',
+                <?= json_encode($flashMsg) ?>,
+                '<?= $flashType ?>'
+            );
+        });
+        </script>
+        <?php endif; ?>
 
         <!-- Search -->
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3 focus-within:ring-2 focus-within:ring-amber-100 transition-all">
@@ -94,7 +129,7 @@ include '../includes/header.php';
 
                 <button type="submit" class="bg-amber-600 text-white font-semibold px-4 py-1.5 rounded-xl text-sm hover:bg-amber-500 transition">Search</button>
                 <?php if ($search): ?>
-                <a href="drivers.php" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition flex items-center justify-center">Clear</a>
+                <a href="/drivers" class="text-slate-400 font-semibold px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 transition flex items-center justify-center">Clear</a>
                 <?php endif; ?>
             </form>
         </div>
@@ -175,7 +210,7 @@ include '../includes/header.php';
 
                 <div class="flex items-center gap-2 pt-4 border-t border-slate-100">
                     <!-- Archive Button -->
-                    <button onclick="archiveAccount(<?= $d['id'] ?>, 'driver', '<?= addslashes($d['full_name']) ?>')"
+                    <button onclick="archiveAccount(<?= $d['id'] ?>, 'driver', '<?= addslashes($d['full_name']) ?>', <?= $isOnRoute ? 'true' : 'false' ?>)"
                             class="flex-1 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600"
                             title="Archive Account">
                         <i class="ph ph-archive text-lg"></i>
@@ -189,7 +224,12 @@ include '../includes/header.php';
 </div>
 
 <script>
-async function archiveAccount(id, type, name) {
+async function archiveAccount(id, type, name, isOnRoute = false) {
+    if (isOnRoute) {
+        window.showToast('Action Denied', 'Cannot archive a driver who is currently on an active route.', 'error');
+        return;
+    }
+
     const isConfirmed = await window.showConfirm({
         title: 'Archive Account?',
         message: `Are you sure you want to archive ${name}?`,
@@ -199,26 +239,24 @@ async function archiveAccount(id, type, name) {
 
     if (!isConfirmed) return;
 
-    try {
-        const res = await fetch('api_delete_account.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, type })
-        });
-        const data = await res.json();
+    // Use a hidden form POST (bypasses InfinityFree firewall)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/drivers';
+    form.style.display = 'none';
 
-        if (data.success) {
-            window.showToast('Account Archived', `${name} has been archived.`, 'success');
-            const card = document.getElementById(`card-${id}`);
-            card.style.transform = 'scale(0.9)';
-            card.style.opacity = '0';
-            setTimeout(() => card.remove(), 300);
-        } else {
-            window.showToast('Action Denied', data.message, 'error');
-        }
-    } catch (err) {
-        window.showToast('Network Error', 'Could not reach server.', 'error');
-    }
+    const inputId = document.createElement('input');
+    inputId.name = 'archive_driver_id';
+    inputId.value = id;
+    form.appendChild(inputId);
+
+    const inputType = document.createElement('input');
+    inputType.name = 'archive_type';
+    inputType.value = type;
+    form.appendChild(inputType);
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 async function toggleDriverStatus(driverId, newState, name) {
@@ -233,52 +271,24 @@ async function toggleDriverStatus(driverId, newState, name) {
 
     if (!confirmed) return;
 
-    try {
-        const res = await fetch('api_toggle_status.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'driver', id: driverId, state: newState })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-            window.showToast(
-                `Driver ${verb}d`, 
-                `${name} has been ${verb.toLowerCase()}d successfully.`,
-                newState ? 'success' : 'info'
-            );
+    // Use a hidden form POST (bypasses InfinityFree firewall)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/drivers';
+    form.style.display = 'none';
 
-            // Update UI state dynamically
-            const card = document.getElementById(`card-${driverId}`);
-            const badge = document.getElementById(`badge-${driverId}`);
-            const btn = document.getElementById(`toggle-btn-${driverId}`);
-            const icon = document.getElementById(`icon-${driverId}`);
-            const text = document.getElementById(`text-${driverId}`);
-            
-            if (newState) {
-                card.classList.remove('opacity-60', 'grayscale-[0.5]');
-                badge.className = 'inline-flex justify-center w-16 mt-1 bg-emerald-100 text-emerald-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full';
-                badge.textContent = 'Active';
-                btn.className = 'w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500';
-                icon.className = 'ph ph-power text-lg';
-                text.textContent = 'Deactivate Account';
-                btn.onclick = () => toggleDriverStatus(driverId, 0, name);
-            } else {
-                card.classList.add('opacity-60', 'grayscale-[0.5]');
-                badge.className = 'inline-flex justify-center w-16 mt-1 bg-red-100 text-red-600 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full';
-                badge.textContent = 'Inactive';
-                btn.className = 'w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg';
-                icon.className = 'ph ph-check-circle text-lg';
-                text.textContent = 'Activate Account';
-                btn.onclick = () => toggleDriverStatus(driverId, 1, name);
-            }
-        } else {
-            window.showToast('Error', data.message, 'error');
-        }
-    } catch (err) {
-        window.showToast('Network Error', 'Could not reach the server.', 'error');
-    }
+    const inputId = document.createElement('input');
+    inputId.name = 'toggle_driver_id';
+    inputId.value = driverId;
+    form.appendChild(inputId);
+
+    const inputState = document.createElement('input');
+    inputState.name = 'new_state';
+    inputState.value = newState;
+    form.appendChild(inputState);
+
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
     </main>

@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_bus_id'])) {
     $toggleId = (int)$_POST['toggle_bus_id'];
     $newState = (int)$_POST['new_state'];
     $pdo->prepare("UPDATE buses SET is_active = ? WHERE id = ?")->execute([$newState, $toggleId]);
-    header('Location: buses.php');
+    header('Location: /buses');
     exit;
 }
 
@@ -46,7 +46,7 @@ include '../includes/header.php';
                 <h2 class="text-2xl font-black text-slate-800 tracking-tight">Fleet Management</h2>
                 <p class="text-slate-500 text-sm"><?= count($buses) ?> bus(es) in fleet</p>
             </div>
-            <a href="add_bus.php" 
+            <a href="/add-bus" 
                class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-amber-500/30 transition active:scale-95">
                 <i class="ph ph-plus-circle text-xl"></i> Add New Bus
             </a>
@@ -110,7 +110,7 @@ include '../includes/header.php';
                         </td>
                         <td class="px-3 py-4">
                             <div class="flex items-center justify-end gap-2">
-                                <form method="POST" class="inline" onsubmit="return confirm('<?= $isInactive ? 'Reactivate' : 'Deactivate' ?> this bus?')">
+                                <form action="/buses" method="POST" class="inline" onsubmit="return confirm('<?= $isInactive ? 'Reactivate' : 'Deactivate' ?> this bus?')">
                                     <input type="hidden" name="toggle_bus_id" value="<?= $b['id'] ?>">
                                     <input type="hidden" name="new_state" value="<?= $isInactive ? 1 : 0 ?>">
                                     <button type="submit" 
@@ -120,7 +120,7 @@ include '../includes/header.php';
                                         <i class="ph <?= $isInactive ? 'ph-power' : 'ph-power' ?> font-bold"></i>
                                     </button>
                                 </form>
-                                <a href="edit_bus.php?id=<?= encryptId($b['id']) ?>" 
+                                <a href="/edit_bus?id=<?= encryptId($b['id']) ?>" 
                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-600 transition shadow-sm"
                                    title="Edit Bus">
                                     <i class="ph ph-pencil-simple font-bold"></i>

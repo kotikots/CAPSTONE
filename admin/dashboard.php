@@ -360,7 +360,7 @@ let fleetMarkers = {};
 let initialFit = false;
 
 function syncFleetMap() {
-    fetch('/admin/get_fleet_locations', { cache: 'no-store' })
+    fetch('/get_fleet_locations', { cache: 'no-store' })
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');
             return response.text();
@@ -373,6 +373,7 @@ function syncFleetMap() {
             if (!data.success) return;
 
             const activeIds = new Set();
+            const seenPos   = new Set();
             const bounds = [];
 
             data.buses.forEach(bus => {
@@ -380,7 +381,20 @@ function syncFleetMap() {
 
                 const id = bus.bus_id;
                 activeIds.add(id);
-                const pos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
+                
+                let lat = parseFloat(bus.latitude);
+                let lng = parseFloat(bus.longitude);
+
+                // Prevent exact overlap if buses are parked at the same terminal (Jitter)
+                let posKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+                while (seenPos.has(posKey)) {
+                    lat += (Math.random() - 0.5) * 0.0003;
+                    lng += (Math.random() - 0.5) * 0.0003;
+                    posKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+                }
+                seenPos.add(posKey);
+
+                const pos = [lat, lng];
                 bounds.push(pos);
                 const isOnTrip = !!bus.trip_id;
                 const shortName = (bus.body_number || '').replace(/\D/g, '').replace(/^0+/, '') || (bus.body_number || '').slice(-2);
@@ -457,7 +471,7 @@ function forceEndTrip(tripId) {
     }).then(confirmed => {
         if (!confirmed) return;
         
-        fetch('/admin/api_force_end_trip.php', {
+        fetch('/api_force_end_trip', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trip_id: tripId })

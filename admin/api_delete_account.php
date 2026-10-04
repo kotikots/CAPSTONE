@@ -22,8 +22,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 // 2. INPUT: Get the user type ('passenger' or 'driver') and their unique ID
 $data = json_decode(file_get_contents('php://input'), true);
-$type = $data['type'] ?? ''; 
-$id   = (int)($data['id'] ?? 0);
+$type = $data['type'] ?? $_POST['type'] ?? ''; 
+$id   = (int)($data['id'] ?? $_POST['id'] ?? 0);
 
 // 3. VALIDATION: Ensure we have a valid ID and known type before proceeding
 if (!$id || !in_array($type, ['passenger', 'driver'])) {
@@ -69,8 +69,9 @@ try {
                 $mail->SMTPAuth   = true;
                 $mail->Username   = 'khianvivar@gmail.com';
                 $mail->Password   = 'zqip kriq dnir obzp'; // Use the standard project password
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port       = 465;
+                $mail->Timeout    = 3; // Fail fast if SMTP is blocked (e.g. on InfinityFree)
 
                 $mail->setFrom($mail->Username, 'PARE System');
                 $mail->addAddress($user['email'], $user['full_name']);

@@ -87,8 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->SMTPAuth   = true;
                     $mail->Username   = 'khianvivar@gmail.com';
                     $mail->Password   = 'zqip kriq dnir obzp';
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port       = 587;
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    $mail->Port       = 465;
+                    $mail->Timeout    = 3;
 
                     $mail->setFrom($mail->Username, 'PARE System');
                     $mail->addAddress($user['email'], $user['full_name']);
@@ -117,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['reset_user_name']   = $user['full_name'];
                     $_SESSION['reset_masked_email'] = $maskedEmail;
                     $_SESSION['reset_otp_attempts'] = 0;
+                    $_SESSION['reset_identifier']   = $identifier;
 
                     // Refresh local vars
                     $step        = 'otp';
@@ -143,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['reset_user_id']     = null; // null = ghost session
                 $_SESSION['reset_masked_email'] = substr($identifier, 0, 1) . '***';
                 $_SESSION['reset_otp_attempts'] = 0;
+                $_SESSION['reset_identifier']   = $identifier;
 
                 $step = 'otp';
             }
@@ -276,7 +279,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Clear all reset session state
             unset($_SESSION['reset_step'], $_SESSION['reset_user_id'],
                   $_SESSION['reset_user_email'], $_SESSION['reset_user_name'],
-                  $_SESSION['reset_masked_email'], $_SESSION['reset_otp_attempts']);
+                  $_SESSION['reset_masked_email'], $_SESSION['reset_otp_attempts'],
+                  $_SESSION['reset_identifier']);
 
             $step        = 'done';
             $message     = 'Your password has been reset successfully! You can now log in.';
@@ -290,7 +294,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif ($action === 'restart') {
         unset($_SESSION['reset_step'], $_SESSION['reset_user_id'],
               $_SESSION['reset_user_email'], $_SESSION['reset_user_name'],
-              $_SESSION['reset_masked_email'], $_SESSION['reset_otp_attempts']);
+              $_SESSION['reset_masked_email'], $_SESSION['reset_otp_attempts'],
+              $_SESSION['reset_identifier']);
         $step = null;
     }
 }
@@ -492,7 +497,8 @@ include '../includes/header.php';
                     </button>
                 </form>
                 <form method="POST">
-                    <input type="hidden" name="action" value="restart">
+                    <input type="hidden" name="action" value="request_otp">
+                    <input type="hidden" name="identifier" value="<?= htmlspecialchars($_SESSION['reset_identifier'] ?? '') ?>">
                     <button type="submit" class="text-blue-600 hover:text-blue-800 font-semibold transition">
                         Resend code
                     </button>

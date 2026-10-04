@@ -35,8 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
             $mail->SMTPAuth   = true;
             $mail->Username   = 'khianvivar@gmail.com';
             $mail->Password   = 'zqip kriq dnir obzp'; // Use the standard project password
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = 465;
+            $mail->Timeout    = 3;
 
             $mail->setFrom($mail->Username, 'PARE System');
             $mail->addAddress($user['email'], $user['full_name']);
@@ -64,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
             $mail->SMTPAuth   = true;
             $mail->Username   = 'khianvivar@gmail.com';
             $mail->Password   = 'zqip kriq dnir obzp'; // Use the standard project password
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = 465;
+            $mail->Timeout    = 3;
 
             $mail->setFrom($mail->Username, 'PARE System');
             $mail->addAddress($user['email'], $user['full_name']);
@@ -86,7 +88,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
         }
     }
 
-    header('Location: passengers.php' . ($search ? '?q='.urlencode($search) : ''));
+    header('Location: /passengers' . (isset($search) && $search ? '?q='.urlencode($search) : ''));
+    exit;
+}
+
+// Handle archive account (moved from api_delete_account.php to bypass InfinityFree firewall)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['archive_user_id'])) {
+    $archiveId   = (int)$_POST['archive_user_id'];
+    $archiveType = $_POST['archive_type'] ?? 'passenger';
+
+    if ($archiveId && in_array($archiveType, ['passenger', 'driver'])) {
+        try {
+            if ($archiveType === 'driver') {
+                $stmt = $pdo->prepare("UPDATE drivers SET is_archived = 1, status = 'inactive' WHERE id = ?");
+                $stmt->execute([$archiveId]);
+            } else {
+                // Fetch user info for email
+                $checkStmt = $pdo->prepare("SELECT email, full_name, is_active FROM users WHERE id = ? AND role = 'passenger'");
+                $checkStmt->execute([$archiveId]);
+                $archiveUser = $checkStmt->fetch();
+
+                $stmt = $pdo->prepare("
+                    UPDATE users 
+                    SET is_archived = 1, 
+                        is_active = 0, 
+                        email = IF(email IS NOT NULL AND email != '', CONCAT('archived_', UNIX_TIMESTAMP(), '_', email), email),
+                        id_number = IF(id_number IS NOT NULL AND id_number != '', CONCAT('archived_', UNIX_TIMESTAMP(), '_', id_number), id_number)
+                    WHERE id = ? AND role = 'passenger'
+                ");
+                $stmt->execute([$archiveId]);
+
+                // Try to send email notification
+                if ($archiveUser && !empty($archiveUser['email']) && !str_starts_with($archiveUser['email'], 'archived_')) {
+                    $mail = new PHPMailer(true);
+                    try {
+                        $mail->isSMTP();
+                        $mail->Host       = 'smtp.gmail.com';
+                        $mail->SMTPAuth   = true;
+                        $mail->Username   = 'khianvivar@gmail.com';
+                        $mail->Password   = 'zqip kriq dnir obzp';
+                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                        $mail->Port       = 465;
+                        $mail->Timeout    = 3;
+
+                        $mail->setFrom($mail->Username, 'PARE System');
+                        $mail->addAddress($archiveUser['email'], $archiveUser['full_name']);
+                        $mail->isHTML(true);
+
+                        $contactInfo = "
+                            <div style='margin-top: 20px; padding: 15px; background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px;'>
+                                <h4 style='margin-top: 0; color: #1e293b;'>Need Help? Contact our Support Team:</h4>
+                                <p style='margin: 5px 0; color: #475569;'><strong>Email:</strong> khianvivar@gmail.com</p>
+                                <p style='margin: 5px 0; color: #475569;'><strong>Phone:</strong> 09684380147</p>
+                                <p style='margin: 5px 0; color: #475569;'><strong>Messenger:</strong> Khian Vivar</p>
+                            </div>
+                        ";
+
+                        if ($archiveUser['is_active'] == 0) {
+                            $mail->Subject = 'PARE Account Registration Update';
+                            $mail->Body = "
+                                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                                    <h3 style='color: #0f172a;'>Hello {$archiveUser['full_name']},</h3>
+                                    <p>We regret to inform you that your registration for a PARE account has been declined by the administrator.</p>
+                                    <p>This may be because the uploaded ID photo was unclear, or the scanned information did not match the ID content. Please try registering again and ensure that your uploaded photo is clear and readable.</p>
+                                    {$contactInfo}
+                                    <br><p>Thank you,<br><strong>PARE Administration</strong></p>
+                                </div>
+                            ";
+                        } else {
+                            $mail->Subject = 'PARE Account Archived';
+                            $mail->Body = "
+                                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                                    <h3 style='color: #0f172a;'>Hello {$archiveUser['full_name']},</h3>
+                                    <p>We are writing to inform you that your PARE account has been archived by the administrator.</p>
+                                    <p>If you believe this is a mistake, or if you have any questions regarding your account status, please reach out to our support team.</p>
+                                    {$contactInfo}
+                                    <br><p>Thank you,<br><strong>PARE Administration</strong></p>
+                                </div>
+                            ";
+                        }
+                        $mail->send();
+                    } catch (MailException $e) {
+                        error_log("PHPMailer Error (account archive): {$mail->ErrorInfo}");
+                    }
+                }
+            }
+        } catch (PDOException $e) {
+            error_log("Archive error: " . $e->getMessage());
+        }
+    }
+
+    $_SESSION['flash_msg'] = 'Account archived successfully!';
+    $_SESSION['flash_type'] = 'success';
+    header('Location: /passengers');
     exit;
 }
 
@@ -118,6 +212,11 @@ $passengers = $stmt->fetchAll();
 $allNamesStmt = $pdo->query("SELECT DISTINCT full_name FROM users WHERE role = 'passenger' AND is_archived = 0 ORDER BY full_name ASC");
 $allPassengerNames = $allNamesStmt->fetchAll(PDO::FETCH_COLUMN);
 
+// Check for flash messages
+$flashMsg  = $_SESSION['flash_msg'] ?? null;
+$flashType = $_SESSION['flash_type'] ?? 'success';
+unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
+
 include '../includes/header.php';
 ?>
 
@@ -132,6 +231,18 @@ include '../includes/header.php';
                 <p class="text-slate-500 text-sm"><?= number_format($total) ?> registered passengers</p>
             </div>
         </div>
+
+        <?php if ($flashMsg): ?>
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.showToast(
+                '<?= $flashType === "success" ? "Success" : "Error" ?>',
+                <?= json_encode($flashMsg) ?>,
+                '<?= $flashType ?>'
+            );
+        });
+        </script>
+        <?php endif; ?>
 
         <!-- Search -->
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-3 px-5 py-3 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
@@ -230,26 +341,24 @@ include '../includes/header.php';
 
             if (!isConfirmed) return;
 
-            try {
-                const res = await fetch('api_delete_account.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, type })
-                });
-                const data = await res.json();
+            // Use a hidden form POST (bypasses InfinityFree firewall)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/passengers';
+            form.style.display = 'none';
 
-                if (data.success) {
-                    window.showToast('Account Archived', `${name} has been moved to archives.`, 'success');
-                    const card = document.getElementById(`card-${id}`);
-                    card.style.transform = 'scale(0.9)';
-                    card.style.opacity = '0';
-                    setTimeout(() => card.remove(), 300);
-                } else {
-                    window.showToast('Action Denied', data.message, 'error');
-                }
-            } catch (err) {
-                window.showToast('Network Error', 'Could not reach server.', 'error');
-            }
+            const inputId = document.createElement('input');
+            inputId.name = 'archive_user_id';
+            inputId.value = id;
+            form.appendChild(inputId);
+
+            const inputType = document.createElement('input');
+            inputType.name = 'archive_type';
+            inputType.value = type;
+            form.appendChild(inputType);
+
+            document.body.appendChild(form);
+            form.submit();
         }
         // Store passenger data securely in JS
         const passengersData = {
@@ -325,49 +434,24 @@ include '../includes/header.php';
 
             if (!confirmed) return;
 
-            try {
-                const res = await fetch('api_toggle_status.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'passenger', id: userId, state: newState })
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    window.showToast(
-                        `Account ${verb}d`, 
-                        `${name} has been ${verb.toLowerCase()}d successfully.`,
-                        newState ? 'success' : 'info'
-                    );
+            // Use a hidden form POST (bypasses InfinityFree firewall)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/passengers';
+            form.style.display = 'none';
 
-                    // Update UI state dynamically
-                    const card = document.getElementById(`card-${userId}`);
-                    const badge = document.getElementById(`badge-${userId}`);
-                    const btn = document.getElementById(`toggle-btn-${userId}`);
-                    const icon = document.getElementById(`icon-${userId}`);
-                    
-                    if (newState) {
-                        card.classList.remove('opacity-60', 'grayscale-[0.5]');
-                        badge.className = 'bg-emerald-100 text-emerald-700 text-[10px] uppercase font-bold px-2 py-1 rounded-lg';
-                        badge.textContent = 'Active';
-                        btn.className = 'w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500';
-                        icon.className = 'ph ph-power text-lg font-bold';
-                        btn.onclick = (e) => { e.stopPropagation(); toggleStatus(userId, 0, name); };
-                    } else {
-                        card.classList.add('opacity-60', 'grayscale-[0.5]');
-                        badge.className = 'bg-red-100 text-red-600 text-[10px] uppercase font-bold px-2 py-1 rounded-lg';
-                        badge.textContent = 'Inactive';
-                        btn.className = 'w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm bg-emerald-600 text-white hover:bg-emerald-500';
-                        icon.className = 'ph ph-check-circle text-lg font-bold';
-                        btn.onclick = (e) => { e.stopPropagation(); toggleStatus(userId, 1, name); };
-                    }
-                } else {
-                    window.showToast('Error', data.message, 'error');
-                }
-            } catch (err) {
-                window.showToast('Network Error', 'Could not reach the server.', 'error');
-            }
+            const inputId = document.createElement('input');
+            inputId.name = 'toggle_user_id';
+            inputId.value = userId;
+            form.appendChild(inputId);
+
+            const inputState = document.createElement('input');
+            inputState.name = 'new_state';
+            inputState.value = newState;
+            form.appendChild(inputState);
+
+            document.body.appendChild(form);
+            form.submit();
         }
         </script>
 

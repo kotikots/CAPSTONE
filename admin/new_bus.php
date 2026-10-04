@@ -1,6 +1,15 @@
 <?php
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_PARSE])) {
+        echo "<h1>FATAL ERROR DETECTED</h1>";
+        echo "<pre>";
+        print_r($error);
+        echo "</pre>";
+    }
+});
 /**
- * admin/add_bus.php
+ * admin/add-bus.php
  * Admin form to register a new bus and assign a driver.
  */
 $requiredRole = 'admin';
@@ -102,7 +111,7 @@ include '../includes/header.php';
                         <p class="font-bold">Bus Registered Successfully!</p>
                         <p class="text-sm opacity-90">The bus is now active and linked to the driver.</p>
                     </div>
-                    <a href="buses.php" class="ml-auto bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">View Fleet</a>
+                    <a href="/buses" class="ml-auto bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">View Fleet</a>
                 </div>
             <?php endif; ?>
 
@@ -117,10 +126,10 @@ include '../includes/header.php';
 
             <!-- Form Card -->
             <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 md:p-8">
-                <a href="buses.php" class="text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-2 text-sm font-bold mb-6">
+                <a href="/buses" class="text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-2 text-sm font-bold mb-6">
                     <i class="ph ph-arrow-left"></i> Back to Fleet
                 </a>
-                <form method="POST" class="space-y-6">
+                <form action="/add-bus" method="POST" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         

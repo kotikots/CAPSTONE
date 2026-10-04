@@ -48,14 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- Universal validation ---
     if (empty($fullName)) $errors[] = 'Full name is required.';
-    if (empty($region) || empty($province) || empty($city) || empty($barangay)) {
-        $errors[] = 'Full home address is required.';
-    }
-    if (empty($contactRaw)) $errors[] = 'Contact number is required.';
-    elseif (!preg_match('/^[0-9]{11}$/', $contactRaw)) $errors[] = 'Contact number must be exactly 11 digits (e.g. 09123456789).';
-
-    // --- Emergency contact: required for discount, optional for basic ---
+    // --- Discount vs Basic validation ---
     if ($regMode === 'discount') {
+        if (empty($region) || empty($province) || empty($city) || empty($barangay)) {
+            $errors[] = 'Full home address is required for discount accounts.';
+        }
+        if (empty($contactRaw)) $errors[] = 'Contact number is required for discount accounts.';
+        elseif (!preg_match('/^[0-9]{11}$/', $contactRaw)) $errors[] = 'Contact number must be exactly 11 digits.';
+        
         if (empty($idNumber))  $errors[] = 'ID number is required for discount accounts.';
         if (empty($ecName))    $errors[] = 'Emergency contact name is required.';
         if (empty($ecContactRaw)) $errors[] = 'Emergency contact number is required.';
@@ -408,7 +408,98 @@ button[onclick="backToStep0()"], button[onclick="backToStep1()"] { color: #0F172
 }
 .step-dot.active { background: #2563EB; transform: scale(1.3); }
 .step-dot.done { background: #10B981; }
+
+/* ===== TOAST NOTIFICATIONS ===== */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 380px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.15);
+    pointer-events: all;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+.toast.hide {
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.25s ease;
+}
+.toast-error   { background: rgba(30, 10, 10, 0.88); border-color: rgba(239,68,68,0.4); }
+.toast-success { background: rgba(5, 30, 20, 0.88);  border-color: rgba(16,185,129,0.4); }
+.toast-warning { background: rgba(30, 20, 5, 0.88);  border-color: rgba(245,158,11,0.4); }
+.toast-info    { background: rgba(5, 15, 40, 0.88);  border-color: rgba(59,130,246,0.4); }
+.toast-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.toast-error   .toast-icon { color: #f87171; }
+.toast-success .toast-icon { color: #34d399; }
+.toast-warning .toast-icon { color: #fbbf24; }
+.toast-info    .toast-icon { color: #60a5fa; }
+.toast-body { flex: 1; min-width: 0; }
+.toast-title {
+    font-weight: 800;
+    font-size: 12.5px;
+    margin-bottom: 2px;
+    color: #f1f5f9;
+    line-height: 1.3;
+}
+.toast-error   .toast-title { color: #fca5a5; }
+.toast-success .toast-title { color: #6ee7b7; }
+.toast-warning .toast-title { color: #fde68a; }
+.toast-info    .toast-title { color: #93c5fd; }
+.toast-msg {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+}
+.toast-close {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.3); font-size: 16px; line-height: 1;
+    padding: 0; flex-shrink: 0; margin-top: 1px;
+    transition: color 0.2s;
+}
+.toast-close:hover { color: rgba(255,255,255,0.7); }
+.toast-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    border-radius: 0 0 14px 14px;
+    animation: toast-progress 4s linear forwards;
+}
+.toast-error   .toast-progress { background: #ef4444; }
+.toast-success .toast-progress { background: #10b981; }
+.toast-warning .toast-progress { background: #f59e0b; }
+.toast-info    .toast-progress { background: #3b82f6; }
+@keyframes toast-progress {
+    from { width: 100%; }
+    to   { width: 0%; }
+}
+.toast { position: relative; overflow: hidden; }
 </style>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container"></div>
 
 <div class="min-h-screen flex items-center justify-center p-4 sm:p-6">
 
@@ -779,7 +870,8 @@ button[onclick="backToStep0()"], button[onclick="backToStep1()"] { color: #0F172
                     </div>
 
                     <!-- ── Personal Info ── -->
-                    <div class="border-t border-white/10 pt-4">
+                    <div id="personal-info-section">
+                        <div class="border-t border-white/10 pt-4">
                         <p class="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-4 ml-2">
                             <i class="ph ph-user"></i> Personal Information
                         </p>
@@ -867,7 +959,8 @@ button[onclick="backToStep0()"], button[onclick="backToStep1()"] { color: #0F172
                                 <input type="hidden" name="ec_address" id="ec_full_address">
                             </div>
                         </div>
-                    </div>
+                    </div> <!-- /ec-panel -->
+                    </div> <!-- /personal-info-section -->
 
                     <!-- ── Account Credentials ── -->
                     <div class="border-t border-white/10 pt-4">
@@ -976,12 +1069,66 @@ button[onclick="backToStep0()"], button[onclick="backToStep1()"] { color: #0F172
 </div>
 
 <script>
+// ── Toast Notification System ─────────────────────────────────
+const TOAST_ICONS = {
+    error:   'ph-x-circle',
+    success: 'ph-check-circle',
+    warning: 'ph-warning-circle',
+    info:    'ph-info',
+};
+const TOAST_TITLES_DEFAULT = {
+    error: 'Error', success: 'Success', warning: 'Warning', info: 'Notice'
+};
+
+function showToast(type = 'info', title = '', message = '', duration = 4000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    title   = title   || TOAST_TITLES_DEFAULT[type] || 'Notice';
+    message = message || '';
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="ph-fill ${TOAST_ICONS[type] || 'ph-info'} toast-icon"></i>
+        <div class="toast-body">
+            <div class="toast-title">${title}</div>
+            ${message ? `<div class="toast-msg">${message}</div>` : ''}
+        </div>
+        <button class="toast-close" onclick="dismissToast(this.closest('.toast'))" aria-label="Close">✕</button>
+        <div class="toast-progress" style="animation-duration:${duration}ms"></div>
+    `;
+
+    container.appendChild(toast);
+
+    // Trigger slide-in
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add('show'));
+    });
+
+    // Auto-dismiss
+    const timer = setTimeout(() => dismissToast(toast), duration);
+    toast._dismissTimer = timer;
+
+    return toast;
+}
+
+function dismissToast(toast) {
+    if (!toast || toast._dismissed) return;
+    toast._dismissed = true;
+    clearTimeout(toast._dismissTimer);
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 350);
+}
+
 // ── Global State ─────────────────────────────────────────────
 let ocrData    = { full_name: null, id_number: null, id_type: null, discount_type: 'none', confidence: 'low' };
 let scanFailed = false;
 let scanDone   = false;
 let currentMode = 'basic'; // 'basic' or 'discount'
 let ecOpen = false;
+
 
 // ── Account Type Selection ────────────────────────────────────
 function selectAccountType(mode) {
@@ -1027,28 +1174,24 @@ function backToStep0() {
 }
 
 function goToStep2FromOTP() {
-    // Move from OTP panel to the ID scan/upload panel
+    if (currentMode === 'basic') {
+        // Skip ID upload completely for basic users
+        skipIdAndContinue();
+        return;
+    }
+
+    // Move from OTP panel to the ID scan/upload panel (Discount only)
     document.getElementById('step-panel-otp').classList.add('hidden');
     document.getElementById('step-panel-1').classList.remove('hidden');
     updateDots(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (currentMode === 'basic') {
-        document.getElementById('step1-label-discount').classList.add('hidden');
-        document.getElementById('step1-label-basic').classList.remove('hidden');
-        document.getElementById('step1-sub-discount').classList.add('hidden');
-        document.getElementById('step1-sub-basic').classList.remove('hidden');
-        document.getElementById('skip-id-btn').classList.remove('hidden');
-        document.getElementById('ocr-btn').classList.add('hidden');
-        document.getElementById('dropzone-label').textContent = 'Click to upload your ID photo (optional)';
-    } else {
-        document.getElementById('step1-label-discount').classList.remove('hidden');
-        document.getElementById('step1-label-basic').classList.add('hidden');
-        document.getElementById('step1-sub-discount').classList.remove('hidden');
-        document.getElementById('step1-sub-basic').classList.add('hidden');
-        document.getElementById('skip-id-btn').classList.add('hidden');
-        document.getElementById('dropzone-label').textContent = 'Click to upload your discount ID photo';
-    }
+    document.getElementById('step1-label-discount').classList.remove('hidden');
+    document.getElementById('step1-label-basic').classList.add('hidden');
+    document.getElementById('step1-sub-discount').classList.remove('hidden');
+    document.getElementById('step1-sub-basic').classList.add('hidden');
+    document.getElementById('skip-id-btn').classList.add('hidden');
+    document.getElementById('dropzone-label').textContent = 'Click to upload your discount ID photo';
 }
 
 function skipIdAndContinue() {
@@ -1083,9 +1226,10 @@ function goToStep2() {
 }
 
 function transitionToStep2() {
+    document.getElementById('step-panel-otp').classList.add('hidden');
     document.getElementById('step-panel-1').classList.add('hidden');
     document.getElementById('step-panel-2').classList.remove('hidden');
-    updateDots(3);
+    updateDots(currentMode === 'basic' ? 2 : 3);
     configureStep2ForMode();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1109,21 +1253,38 @@ function configureStep2ForMode() {
     // Step label
     document.getElementById('step2-label').textContent = isDiscount
         ? 'Step 4 of 4 — Complete Your Profile'
-        : 'Step 4 of 4 — Complete Your Profile';
+        : 'Step 3 of 3 — Set Password';
 
-    // EC section — discount shows always-open, basic shows toggle
+    // Personal Info section (Contact, Address, EC) — show only for discount
+    const personalInfoSection = document.getElementById('personal-info-section');
+    if (personalInfoSection) personalInfoSection.classList.toggle('hidden', !isDiscount);
+
+    // EC section toggles (only relevant if personal info is shown)
     document.getElementById('ec-section-discount').classList.toggle('hidden', !isDiscount);
-    document.getElementById('ec-section-basic').classList.toggle('hidden', isDiscount);
+    document.getElementById('ec-section-basic').classList.toggle('hidden', true); // Always hide the basic toggle now that it's hidden entirely
 
     if (isDiscount) {
         // EC is required for discount: open the panel, add required attributes
         document.getElementById('ec-panel').classList.add('open');
         setECRequired(true);
+        setPersonalInfoRequired(true);
     } else {
         // EC is optional for basic: collapsed by default
         if (!ecOpen) document.getElementById('ec-panel').classList.remove('open');
         setECRequired(false);
+        setPersonalInfoRequired(false);
     }
+}
+
+function setPersonalInfoRequired(required) {
+    const fields = ['contact_number', 'region', 'province', 'city', 'barangay'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (required) el.setAttribute('required', '');
+            else el.removeAttribute('required');
+        }
+    });
 }
 
 function setECRequired(required) {
@@ -1162,13 +1323,21 @@ function updateDots(step) {
     const labels = {
         0: 'Choose account type',
         1: 'Verify your email',
-        2: currentMode === 'basic' ? 'Upload ID (optional)' : 'Scan your discount ID',
+        2: currentMode === 'basic' ? 'Complete your profile' : 'Scan your discount ID',
         3: 'Complete your profile'
     };
     ['dot-0','dot-1','dot-2','dot-3'].forEach((id, i) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.className = 'step-dot';
+        
+        // Hide the 4th dot for basic users since they skip step 2
+        if (currentMode === 'basic' && i === 3) {
+            el.style.display = 'none';
+        } else {
+            el.style.display = 'flex';
+        }
+
         if (i < step) el.classList.add('done');
         else if (i === step) el.classList.add('active');
     });
@@ -1177,6 +1346,7 @@ function updateDots(step) {
 
 // ── Email OTP Verification ────────────────────────────────────
 let otpEmailVerified = false;
+let otpTargetEmail   = '';   // Persists the email across the entire OTP flow
 
 async function sendRegOTP() {
     const emailInput = document.getElementById('otp-email-input');
@@ -1189,14 +1359,15 @@ async function sendRegOTP() {
         return;
     }
 
-    // Save the actual email on the input for later retrieval
+    // ── Persist in both dataset AND module variable ──────────────
     emailInput.dataset.email = email;
+    otpTargetEmail           = email;   // ← reliable module-level store
 
     btn.disabled  = true;
     btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Sending…';
 
     try {
-        const res  = await fetch('api_send_reg_otp.php', {
+        const res  = await fetch('/api_send_reg_otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -1236,7 +1407,7 @@ async function verifyRegOTP() {
     btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Verifying…';
 
     try {
-        const res  = await fetch('api_verify_reg_otp.php', {
+        const res  = await fetch('/api_verify_reg_otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ otp })
@@ -1245,7 +1416,8 @@ async function verifyRegOTP() {
 
         if (data.success) {
             otpEmailVerified = true;
-            const verifiedEmail = document.getElementById('otp-email-input').dataset.email || '';
+            // Use module-level variable — always reliable
+            const verifiedEmail = otpTargetEmail || document.getElementById('otp-email-input').dataset.email || '';
 
             // Show verified badge, hide code entry
             document.getElementById('otp-code-row').classList.add('hidden');
@@ -1254,8 +1426,8 @@ async function verifyRegOTP() {
             document.getElementById('otp-continue-btn').classList.remove('hidden');
 
             // Pre-fill email in the final form and lock it
-            const emailField = document.getElementById('email');
-            const displayEmail = document.getElementById('display-email');
+            const emailField    = document.getElementById('email');
+            const displayEmail  = document.getElementById('display-email');
             if (emailField && verifiedEmail) {
                 emailField.value = verifiedEmail;
                 if (displayEmail) displayEmail.textContent = verifiedEmail;
@@ -1267,17 +1439,19 @@ async function verifyRegOTP() {
 
         } else {
             showOTPStatus('error', data.error || 'Incorrect code.');
+
             if (data.locked || data.expired) {
+                // ── Do NOT go back to email entry — just clear boxes and resend automatically ──
                 boxes.forEach(b => b.value = '');
-                document.getElementById('otp-code-row').classList.add('hidden');
-                document.getElementById('otp-email-row').classList.remove('hidden');
-                const sb = document.getElementById('send-otp-btn');
-                sb.disabled  = false;
-                sb.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Send New Code';
+                showOTPStatus('warning', (data.locked ? 'Too many attempts. ' : 'Code expired. ') + 'Sending a new code…');
+                // Auto-trigger resend after a short delay
+                setTimeout(() => resendOTP(), 1200);
             }
+
             btn.disabled  = false;
             btn.innerHTML = '<i class="ph ph-shield-check"></i> Verify Code';
-            // Shake effect on wrong code
+
+            // Shake / highlight effect on wrong code
             boxes.forEach(b => {
                 b.classList.add('border-red-400', 'bg-red-50');
                 setTimeout(() => b.classList.remove('border-red-400', 'bg-red-50'), 1200);
@@ -1291,14 +1465,67 @@ async function verifyRegOTP() {
 }
 
 async function resendOTP() {
-    document.getElementById('otp-email-row').classList.remove('hidden');
-    document.getElementById('otp-code-row').classList.add('hidden');
-    document.getElementById('otp-status').innerHTML = '';
+    // ── Always read from the module-level variable — never reset to email row ──
+    const email = otpTargetEmail
+                  || document.getElementById('otp-email-input').dataset.email
+                  || '';
+
+    if (!email) {
+        // True edge case — email is completely gone, only then show email row
+        changeOTPEmail();
+        return;
+    }
+
+    // Keep OTP boxes visible — just clear the values
     document.querySelectorAll('.otp-box').forEach(b => b.value = '');
-    const sb = document.getElementById('send-otp-btn');
-    sb.disabled  = false;
-    sb.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Send Code';
-    await sendRegOTP();
+    document.getElementById('otp-status').innerHTML = '';
+
+    // Make sure the code row is still showing, email row is hidden
+    document.getElementById('otp-code-row').classList.remove('hidden');
+    document.getElementById('otp-email-row').classList.add('hidden');
+
+    // Re-show the verify button in case it was hidden
+    const verifyBtn = document.getElementById('verify-otp-btn');
+    if (verifyBtn) verifyBtn.classList.remove('hidden');
+
+    // Update resend button to loading state
+    const resendBtn = document.getElementById('resend-otp-btn');
+    if (resendBtn) {
+        resendBtn.disabled  = true;
+        resendBtn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Resending…';
+    }
+
+    showOTPStatus('info', 'Sending a new code…');
+
+    try {
+        const res  = await fetch('/api_send_reg_otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const maskedEl = document.getElementById('otp-masked-email');
+            if (maskedEl) maskedEl.textContent = data.masked_email;
+
+            showOTPStatus('success', '✓ New code sent to ' + data.masked_email + '. Check your inbox.');
+            document.querySelectorAll('.otp-box')[0].focus();
+            startOTPCountdown(data.expires_in || 600);
+        } else {
+            showOTPStatus('error', data.error || 'Failed to resend code. Please try again.');
+            if (resendBtn) {
+                resendBtn.disabled  = false;
+                resendBtn.innerHTML = '<i class="ph ph-arrow-clockwise"></i> Resend Code';
+            }
+        }
+    } catch (e) {
+        showOTPStatus('error', 'Network error. Please check your connection.');
+        if (resendBtn) {
+            resendBtn.disabled  = false;
+            resendBtn.innerHTML = '<i class="ph ph-arrow-clockwise"></i> Resend Code';
+        }
+    }
 }
 
 function changeOTPEmail() {
@@ -1435,8 +1662,22 @@ async function startMistralScan() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_base64: base64, mime_type: mimeType })
         });
-        const data = await resp.json();
+
+        // ── Safe JSON extraction ──────────────────────────────────────────────
+        // Read raw text first. The server (especially shared hosting like InfinityFree)
+        // may prepend PHP notices, warnings, or inject HTML. We extract the JSON
+        // object directly via regex instead of relying on resp.json().
+        const rawText = await resp.text();
+        console.log('[OCR] Raw server response:', rawText.substring(0, 300));
+
+        // Extract the first {...} JSON block from whatever the server returned
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error('Server returned an invalid response. HTTP ' + resp.status + '. Check that api_mistral_ocr.php is uploaded to the server.');
+        }
+        const data = JSON.parse(jsonMatch[0]);
         if (!data.success) throw new Error(data.error || 'Unknown error from Mistral.');
+
 
         ocrData    = { full_name: data.full_name||null, id_number: data.id_number||null, id_type: data.id_type||null, discount_type: data.discount_type||'none', confidence: data.confidence||'low' };
         scanFailed = false;
@@ -1531,15 +1772,15 @@ document.getElementById('register-form').addEventListener('submit', function (e)
         if (scanFailed) {
             const n = document.getElementById('full_name_editable').value.trim();
             const i = document.getElementById('id_number_editable').value.trim();
-            if (!n) { e.preventDefault(); alert('Please enter your full name.'); return; }
-            if (!i) { e.preventDefault(); alert('Please enter your ID number.'); return; }
+            if (!n) { e.preventDefault(); showToast('error', 'Full Name Required', 'Please enter your full name as it appears on your ID.'); return; }
+            if (!i) { e.preventDefault(); showToast('error', 'ID Number Required', 'Please enter your ID number before continuing.'); return; }
             document.getElementById('full_name_hidden').value = n;
             document.getElementById('id_number_hidden').value = i;
         }
     } else {
         // Basic: copy name from basic_full_name input → full_name_hidden
         const basicName = document.getElementById('basic_full_name').value.trim();
-        if (!basicName) { e.preventDefault(); alert('Please enter your full name.'); return; }
+        if (!basicName) { e.preventDefault(); showToast('error', 'Full Name Required', 'Please enter your full name to continue.'); return; }
         document.getElementById('full_name_hidden').value = basicName;
         document.getElementById('id_number_hidden').value = '';
         document.getElementById('discount_type_hidden').value = 'none';
@@ -1548,8 +1789,8 @@ document.getElementById('register-form').addEventListener('submit', function (e)
     // Password checks
     const pw = document.getElementById('password').value;
     const ok = /.{8,}/.test(pw) && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
-    if (!ok) { e.preventDefault(); alert('Password does not meet all requirements.'); return; }
-    if (pw !== document.getElementById('confirm_password').value) { e.preventDefault(); alert('Passwords do not match.'); return; }
+    if (!ok) { e.preventDefault(); showToast('error', 'Weak Password', 'Your password does not meet all the requirements. Please check the checklist.'); return; }
+    if (pw !== document.getElementById('confirm_password').value) { e.preventDefault(); showToast('error', 'Passwords Do Not Match', 'The passwords you entered do not match. Please re-enter them carefully.'); return; }
 });
 
 // ── Password strength ─────────────────────────────────────────

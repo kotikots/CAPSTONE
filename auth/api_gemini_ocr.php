@@ -181,17 +181,29 @@ if (!$rawText) {
 }
 
 // ── Parse JSON from Gemini output ────────────────────────────
-$cleanText = preg_replace('/^```(?:json)?\s*/i', '', trim($rawText));
-$cleanText = preg_replace('/\s*```$/i', '', $cleanText);
-$cleanText = trim($cleanText);
+// Strategy 1: Extract JSON object directly via regex (robust against any wrapping)
+$extracted = null;
 
-$extracted = json_decode($cleanText, true);
+if (preg_match('/\{[\s\S]*\}/u', $rawText, $matches)) {
+    $extracted = json_decode($matches[0], true);
+}
+
+// Strategy 2: Fallback — strip markdown fences and any leading word prefix
+if (!is_array($extracted)) {
+    $cleanText = preg_replace('/^```(?:json)?[\s]*/iu', '', trim($rawText));
+    $cleanText = preg_replace('/[\s]*```$/iu', '', $cleanText);
+    // Strip any leading non-JSON word (e.g. "json" without backticks)
+    $cleanText = preg_replace('/^[a-zA-Z]+\s*/u', '', trim($cleanText));
+    $cleanText = trim($cleanText);
+    $extracted = json_decode($cleanText, true);
+}
 
 if (!is_array($extracted)) {
-    error_log("Gemini non-JSON response: $rawText");
+    $jsonError = json_last_error_msg();
+    error_log("Gemini non-JSON response (json_error: $jsonError): " . substr($rawText, 0, 500));
     echo json_encode([
         'success' => false,
-        'error'   => 'Could not parse ID data. Please try a clearer, well-lit photo.'
+        'error'   => 'AI Scan Failed: ' . $jsonError . '. Please try a clearer, well-lit photo.'
     ]);
     exit;
 }

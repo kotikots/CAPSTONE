@@ -70,8 +70,9 @@ try {
     $mail->SMTPAuth   = true;
     $mail->Username   = 'khianvivar@gmail.com';
     $mail->Password   = 'zqip kriq dnir obzp';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = 465;
+    $mail->Timeout    = 3;
 
     $mail->setFrom($mail->Username, 'PARE System');
     $mail->addAddress($email);
